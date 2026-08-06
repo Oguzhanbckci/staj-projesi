@@ -61,9 +61,9 @@ için `karar-gunlugu.md` (2026-08-06, "Panel mimarisi düzeltildi: tek panel, te
 kullanıcı, tam yönetilen hizmet").
 
 Bu ağaç yapısı 2026-08-06'da fiilen oluşturuldu (`app/`, `components/`, `lib/`,
-`types/`) — her klasörün ne için var olduğunun ayrıntılı gerekçesi için
-**`docs/Mimari.md` madde 8**'e bakılır. `api/` ve `supabase/` henüz
-oluşturulmadı, ilk gerçek ihtiyaç doğduğunda eklenecek.
+`types/`, `supabase/migrations/`) — her klasörün ne için var olduğunun
+ayrıntılı gerekçesi için **`docs/Mimari.md` madde 8**'e bakılır. `app/api/`
+henüz oluşturulmadı, ilk gerçek ihtiyaç doğduğunda eklenecek.
 
 ## 4. Kod Standartları
 
@@ -157,3 +157,8 @@ tutulur.
 6. Yeni bir özellik önerisi/isteği geldiğinde önce `docs/PRD.md`'deki
    "İstenmeyen" listesine bakılır; orada açıkça yasaklanmış bir şeyse
    uygulanmadan önce kullanıcıya sorulur.
+7. AI, `docs/` içinde açıkça istenmeyen yeni bir dosya oluşturmadan önce
+   kullanıcıya sorar (bkz. `karar-gunlugu.md`, 2026-08-06,
+   "`docs/veritabani-semasi.md` kaldırıldı..." — AI bunu sormadan
+   oluşturmuştu, kullanıcı düzeltti). Mevcut bir dosyayı güncellemek bu
+   kuralın dışında, serbesttir.

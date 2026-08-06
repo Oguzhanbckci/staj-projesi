@@ -3,8 +3,9 @@
 Bu klasör (`docs/`), projede alınan kararları ve açıklamalarını tutar — kod içermez.
 Yeni bir oturuma başlarken önce bu dosyayı (güncel durum), sonra `PRD.md`'yi
 (özellik bazlı yapılacak/yapılmayacak referansı), `Mimari.md`'yi (teknik
-mimari: framework/dil/stil/backend/hosting/render) ve `test-stratejisi.md`'yi
-(test yaklaşımı, kalite eşikleri, "bitti" tanımı), gerekirse `karar-gunlugu.md`'yi
+mimari: framework/dil/stil/backend/hosting/render), `test-stratejisi.md`'yi
+(test yaklaşımı, kalite eşikleri, "bitti" tanımı) ve `VERİ-MODELİ.md`'yi
+(Supabase tablo/kolon tasarımı + gerekçeler), gerekirse `karar-gunlugu.md`'yi
 (tarihli, hiç silinmeyen karar geçmişi) oku.
 
 **Son güncelleme:** 2026-08-06
@@ -96,15 +97,32 @@ işaret edecek şekilde genişletildi.
 (placeholder sayfalarla), `components/ui/`, `components/site/`,
 `lib/supabase/`, `lib/utils.ts`, `types/index.ts` — hepsi `npm run build` ile
 doğrulandı (`/`, `/panel`, `/_not-found` hatasız derleniyor). Her klasörün
-amacı `docs/Mimari.md` madde 8'de belgelendi. `app/api/` ve `supabase/`
-(migrations) henüz yok, ilk gerçek ihtiyaçta eklenecek.
+amacı `docs/Mimari.md` madde 8'de belgelendi. `app/api/` henüz yok, ilk
+gerçek ihtiyaçta eklenecek.
+
+**Veritabanı şeması netleşti + SQL yazıldı (2026-08-06):** İçerik envanteri
+tablolara döküldü, platform sahibi `tenants` tablosunda özel bir satır
+(`is_platform_owner`) olarak birleştirildi, sonra dışarıdan gelen bir
+yönergeyle karşılaştırılıp revize edildi (bkz. `karar-gunlugu.md`, "Şema,
+dışarıdan gelen bir yönergeyle karşılaştırılıp 3 noktada revize edildi").
+Sonuç: **8 tablo** (`tenants`, `site_settings`, `hero_sections`,
+`about_sections`, `services`, `projects`, `contact_sections`,
+`contact_messages`) — `order_index` sadece `services`/`projects`'te,
+`is_published` yalnızca yayın kontrolü gereken tablolarda, görsel kolonları
+`*_path` (Storage yolu, tam URL değil). Çalışır SQL migration'ı yazıldı:
+`supabase/migrations/20260806120000_create_content_tables.sql` (RLS her
+tabloda açık, policy henüz yok) + `supabase/seed.sql` (her tabloya 2 satırlık
+doğrulama verisi). Detay: `docs/VERİ-MODELİ.md`.
 
 ## Sıradaki adım
 
 1. Vitest ve Playwright'ı kur (bkz. `test-stratejisi.md`).
-2. Supabase projesini oluştur, `lib/supabase/` istemcilerini kur; `tenants` tablosu
-   ve tenant_id tabanlı RLS'i tasarla; `supabase/migrations/` klasörünü aç.
-3. Hazır bölüm kütüphanesindeki ilk bileşenleri (Hero, İletişim gibi en sık
+2. Gerçek bir Supabase projesi oluştur (supabase.com), migration'ı ona
+   uygula (`supabase link` + `supabase db push`, veya SQL editöründen
+   yapıştır); `lib/supabase/` istemcilerini kur.
+3. Panel auth'u (Supabase Auth, platform sahibi girişi) kodlanınca RLS
+   policy'lerini ayrı bir migration'da ekle.
+4. Hazır bölüm kütüphanesindeki ilk bileşenleri (Hero, İletişim gibi en sık
    görülenlerden başlayarak) `components/site/` altına kodla + birim
    testlerini yaz; en az bir örnek "demo" (bölüm kombinasyonu + örnek içerik)
    hazırla.

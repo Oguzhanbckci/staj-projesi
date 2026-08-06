@@ -56,6 +56,35 @@ bir kurumsal web sitesi hizmeti — "tek müşteri = tek kurulum" iş modelinde.
 - SEO, responsive, performans, KVKK uyumluluğu (bkz.
   `kurumsal-site-standartlari.md`).
 
+### 3.4 İçerik Modeli (Veri Alanları)
+
+Veritabanı şeması tasarlanırken referans alınacak alan listesi. **TEKİL** =
+tenant/platform başına bir kayıt; **LİSTE** = birden çok öğe (her öğenin kendi
+`sıra` alanı var). Her bölümde ayrıca ortak iki alan bulunur: `aktif` (panelden
+aç/kapat) ve bölüm `sıra`sı (bölümler arası sürükle-bırak sıralama).
+
+**Tenant siteleri:**
+
+| Bölüm | Tip | Alanlar |
+|---|---|---|
+| Hero | Tekil | başlık, alt başlık, arka plan görseli, CTA metni, CTA linki |
+| Hakkımızda | Tekil | başlık, açıklama, görsel (opsiyonel), kuruluş/deneyim yılı (opsiyonel) |
+| Hizmetler | Liste | başlık, açıklama, ikon, sıra |
+| Projeler | Liste | başlık, görsel, konum, yıl, sıra |
+| İletişim | Tekil | adres, telefon, e-posta (statik gösterim) + form (ad-soyad, telefon, mesaj) — form gönderiminde **o tenant'a** e-posta gider (alıcı adresi tenant ayarlarında tutulur, içerik verisi değil) |
+
+Tenant başına ayrıca (bölüm değil, tenant meta verisi): **tema** (açık/koyu
+tercih, marka rengi), **domain**, **iletişim formu alıcı e-postası**.
+
+**Platform sahibinin tanıtım sitesi** (ayrı, tek kurulum — tenant değil):
+
+| Bölüm | Tip | Alanlar |
+|---|---|---|
+| Hero/Ana sayfa | Tekil | başlık, alt başlık, arka plan görseli, CTA metni, CTA linki |
+| Portfolyo/Örnekler | Liste | başlık, görsel, sıra, canlı link (opsiyonel) |
+| Vaat edilen özellikler | Liste | başlık, açıklama, ikon, sıra |
+| İletişim | Tekil | WhatsApp numarası + form (ad-soyad, telefon, mesaj) — form gönderiminde **platform sahibine** e-posta gider |
+
 ## 4. İstenmeyen (Kapsam Dışı) — Yapma
 
 - Tanıtım sitesinde fiyatlandırma, abonelik veya ödeme bilgisi ya da herhangi

@@ -505,3 +505,186 @@ uygulandı:
 **Gerekçe:** Kullanıcı, klasörlerin fiilen oluşturulmasını ve her birinin
 amacının `Mimari.md`'de belgelenmesini istedi — daha önce sadece planlanmış
 (AI-KURALLARI.md'deki ağaç şeması) bir yapıyı gerçek koda dönüştürme adımı.
+
+---
+
+## 2026-08-06 — İçerik modeli (bölüm veri alanları) çıkarıldı, `PRD.md` madde 3.4
+
+**Karar:** Yaklaşan Supabase şema çalışması öncesi, `PRD.md`'deki her bölümün
+(Hero, Hakkımızda, Hizmetler, Projeler, İletişim — hem tenant hem platform
+sahibinin tanıtım sitesi için ayrı ayrı) hangi veri alanlarını tuttuğu
+listelendi ve `PRD.md` madde 3.4'e eklendi. Her bölüm **Tekil** (tenant/
+platform başına bir kayıt) veya **Liste** (sıralı çoklu öğe) olarak
+işaretlendi; ortak `aktif`/`sıra` alanları not edildi.
+
+Netleşen tek yeni nokta: **tenant sitelerindeki İletişim bölümü** — statik
+bilgi (adres/telefon/e-posta) + bir iletişim formu (ad-soyad, telefon, mesaj)
+içerecek; form gönderiminde **o tenant'a** (platform sahibine değil) e-posta
+gider. Bu, platform sahibinin kendi tanıtım sitesindeki İletişim'den
+(form → platform sahibine gider) farklı bir alıcı davranışı.
+
+**Gerekçe:** Veri modelini kod yazmadan önce netleştirmek, Supabase
+migration'larının doğru şemayla tek seferde yazılmasını sağlıyor.
+
+---
+
+## 2026-08-06 — İçerik envanteri tablolara döküldü, `docs/veritabani-semasi.md` oluşturuldu
+
+**Karar:** `PRD.md` madde 3.4'teki içerik envanteri tablolara dönüştürüldü ve
+`docs/veritabani-semasi.md`'ye kaydedildi. Kurallar:
+
+- Her tabloda ortak 4 kolon: `id`, `created_at`, `order_index`,
+  `is_published`.
+- Tablo/kolon adları İngilizce `snake_case` (Postgres/Supabase konvansiyonu,
+  Türkçe karakterli kolon adlarının quote gerektirmesi ve TypeScript
+  tarafıyla uyumsuzluğu nedeniyle).
+- Tenant içerik tabloları: `hero_sections`, `about_sections`, `services`,
+  `projects`, `contact_sections`.
+- Platform sahibinin tanıtım sitesi tabloları (ayrı tutuldu, şimdilik):
+  `platform_hero`, `platform_portfolio`, `platform_features`,
+  `platform_contact`.
+- **`contact_messages`** eklendi — ziyaretçi form gönderimleri (hem
+  tenant'tan hem platformdan) veritabanında da saklanacak, sadece e-postaya
+  güvenilmeyecek (e-posta gönderimi başarısız olursa mesaj kaybolmasın diye).
+- Site geneli ayarlar için ayrı tablo istendiği için **`tenants`** (her
+  tenant'ın adı, domaini, teması, form alıcı e-postası) ve **`platform_settings`**
+  (platform sahibinin kendi sitesi için, singleton) eklendi.
+
+Tablolar arası ilişkiler (foreign key'ler, özellikle tenant_id bağlantıları)
+bilinçli olarak bu adıma dahil edilmedi — kullanıcı bunu ayrı bir sonraki
+adım olarak planladı.
+
+**Gerekçe:** Kullanıcı, veritabanı işlemlerine geçmeden önce içerik
+envanterini somut tablo/kolon tasarımına dönüştürmek istedi; ilişkileri ayrı
+bir adımda ele almayı tercih etti (kapsamı küçük parçalara bölmek, tek
+seferde çok karar almamak için).
+
+**Not:** `veritabani-semasi.md`'de bir açık soru var — platform sahibinin
+tanıtım sitesi tabloları tenant tablolarından tamamen ayrı mı kalacak, yoksa
+platform sahibi `tenants` tablosunda özel bir satır olarak modellenip aynı
+tablolar mı paylaşılacak? Bu, ilişkiler adımında ilk ele alınacak konu.
+
+---
+
+## 2026-08-06 — Platform sahibi `tenants` tablosunda birleştirildi, ayrı `platform_*` tabloları kaldırıldı
+
+**Karar:** Bir önceki kayıttaki açık soru çözüldü: **platform sahibi için ayrı
+tablo yok.** `platform_hero`, `platform_portfolio`, `platform_features`,
+`platform_contact`, `platform_settings` tabloları kaldırıldı. Bunun yerine
+platform sahibi, `tenants` tablosunda `is_platform_owner = true` olan
+özel/rezerve bir satırdır ve tenant'larla **aynı** içerik tablolarını
+(`hero_sections`, `services`, `projects`, `contact_sections`) paylaşır.
+
+Bu birleştirmenin doğal/zorunlu sonucu olarak her içerik tablosuna bir
+**`tenant_id`** (→ `tenants.id`, `NOT NULL`) kolonu eklendi — bu, "Aşama 2"
+(tablolar arası ilişkiler) planının ilk ve en temel parçasını da çözmüş oldu.
+`projects` tablosuna platform sahibinin kullanacağı `live_url` (nullable)
+kolonu eklendi; `contact_sections`'da ayrı bir `whatsapp_number` kolonuna
+gerek kalmadı (WhatsApp butonu aynı `phone` alanından üretilecek).
+Middleware mantığı (`Mimari.md` madde 7) buna göre güncellendi: `Host` →
+`tenants.domain` eşleşir, satırda `is_platform_owner = true` ise `/panel`
+aktif olur.
+
+**Gerekçe:** Kullanıcı, gerekli değilse platform sahibine özel ayrı bir
+tablo/özellik seti kurulmasını istemedi. İçerik şekilleri zaten neredeyse
+aynıydı (Hizmetler ≈ Vaat edilen özellikler, Projeler ≈ Portfolyo); ayrı
+tablo tutmak gereksiz tekrar ve bakım yükü olurdu. Toplam tablo sayısı
+12'den 7'ye indi (`tenants`, `hero_sections`, `about_sections`, `services`,
+`projects`, `contact_sections`, `contact_messages`).
+
+---
+
+## 2026-08-06 — Şema SQL'e döküldü: `supabase/migrations/20260806120000_create_content_tables.sql`
+
+**Karar:** `veritabani-semasi.md`'deki 7 tablo tasarımı çalışır bir SQL
+migration dosyasına dönüştürüldü. Uygulanan kısıtlama/varsayılan kararları:
+
+- `id uuid default gen_random_uuid()`, `created_at timestamptz default now()`,
+  `order_index integer default 0`, `is_published boolean default false`
+  (güvenli varsayılan — bilinçli yayınlanana kadar görünmez).
+- Her içerik tablosunda `tenant_id uuid not null references tenants(id) on
+  delete cascade`.
+- Tekil bölümlerde (`hero_sections`, `about_sections`, `contact_sections`)
+  `tenant_id` üzerinde `UNIQUE`.
+- `tenants.is_platform_owner` üzerinde kısmi unique index — en fazla bir
+  satır `true` olabilir. `tenants.domain` `UNIQUE`, `theme_mode` `CHECK
+  (in ('light','dark'))`.
+- `founded_year`/`year` için 1800-2100 `CHECK` aralığı.
+- **RLS her tabloda açıldı** (`alter table ... enable row level security`)
+  ama **policy yazılmadı** — panel auth'u henüz kodlanmadığı için kimin ne
+  okuyup yazabileceği netleşmedi. RLS açık + policy yok = varsayılan olarak
+  hiç kimse (service role hariç) hiçbir satıra erişemiyor; bu, veri
+  yazılmadan önce güvenli bir ilk durum.
+
+**Gerekçe:** Kullanıcı tasarımı çalışır SQL'e dönüştürmek istedi. RLS'in
+policy'siz de olsa açık başlatılması `AI-KURALLARI.md` madde 6.1'in ("RLS
+varsayılan olarak açık tutulur") doğrudan gereği.
+
+**Not:** RLS policy'leri ayrı bir migration'da, panel auth'u kodlanınca
+eklenecek (bkz. `docs/durum.md` sıradaki adım).
+
+---
+
+## 2026-08-06 — `docs/veritabani-semasi.md` kaldırıldı, içeriği `docs/VERİ-MODELİ.md`'ye taşındı
+
+**Karar:** `docs/veritabani-semasi.md` dosyası, kullanıcı tarafından açıkça
+istenmeden, AI tarafından kendi inisiyatifiyle oluşturulmuştu. Kullanıcı bunu
+fark edip sorguladı; AI durumu doğrudan kabul etti (kullanıcı istememişti,
+kendi kararıydı). Kullanıcı, aynı bilgiyi (her tablo, alanları, neden öyle
+tasarlandığı) **`docs/VERİ-MODELİ.md`** adıyla, tasarım gerekçelerine daha
+çok ağırlık vererek istedi. `veritabani-semasi.md` silindi (hiç commit
+edilmemişti, kayıp yok); tüm çapraz referanslar (`Mimari.md`, `durum.md`)
+`VERİ-MODELİ.md`'ye güncellendi.
+
+**Gerekçe:** Kullanıcı, veritabanı tasarım bilgisini tek, kendi belirlediği
+bir dosyada tutmak istiyor; içerik olarak `veritabani-semasi.md`'den farkı
+yok ama artık "neden" kısmı (her tasarım kararının gerekçesi) daha belirgin.
+
+**Not:** Bu, AI'nin kullanıcıdan açıkça istenmeyen bir dosya oluşturduğu bir
+örnek — ileride yeni bir dosya açmadan önce kullanıcıya sorulması gerektiğini
+hatırlatan bir kayıt.
+
+---
+
+## 2026-08-06 — Şema, dışarıdan gelen bir yönergeyle karşılaştırılıp 3 noktada revize edildi
+
+**Karar:** Kullanıcı, staj yönergesinden gelen bir görev tanımını (BAĞLAM/
+İSTEK/KISITLAR/KABUL KRİTERİ formatında, PostgreSQL şeması için) paylaştı ve
+mevcut tasarımla karşılaştırılıp uyuşmayan kısımların düzeltilmesini istedi.
+Karşılaştırma sonucu:
+
+1. **`order_index`/`is_published` kapsamı daraltıldı.** Önceki karar ("her
+   tabloda") yönergeyle çelişiyordu ("sıralanabilir içeriklerde order_index,
+   yayın kontrolü için is_published"). Kullanıcı yönergeye göre daraltılmasını
+   seçti: `order_index` artık sadece `services`/`projects`'te; `is_published`
+   `tenants` + 5 içerik tablosunda var, `site_settings`/`contact_messages`'ta
+   yok.
+2. **Görsel kolonları `*_url`'den `*_path`'e çevrildi** — yönerge "Storage'da
+   tut, tabloda yalnız dosya yolu sakla" dedi (`background_image_path`,
+   `image_path`, `logo_path`). `live_url` (projects) bu kurala girmiyor,
+   gerçek bir dış bağlantı.
+3. **`site_settings` tablosu eklendi** (logo, renkler, SEO, iletişim gösterim
+   bilgisi) — yönerge "tek satırlık bir ayar tablosu" istedi. Kullanıcı,
+   `tenants`'ın çok kiracılı olması nedeniyle ortaya çıkan çelişkiyi
+   "yönergeyi harfiyen uygula, ayrı tablo ekle" seçeneğiyle çözdü:
+   `site_settings`, `tenants`'tan ayrı, `tenant_id` üzerinde UNIQUE bir tablo
+   oldu (her tenant'ın kendi tek satırı — çok kiracılı mimaride "tek
+   satırlık" ifadesinin karşılığı). `tenants.brand_color` tekrarı önlemek
+   için kaldırılıp `site_settings.primary_color`/`secondary_color`'a
+   taşındı; `contact_recipient_email` (operasyonel, form gönderim adresi)
+   `tenants`'ta kaldı, `site_settings.contact_email/phone` (gösterim amaçlı)
+   ile bir miktar kavramsal örtüşme olabileceği bilinerek kabul edildi.
+
+Ayrıca her tabloya `comment on table` eklendi (önceden sadece `tenants`'ta
+vardı) — yönergenin kabul kriteriydi.
+
+**Gerekçe:** Yönerge, muhtemelen tek-kiracılı bir zihniyetle ("tek satırlık
+ayar tablosu") yazılmıştı; kullanıcı bunu çok kiracılı mimarimize (tenant
+başına tek satır) uyarlayarak literal isteği de karşılamayı tercih etti,
+mimariyi (2026-08-06, "Barınma modeli") değiştirmek yerine.
+
+**Not:** Migration dosyası (`20260806120000_create_content_tables.sql`) hiç
+commit'lenmemişti, bu yüzden yeniden yazıldı (ayrı bir ALTER migration
+eklenmedi). Kullanıcı ayrıca doğrulama için her tabloya 2 satırlık örnek
+`insert` istedi — `supabase/seed.sql` bu amaçla oluşturuldu (2 tenant üzerinde
+kurulu örnek veri).

@@ -70,6 +70,8 @@ kurulurken bu `@theme` bloğu genişletilir.
 Sorgular bileşen içine yazılmaz, `lib/supabase/` altındaki fonksiyonlar
 üzerinden çağrılır (bkz. `AI-KURALLARI.md` madde 4).
 
+Tablo/kolon tasarımı için tek referans: **`docs/VERİ-MODELİ.md`**.
+
 ## 5. Hosting
 
 **Vercel, Hobby (ücretsiz) plan.**
@@ -97,17 +99,23 @@ Regeneration).**
 
 ## 7. Domain & Tenant Çözümleme
 
-Next.js middleware, gelen isteğin `Host` başlığına bakar:
+Platform sahibi için ayrı bir tablo/altyapı yok — o da `tenants` tablosunda
+`is_platform_owner = true` olan özel/rezerve bir satırdır ve diğer
+tenant'larla **aynı içerik tablolarını** paylaşır (bkz.
+`VERİ-MODELİ.md`).
 
-- İstek platform sahibinin kendi domainineyse → `/panel` rotası aktif olur
-  (login korumalı) + platform sahibinin tanıtım sitesi render edilir.
-- İstek bir tenant'ın kendi domainineyse (ör. `akmeinsaat.com.tr`) → sadece o
-  tenant'ın herkese açık `(site)` sayfaları render edilir; `panel` orada hiç
-  yoktur/erişilemez.
+Next.js middleware, gelen isteğin `Host` başlığını `tenants.domain` ile
+eşleştirir:
 
-Domain → tenant eşlemesi bir veritabanı tablosunda tutulur. Karar ve gerekçe:
-`karar-gunlugu.md`, 2026-08-06 ("Domain stratejisi: her tenant kendi alan
-adını kullanır", "Panel mimarisi düzeltildi").
+- Eşleşen satırda `is_platform_owner = true` ise → `/panel` rotası aktif olur
+  (login korumalı) + o satırın içerik/tanıtım sitesi render edilir.
+- Eşleşen satırda `is_platform_owner = false` ise (normal bir tenant) →
+  sadece o tenant'ın herkese açık `(site)` sayfaları render edilir; `panel`
+  orada hiç yoktur/erişilemez.
+
+Karar ve gerekçe: `karar-gunlugu.md`, 2026-08-06 ("Domain stratejisi: her
+tenant kendi alan adını kullanır", "Panel mimarisi düzeltildi",
+"Platform sahibi tenants tablosunda birleştirildi").
 
 ## 8. Proje Klasör Yapısı
 
@@ -142,9 +150,11 @@ scaffold'ı (`create-next-app`, 2026-08-06) kurulduktan sonra oluşturuldu.
 - **`types/`** — paylaşılan TypeScript tipleri (`Tenant`, `Section`, `Theme`
   vb. — veri modeli Supabase şeması tasarlanınca netleşecek). Henüz
   placeholder.
-- **`supabase/`** — henüz oluşturulmadı; Supabase projesi kurulunca
-  `migrations/` ve `seed.sql` ile birlikte eklenecek (bkz. `docs/durum.md`
-  sıradaki adım).
+- **`supabase/migrations/`** — `20260806120000_create_content_tables.sql`
+  (8 tablo, RLS açık ama henüz policy yok — bkz. `VERİ-MODELİ.md`).
+  `supabase/seed.sql` — her tablo için 2 satırlık doğrulama verisi. Henüz
+  gerçek bir Supabase projesine uygulanmadı (proje henüz kurulmadı, bkz.
+  `docs/durum.md` sıradaki adım).
 - **`public/`** — statik dosyalar. Şu an sadece `create-next-app`'in
   varsayılan SVG'leri var (`next.svg`, `vercel.svg` vb.); gerçek
   marka/portfolyo görselleri eklenince temizlenecek.
