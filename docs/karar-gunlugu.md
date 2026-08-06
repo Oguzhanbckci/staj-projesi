@@ -134,3 +134,212 @@ olarak kullanılacak.
 holdinglerinde (Limak, Nurol) Sürdürülebilirlik/Yatırımcı İlişkileri gibi
 kurumsal-holding'e özgü bölümler var — bunlar tek-kurulumluk ürün kapsamı dışında
 tutulabilir.
+
+---
+
+## 2026-08-06 — Ürün mimarisi netleşti: platform / tenant admin / public site üç katmanı
+
+**Karar:** Sohbet üzerinden ürünün yönetici (müşteri), müşteri-ziyaretçi ve panel
+taraflarının anlatılmasıyla, önceden açık kalan sorular netleştirildi:
+
+1. **İki ayrı panel var, birbirinden bağımsız:**
+   - **Platform paneli** (`/platform` rotası, sadece geliştirici/satıcı "Ben"
+     erişir) — yeni bir müşteri (tenant) oluşturma ve o müşteri için hangi
+     bölümlerin (Hero, Hakkımızda, Hizmetler, Projeler, Blog, İletişim ve
+     varyasyonları — bkz. `rakip-analizi.md`) aktif olacağını seçme, temel tema
+     ayarını yapma. Müşterinin bu panelin varlığından haberi yok, erişimi de yok.
+   - **Tenant admin paneli** (2026-08-05'te karar verilen "tek yönetici rolü,
+     Supabase Auth login") — müşterinin kendisi, platform panelinde kendisi için
+     açılmış bölümlerin içeriğini ve temasını (açık/koyu tema dahil) düzenler;
+     yapısal değişiklik (yeni bölüm ekleme/çıkarma) yapamaz.
+2. **Barınma modeli:** Tek Next.js kod tabanı + tek Supabase projesi, çok kiracı
+   (multi-tenant). Her müşteri bir tenant kaydı; veri izolasyonu RLS ile sağlanır.
+   "Tek müşteri = tek kurulum" ifadesi iş modelini (her müşteri kendine ait bir
+   site/kurulum satın alır) tanımlar — teknik olarak ayrı deploy veya ayrı
+   Supabase projesi anlamına gelmiyor.
+3. **İçerik/bölüm modeli:** Serbest page builder değil, önceden kodlanmış hazır
+   bölüm kütüphanesi. Platform panelinden bölümler açılıp kapatılır ve sıralanır;
+   tenant panelinden içerik doldurulur. Yeni bir bölüm ihtiyacı doğarsa kütüphaneye
+   kod yazılarak eklenir (zamanla genişleyen kütüphane).
+4. **Çoklu dil desteği:** v1 kapsamı dışında bırakıldı, ileride ayrı bir faz olarak
+   ele alınacak. Açık/koyu tema v1'de var.
+
+Bu kararlarla `durum.md`'deki iki açık soru ("ayrı Supabase mi tek altyapı mı" ve
+"sabit şablon mu page builder mı") çözülmüş oldu.
+
+**Gerekçe:** Kullanıcı staj sürecinde ürünün iş modelini ve teknik mimarisini aynı
+anda netleştirmek istedi; yönetici/müşteri/panel taraflarını anlattıktan sonra
+belirsiz kalan noktalar (panel sahipliği, barınma modeli, bölüm kütüphanesi
+esnekliği, çoklu dil kapsamı) soru-cevapla tek tek netleştirildi.
+
+**Not:** Bu karar, `AI-KURALLARI.md` madde 6'daki "admin panelde tek yönetici
+rolü var, çoklu yetki seviyesi uygulanmaz" ifadesini geçersiz kılmaz — o ifade
+tenant admin paneli için geçerliliğini korur. Platform paneli, tenant'ların
+üzerinde duran, tamamen ayrı bir katman ve rol.
+
+---
+
+## 2026-08-06 — Platform paneli: demo kataloğu + sınırlı sürükle-bırak düzenleme
+
+**Karar:** Bir önceki karardaki "hazır bölüm kütüphanesi" yaklaşımı iki somut
+özellikle netleştirildi (ikisi de o kararla tutarlı, kapsamını büyütmüyor):
+
+1. **Demo kataloğu (one-click import):** Platform panelinde, WordPress
+   temalarındaki gibi birkaç hazır "demo" bulunur — her demo, bölüm
+   kütüphanesinden seçilmiş bir kombinasyon + örnek içerik + tema rengi
+   önayarıdır. Yeni bir müşteri (tenant) oluşturulurken bir demo seçilir, tek
+   tıkla o tenant'a kopyalanır; ardından üzerinde değişiklik yapılır. Sıfırdan
+   boş bir siteyle başlanmaz.
+2. **Sürükle-bırak düzenleme (sınırlı, Elementor'un tam serbest sürümü değil):**
+   Platform panelinde bölümler görsel bir arayüzde sürüklenerek sıralanır,
+   açılıp kapatılır; her bölümün kendi içindeki hazır alanlarına (başlık,
+   görsel, metin) tıklanarak içerik girilir. Bölümün iç düzeni/tasarımı sabit
+   kalır — serbestçe eleman (metin kutusu, buton, sütun vb.) sayfanın herhangi
+   bir yerine sürüklenip boyutlandırılamaz. Gerçek Elementor'daki tam serbestlik
+   bilinçli olarak kapsam dışı bırakıldı; staj süresi için çok büyük bir
+   mühendislik yükü olurdu.
+
+**Gerekçe:** Kullanıcı "one-click demo import" ve "Elementor sürükle-bırak"
+ifadelerini kullanınca, bunun önceki "hazır bölüm kütüphanesi vs. serbest page
+builder" kararıyla çelişip çelişmediği netleştirilmesi gerekti. Netleştirme
+sonucu: her iki istek de hazır kütüphane yaklaşımının üzerine iyi bir kullanıcı
+deneyimi katmanı olarak eklenebiliyor, kapsamı serbest page builder'a
+genişletmiyor.
+
+**Not:** Bu karar veri modelini etkiler — bir `demos` (veya benzeri) tanım
+tablosu ve tenant'a bağlı bölümlerin sırasını tutan bir `order`/`position`
+alanı gerekecek. Şema henüz yazılmadı, Supabase migration aşamasında
+tasarlanacak.
+
+---
+
+## 2026-08-06 — Domain stratejisi: her tenant kendi alan adını kullanır
+
+**Karar:** Bir tenant'ın (müşterinin) sitesine ziyaretçiler, o müşterinin kendi
+satın aldığı alan adından (ör. `akmeinsaat.com.tr`) ulaşır — platforma ait bir
+alt alan adı (`akmeinsaat.senin-platformun.com`) değil. Kodlamaya geçmeden önce
+mimarinin son temel parçası olarak netleştirildi.
+
+**Gerekçe:** Ürün "gerçek bir kurumsal site" olarak satılıyor; inşaat firması
+için kendi markalı alan adı olmayan bir site ikna edici olmaz, güven unsuru
+zedelenir (bkz. `kurumsal-site-standartlari.md`, "Güven Unsurları").
+
+**Teknik not (henüz uygulanmadı, ileride kod aşamasında ele alınacak):** Next.js
+middleware, gelen isteğin `Host` başlığına bakıp bir `domain → tenant_id`
+eşleşme tablosundan tenant'ı çözecek. SSL/sertifika ve DNS yönlendirmesi hosting
+sağlayıcısı (ör. Vercel custom domains) üzerinden yapılacak. Müşteri kendi
+domainini DNS'te platforma yönlendirecek. Geçiş/demo aşaması için tenant'a
+otomatik bir alt alan adı da (opsiyonel, yedek) verilip verilmeyeceği ileride
+netleşecek bir ayrıntı.
+
+---
+
+## 2026-08-06 — Panel mimarisi düzeltildi: tek panel, tek kullanıcı, tam yönetilen hizmet
+
+**Karar:** Bugün daha önce alınan "iki panel" ve "tenant admin paneli" kararları
+**geçersiz kılınıyor** (bu satırlar silinmiyor, iptal edildiği burada not
+düşülüyor — ayrıca 2026-08-05 tarihli "Admin panel giriş modeli: tek yönetici
+rolü" kararı da bu şekilde revize edilmiş oluyor). Doğru model:
+
+- Platform sahibinin (kullanıcının) **kendi tanıtım/ajans web sitesi** var — bu
+  site, hizmeti anlatan, potansiyel müşterilerin bilgi aldığı herkese açık bir
+  sayfa. Bu, satılan ürünün kendisi değil, ürünü satan kişinin kendi pazarlama
+  sitesi.
+- Bu sitenin domaininin sonuna `/panel` eklendiğinde, kullanıcı adı/şifre isteyen
+  gizli bir giriş açılır. **Sadece platform sahibi** bu panele girebilir.
+- Bu **tek panel = platformun tüm yönetim merkezi**. Buradan: yeni müşteri
+  (tenant) oluşturulur, demo seçilip import edilir, bölümler açılıp
+  kapatılır/sıralanır (sürükle-bırak) — **ve her tenant'ın içeriği/teması da
+  buradan düzenlenir.**
+- **Müşterinin (tenant'ın) kendi domaininde (ör. `akmeinsaat.com.tr`) hiçbir
+  panel/admin rotası yoktur.** Orada yalnızca herkese açık, statik/dinamik
+  render edilen kurumsal site vardır. Müşterinin kendisi de kendi sitesine bir
+  ziyaretçi gibi bakar, hiçbir yere login olmaz.
+- Sonuç: platform sahibi, müşteriye **"web servis hizmeti"** veriyor — yani
+  içerik güncellemesi bir self-servis özellik değil, tam yönetilen (managed)
+  bir hizmet. Müşteri değişiklik istediğinde platform sahibine iletir, o da
+  `/panel` üzerinden günceller.
+
+**Gerekçe:** Kullanıcı, ürünün gerçek kullanım şeklini ("ben o panelden
+müşteriye web servis hizmeti vereceğim") netleştirince önceki "müşteri kendi
+paneline girer" varsayımının yanlış olduğu ortaya çıktı. Bu model aynı zamanda
+mimariyi belirgin şekilde basitleştiriyor: tek rol, tek kullanıcı, tek login
+noktası (platform sahibinin kendi domaini) — farklı müşteri domainleri arasında
+oturum/auth taşıma sorunu da böylece ortadan kalkıyor.
+
+**Etkilenen önceki kararlar:**
+- 2026-08-05, "Admin panel giriş modeli: tek yönetici rolü" — o karardaki "tek
+  yönetici rolü" fikri korunuyor ama o rol artık **müşteri değil, platform
+  sahibinin kendisi**.
+- 2026-08-06, "Ürün mimarisi netleşti" — oradaki `platform/` ve `admin/` (tenant
+  admin) ayrımı kalkıyor; tek bir `panel/` (veya `admin/`) rotası yeterli, çünkü
+  onu kullanan tek bir rol var.
+
+**Not (teknik, ileride ele alınacak):** Next.js middleware, gelen isteğin `Host`
+başlığına bakacak: istek platform sahibinin kendi domainineyse `/panel` rotası
+aktif olur (login korumalı); istek bir tenant'ın kendi domainineyse sadece
+`(site)` (herkese açık) render edilir, `/panel` orada hiç yoktur/erişilemez.
+
+---
+
+## 2026-08-06 — `docs/PRD.md` oluşturuldu
+
+**Karar:** `docs/PRD.md` eklendi — ürünün "istenen/istenmeyen" özellik
+listesini tutan, `durum.md` (anlık durum) ve `karar-gunlugu.md`'den (tarihli
+karar geçmişi) ayrı, üçüncü bir referans dosyası. İçeriği: aktörler, kapsam içi
+özellikler (tanıtım sitesi, panel, tenant siteleri) ve kapsam dışı bırakılanlar
+— bu oturumda netleşen "tanıtım sitesinde fiyat/abonelik bilgisi yok, 'blog
+motoru' gibi ifadeler yok, tenant'a panel erişimi yok, her ziyaretçi aynı
+arayüzü görür, panel her zaman kullanıcı adı/şifre ister" kuralları dahil.
+
+**Gerekçe:** Kullanıcı, bir özelliğin yapılıp yapılmayacağına hızlıca karar
+verebilmek için tek bir kapsam referansı istedi. Kararların kronolojik
+geçmişini (`karar-gunlugu.md`) her seferinde taramak yerine, güncel kapsamı
+tek bir yerde (Yap/Yapma listesi olarak) tutmak bunu sağlıyor.
+
+**Not:** `PRD.md`'de iki açık soru bırakıldı — "blog motoru" ifadesinin tenant
+sitelerindeki Blog/Haberler bölümünü etkileyip etkilemediği, ve tanıtım
+sitesindeki iletişim erişiminin form mu yoksa statik bilgi mi olacağı.
+
+---
+
+## 2026-08-06 — Tanıtım sitesi: statik iletişim bilgisi + anonim marka
+
+**Karar:** `PRD.md`'deki ikinci açık soru çözüldü. Tanıtım sitesindeki iletişim
+erişimi bir form değil, statik e-posta ve/veya telefon bilgisidir. Ayrıca yeni
+bir kural eklendi: platform sahibinin kimliği (isim), ekip büyüklüğü gibi
+şahsi/kurumsal bilgiler tanıtım sitesinde paylaşılmaz — marka anonim kalır,
+ziyaretçi sadece yapılan işleri/projeleri görür.
+
+**Gerekçe:** Kullanıcı, tanıtım sitesinde kişisel kimliğinin görünür olmasını
+istemiyor; işlerin/projelerin kalitesiyle güven kazanmak istiyor, kişisel
+tanınırlıkla değil.
+
+---
+
+## 2026-08-06 — Blog/Haberler kapsam dışı bırakıldı; iletişim: WhatsApp + form
+
+**Karar:** İki düzeltme yapıldı, `PRD.md`'ye işlendi:
+
+1. **Blog/Haberler kavramı kapsam dışı.** Önceki kayıtta ("Panel mimarisi
+   düzeltildi") bölüm kütüphanesi örneklenirken Blog'a da yer verilmişti ve
+   `PRD.md`'de "blog motoru ifadesi sadece pazarlama dilini mi kapsıyor"
+   şeklinde açık bir soru bırakılmıştı. Kullanıcı bunu netleştirdi: blog/haber
+   kavramı ürünün hiçbir yerinde (tanıtım sitesi, bölüm kütüphanesi, tenant
+   siteleri) bulunmayacak. `rakip-analizi.md`'deki bulgunun (Blog/Haberler
+   7/8 sitede yaygın) aksine, bilinçli bir kapsam dışı bırakma kararı.
+2. **Tanıtım sitesi iletişimi revize edildi.** Bir önceki kayıtta "statik
+   e-posta/telefon, form değil" denilmişti; kullanıcı bunu somutlaştırıp
+   genişletti: iletişim bölümünde **WhatsApp butonu** ve **iletişim formu**
+   (ad-soyad, telefon, serbest metin/istek textarea) olacak; form
+   gönderildiğinde platform sahibine **e-posta** olarak iletilecek.
+
+**Gerekçe:** Kullanıcı ürün detaylarını netleştirmeye devam ederken önceki iki
+karışıklığı fark edip düzeltti — biri eksik bir bölüm listesi kalıntısı
+(Blog), diğeri iletişim mekanizmasının ilk turda eksik/yanlış özetlenmesi
+(sadece statik bilgi denilmişti, oysa WhatsApp+form isteniyormuş).
+
+**Not (teknik, ileride ele alınacak):** İletişim formunun e-posta gönderimi
+için bir e-posta servisi (ör. Resend, SendGrid) entegrasyonu gerekecek; form
+verisinin ayrıca veritabanında saklanıp saklanmayacağı henüz belirtilmedi,
+şimdilik sadece "e-posta ile iletilir" gereksinimi var.
