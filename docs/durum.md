@@ -31,9 +31,9 @@ güven unsurları vb.) — ileride tasarlanacak site bu listeye göre değerlend
 Proje GitHub'a bağlandı: `https://github.com/Oguzhanbckci/staj-projesi` (public),
 ilk commit push'landı.
 
-**Teknoloji kararı verildi:** Next.js 15 (App Router) + TypeScript + Tailwind CSS +
-Supabase. Detaylar `karar-gunlugu.md`'de (2026-08-05, "Teknoloji seçildi"), kod
-kuralları `docs/AI-KURALLARI.md`'de.
+**Teknoloji kararı verildi:** Next.js 16 (App Router) + TypeScript + Tailwind CSS +
+Supabase. Detaylar `karar-gunlugu.md`'de (2026-08-05, "Teknoloji seçildi";
+2026-08-06, "Next.js 16'ya güncellendi"), kod kuralları `docs/AI-KURALLARI.md`'de.
 
 ## Ürünün güncel mimarisi (2026-08-06'da netleşti)
 
@@ -83,16 +83,32 @@ canlıya alınmadığı için ücretsiz plan yeterli), **Render stratejisi = sta
 üretim + panelden tetiklenen on-demand ISR** (`revalidatePath`/`revalidateTag`
 ile panel kaydında ilgili sayfa yeniden üretilir; `/panel` tamamen SSR).
 
+**Kod tarafı başladı (2026-08-06):** Next.js scaffold (`create-next-app`,
+TypeScript + Tailwind + App Router) kuruldu — **Next.js 16.3.0** ile (bkz.
+`karar-gunlugu.md`, "Next.js 16'ya güncellendi"). Yanlışlıkla
+`C:\Users\toffe\staj-projesi` içine kurulmuştu, doğru konuma
+(`C:\Users\toffe\Projects\staj-projesi`) taşındı; `.git` ve `docs/` sağlam
+kaldığı doğrulandı, `npm run dev` çalıştığı teyit edildi. Kök dizindeki
+`CLAUDE.md`, `docs/durum.md`'ye (ve diğer proje beyni dosyalarına) otomatik
+işaret edecek şekilde genişletildi.
+
+**Klasör yapısı oluşturuldu (2026-08-06):** `app/(site)/`, `app/panel/`
+(placeholder sayfalarla), `components/ui/`, `components/site/`,
+`lib/supabase/`, `lib/utils.ts`, `types/index.ts` — hepsi `npm run build` ile
+doğrulandı (`/`, `/panel`, `/_not-found` hatasız derleniyor). Her klasörün
+amacı `docs/Mimari.md` madde 8'de belgelendi. `app/api/` ve `supabase/`
+(migrations) henüz yok, ilk gerçek ihtiyaçta eklenecek.
+
 ## Sıradaki adım
 
-1. Next.js projesini `staj-projesi` içinde scaffold et (`create-next-app`, TypeScript
-   + Tailwind + App Router seçenekleriyle), Vitest ve Playwright'ı kur.
+1. Vitest ve Playwright'ı kur (bkz. `test-stratejisi.md`).
 2. Supabase projesini oluştur, `lib/supabase/` istemcilerini kur; `tenants` tablosu
-   ve tenant_id tabanlı RLS'i tasarla.
+   ve tenant_id tabanlı RLS'i tasarla; `supabase/migrations/` klasörünü aç.
 3. Hazır bölüm kütüphanesindeki ilk bileşenleri (Hero, İletişim gibi en sık
-   görülenlerden başlayarak) kodla + birim testlerini yaz; en az bir örnek
-   "demo" (bölüm kombinasyonu + örnek içerik) hazırla.
-4. Site tasarımı ilerledikçe `kurumsal-site-standartlari.md`'deki kontrol listesini
+   görülenlerden başlayarak) `components/site/` altına kodla + birim
+   testlerini yaz; en az bir örnek "demo" (bölüm kombinasyonu + örnek içerik)
+   hazırla.
+5. Site tasarımı ilerledikçe `kurumsal-site-standartlari.md`'deki kontrol listesini
    madde madde işaretle.
 
 ## Açık sorular

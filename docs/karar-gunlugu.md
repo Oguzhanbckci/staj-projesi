@@ -453,3 +453,55 @@ tarafından onaylandı.
 
 **Not:** "Gerçek müşteriye canlıya alınmayacak" bilgisi yeni — `durum.md`'ye
 proje bağlamı olarak eklendi.
+
+---
+
+## 2026-08-06 — Next.js scaffold yanlış klasöre kurulmuştu, düzeltildi; Next.js 16'ya güncellendi
+
+**Karar:** Kullanıcı `create-next-app`'i yanlışlıkla `C:\Users\toffe\staj-projesi`
+içine çalıştırmış (doğrusu `C:\Users\toffe\Projects\staj-projesi` — bu projenin
+git deposu ve `docs/` klasörü orada). Yanlış klasörde ayrı bir git deposu
+oluşmadığı doğrulandı (çakışma riski yoktu); dosyalar doğru klasöre taşındı,
+yanlış klasör silindi.
+
+Taşıma sırasında scaffold edilen sürümün **Next.js 16.3.0** olduğu görüldü —
+önceki karar (2026-08-05, "Teknoloji seçildi") Next.js 15'i belirtiyordu.
+Kullanıcı, zaten kurulu olan 16.3.0 ile devam edilmesine karar verdi; yeniden
+kuruluma gerek yok. `AI-KURALLARI.md`, `Mimari.md` ve `durum.md` "Next.js 16"
+olarak güncellendi.
+
+**Gerekçe:** Yanlış klasöre kurulum, git deposu içermediği için düşük riskliydi
+— basit bir taşıma ile çözüldü. Versiyon için: daha yeni bir sürüm zaten
+kurulu ve çalışır durumdaydı, 15'e düşürüp yeniden kurulum yapmanın bir
+gerekçesi yoktu.
+
+---
+
+## 2026-08-06 — `app/`, `components/`, `lib/`, `types/` klasörleri fiilen oluşturuldu
+
+**Karar:** `AI-KURALLARI.md` madde 3'te planlanmış olan klasör yapısı fiilen
+uygulandı:
+
+- `create-next-app`'in düz `app/page.tsx`'i, çakışmayı önlemek için
+  `app/(site)/page.tsx`'e taşındı (route group URL'e segment eklemediği için
+  `/` hâlâ oradan render ediliyor); `app/layout.tsx`/`globals.css` kökte kaldı
+  (her iki route group'a da uygulanıyor).
+- `app/panel/page.tsx` bir placeholder ile oluşturuldu (auth/gerçek arayüz
+  ileride).
+- `components/ui/`, `components/site/`, `lib/supabase/` boş klasörler olarak
+  (`.gitkeep` ile) oluşturuldu; `lib/utils.ts` ve `types/index.ts` placeholder
+  içerikle oluşturuldu.
+- `app/api/` ve `supabase/` (migrations) henüz oluşturulmadı — ilk gerçek
+  ihtiyaçta (ilk route handler / ilk migration) eklenecek.
+- `npm run build` ile doğrulandı: üç route (`/`, `/panel`, `/_not-found`)
+  hatasız derleniyor.
+- `docs/Mimari.md`'ye yeni bir madde (8, "Proje Klasör Yapısı") eklendi — her
+  klasörün ne için var olduğunun ayrıntılı gerekçesi burada; ayrıca Stil
+  (madde 3) ve Dil (madde 2) bölümlerine gerçek scaffold detayları eklendi:
+  **Tailwind CSS v4** (config dosyası yok, `app/globals.css` içinde `@theme`
+  ile CSS-first konfigürasyon), **`@/*` mutlak import path'i** (tsconfig'te
+  zaten tanımlı), **ESLint 9 flat config**.
+
+**Gerekçe:** Kullanıcı, klasörlerin fiilen oluşturulmasını ve her birinin
+amacının `Mimari.md`'de belgelenmesini istedi — daha önce sadece planlanmış
+(AI-KURALLARI.md'deki ağaç şeması) bir yapıyı gerçek koda dönüştürme adımı.

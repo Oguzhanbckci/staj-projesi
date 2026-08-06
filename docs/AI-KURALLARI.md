@@ -19,7 +19,7 @@ dosyasına bakılır.
 
 ## 2. Teknoloji
 
-- Next.js 15 (App Router), TypeScript (strict mode)
+- Next.js 16 (App Router), TypeScript (strict mode)
 - Tailwind CSS
 - Supabase (Postgres + Auth + Storage) — içerik, tema ayarları ve admin kullanıcıları
 - Paket yöneticisi: npm
@@ -59,6 +59,11 @@ sahibinin kendi domaininde aktiftir — middleware, isteğin `Host` başlığın
 bir tenant domaininde `panel`'i tamamen erişilmez kılar. Mimari detay ve gerekçe
 için `karar-gunlugu.md` (2026-08-06, "Panel mimarisi düzeltildi: tek panel, tek
 kullanıcı, tam yönetilen hizmet").
+
+Bu ağaç yapısı 2026-08-06'da fiilen oluşturuldu (`app/`, `components/`, `lib/`,
+`types/`) — her klasörün ne için var olduğunun ayrıntılı gerekçesi için
+**`docs/Mimari.md` madde 8**'e bakılır. `api/` ve `supabase/` henüz
+oluşturulmadı, ilk gerçek ihtiyaç doğduğunda eklenecek.
 
 ## 4. Kod Standartları
 
