@@ -87,6 +87,7 @@ bir kurumsal web sitesi hizmeti — "tek müşteri = tek kurulum" iş modelinde.
 - Tanıtım sitesinde platform sahibinin kimliği, ekip büyüklüğü gibi şahsi/
   kurumsal bilgileri paylaşmak — marka anonim kalır, sadece iletişim (e-posta/
   telefon) ve yapılan işler görünür.
+
 ## 5. Açık Sorular / Netleştirilmesi Gereken
 
 Şu an aktif açık soru yok.

@@ -24,6 +24,10 @@ dosyasına bakılır.
 - Supabase (Postgres + Auth + Storage) — içerik, tema ayarları ve admin kullanıcıları
 - Paket yöneticisi: npm
 
+Hosting, render stratejisi ve mimari gerekçeler için tek referans:
+**`docs/Mimari.md`** (Vercel Hobby plan, statik üretim + panelden tetiklenen
+on-demand ISR).
+
 ## 3. Klasör Yapısı
 
 ```
@@ -111,16 +115,30 @@ kullanıcı, tam yönetilen hizmet").
 7. Genel site kalite/güvenlik kriterleri (SSL, KVKK, çerez politikası) için
    `kurumsal-site-standartlari.md`'ye bakılır.
 
-## 7. Commit Kuralları
+## 7. Test Stratejisi
+
+Detaylı test yaklaşımı, kalite eşikleri ve "bitti" tanımı için tek referans:
+**`docs/test-stratejisi.md`**. Özet: Vitest + React Testing Library (unit —
+sürekli, her özellikle birlikte yazılır) + Playwright (e2e — sadece belli
+kritik noktalarda, madde/madde listesi `test-stratejisi.md`'de). Test miktarı
+bilinçli olarak sınırlı tutulur; tek geliştirici + ~32 iş günlük süre kısıtı
+göz önünde bulundurulur.
+
+Test dosyaları, test ettikleri dosyayla aynı dizinde `*.test.ts(x)` (unit/
+integration) veya kök dizinde `e2e/` altında `*.spec.ts` (Playwright) olarak
+tutulur.
+
+## 8. Commit Kuralları
 
 1. Commit mesajı `tip: kısa açıklama` formatındadır (`feat`, `fix`, `docs`, `chore`,
-   `refactor`).
+   `refactor`, `test`).
 2. Her commit tek bir mantıksal değişikliği içerir.
 3. Migration dosyası ile onu kullanan kod değişikliği aynı commit'te birlikte
    gönderilir.
-4. `main`'e push'lamadan önce `npm run build` hatasız tamamlanmalı.
+4. `main`'e push'lamadan önce `npm run build` ve `npm test` hatasız
+   tamamlanmalı.
 
-## 8. AI ile Çalışma İlkeleri
+## 9. AI ile Çalışma İlkeleri
 
 1. AI, attığı her adımı kullanıcıya açıklayarak ilerler.
 2. Terminal/kurulum komutlarını kullanıcı kendisi çalıştırır; AI komutu açıklar,

@@ -2,10 +2,22 @@
 
 Bu klasör (`docs/`), projede alınan kararları ve açıklamalarını tutar — kod içermez.
 Yeni bir oturuma başlarken önce bu dosyayı (güncel durum), sonra `PRD.md`'yi
-(özellik bazlı yapılacak/yapılmayacak referansı), gerekirse `karar-gunlugu.md`'yi
+(özellik bazlı yapılacak/yapılmayacak referansı), `Mimari.md`'yi (teknik
+mimari: framework/dil/stil/backend/hosting/render) ve `test-stratejisi.md`'yi
+(test yaklaşımı, kalite eşikleri, "bitti" tanımı), gerekirse `karar-gunlugu.md`'yi
 (tarihli, hiç silinmeyen karar geçmişi) oku.
 
 **Son güncelleme:** 2026-08-06
+
+## Proje bağlamı
+
+**Tek geliştirici, toplam ~32 iş günlük süre. Bu proje kapsamında gerçek bir
+müşteriye canlıya alınmıyor** — staj/geliştirme amaçlı bir ürün/demo inşa
+ediliyor. Bu kısıtlar, kapsamı sınırlayan birçok kararın (hazır bölüm
+kütüphanesi, sınırlı sürükle-bırak, çoklu dilin ertelenmesi, pragmatik/hedefli
+test stratejisi, Vercel Hobby plan seçimi) arka planındaki ortak sebep — bkz.
+`karar-gunlugu.md`, 2026-08-06 ("Proje bağlamı netleşti...", "`docs/Mimari.md`
+oluşturuldu...").
 
 ## Güncel aşama
 
@@ -58,15 +70,28 @@ kullanıcı, tam yönetilen hizmet" — bu, aynı gün ve 2026-08-05'te alınan 
 panel" / "tenant kendi admin'ine girer" fikirlerini geçersiz kılar). Özellik
 bazlı güncel kapsam için tek referans `docs/PRD.md`'dir.
 
+**Yeni:** Test stratejisi netleşti ve `docs/test-stratejisi.md`'ye taşındı
+(staj yönergesi gereği e2e/unit/integration, ama tek geliştirici + 32 iş günü
+kısıtıyla pragmatik/hedefli bir yaklaşımla). Unit sürekli, e2e/integration
+sadece kritik akışlarda. "Bitti" tanımı (Definition of Done) da bu dosyada.
+Lighthouse eşiği netleşti: Performance/Accessibility/Best Practices/SEO
+dördünde de ≥90.
+
+**Yeni:** `docs/Mimari.md` oluşturuldu — teknik mimari tek dosyada toplandı.
+İki yeni karar: **Hosting = Vercel, Hobby plan** (proje gerçek müşteriye
+canlıya alınmadığı için ücretsiz plan yeterli), **Render stratejisi = statik
+üretim + panelden tetiklenen on-demand ISR** (`revalidatePath`/`revalidateTag`
+ile panel kaydında ilgili sayfa yeniden üretilir; `/panel` tamamen SSR).
+
 ## Sıradaki adım
 
 1. Next.js projesini `staj-projesi` içinde scaffold et (`create-next-app`, TypeScript
-   + Tailwind + App Router seçenekleriyle).
+   + Tailwind + App Router seçenekleriyle), Vitest ve Playwright'ı kur.
 2. Supabase projesini oluştur, `lib/supabase/` istemcilerini kur; `tenants` tablosu
    ve tenant_id tabanlı RLS'i tasarla.
 3. Hazır bölüm kütüphanesindeki ilk bileşenleri (Hero, İletişim gibi en sık
-   görülenlerden başlayarak) kodla; en az bir örnek "demo" (bölüm kombinasyonu +
-   örnek içerik) hazırla.
+   görülenlerden başlayarak) kodla + birim testlerini yaz; en az bir örnek
+   "demo" (bölüm kombinasyonu + örnek içerik) hazırla.
 4. Site tasarımı ilerledikçe `kurumsal-site-standartlari.md`'deki kontrol listesini
    madde madde işaretle.
 

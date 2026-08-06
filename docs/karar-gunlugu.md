@@ -343,3 +343,113 @@ karışıklığı fark edip düzeltti — biri eksik bir bölüm listesi kalınt
 için bir e-posta servisi (ör. Resend, SendGrid) entegrasyonu gerekecek; form
 verisinin ayrıca veritabanında saklanıp saklanmayacağı henüz belirtilmedi,
 şimdilik sadece "e-posta ile iletilir" gereksinimi var.
+
+---
+
+## 2026-08-06 — Test stratejisi: Vitest + React Testing Library + Playwright
+
+**Karar:** Staj yönergesi, proje geliştirilirken ve tamamlandığında testlere
+tabi tutulmasını (e2e, unit, integration) istiyor. Yönerge belirli bir araç
+belirtmiyor; Next.js/TypeScript ekosistemi için standart bir set seçildi:
+**Vitest + React Testing Library** (unit ve integration test için), gerçek
+kullanıcı senaryoları için **Playwright** (e2e). Detaylı kurallar
+`AI-KURALLARI.md` madde 7'ye eklendi (test seviyesi tanımları, hangi akışların
+e2e ile kapsanacağı, commit öncesi `npm test` zorunluluğu).
+
+**Gerekçe:** Yönerge test türlerini zorunlu kılıyor ama araç seçimini
+belirtmiyor; Vitest ve Playwright, TypeScript ile doğal çalışan, geniş
+kullanılan ve staj sürecinde öğrenmesi/dokümantasyonu kolay araçlar olduğu
+için tercih edildi (ör. Jest yerine Vitest — Next.js/Vite ekosisteminde daha
+hızlı ve daha az konfigürasyon gerektiriyor).
+
+**Not:** Bu karar `AI-KURALLARI.md`'nin madde numaralarını kaydırdı — eski
+madde 7 (Commit Kuralları) madde 8, eski madde 8 (AI ile Çalışma İlkeleri)
+madde 9 oldu. `karar-gunlugu.md`'deki "madde 6" referansı (Güvenlik) hâlâ
+geçerli, değişmedi.
+
+---
+
+## 2026-08-06 — Proje bağlamı netleşti + `docs/test-stratejisi.md` oluşturuldu
+
+**Karar:** Kullanıcı projenin somut kısıtlarını verdi: **tek geliştirici,
+toplam ~32 iş günlük süre**. Bu bağlamda test stratejisi revize edildi ve
+`docs/test-stratejisi.md` adında yeni bir referans dosyası oluşturuldu
+(`AI-KURALLARI.md` madde 7 artık buraya işaret ediyor, kendisi özet bilgiye
+indirildi). Değişenler:
+
+1. **Test yaklaşımı pragmatikleşti.** Önceki kayıtta ("Test stratejisi:
+   Vitest...") her yeni özellik için test zorunluydu; kullanıcı bunun elindeki
+   süreyle uyuşmadığını belirtti. Yeni yaklaşım: **unit test sürekli/rutin**
+   (özellikle birlikte yazılır), **e2e/entegrasyon testleri sadece "belli
+   noktalarda"** (kritik akışlarda) — hangi akışların kritik sayıldığı
+   `test-stratejisi.md` madde 3'te listelendi (panel auth, tenant oluşturma,
+   içerik düzenleme, iletişim formu, tema geçişi, panel'in tenant domaininde
+   erişilemez olduğunun doğrulanması).
+2. **Kalite eşikleri tanımlanmaya başladı.** Lighthouse (Performance,
+   Accessibility, Best Practices, SEO) için "iyi" bir skor hedefleniyor;
+   sayısal eşik kullanıcıya soruldu, henüz netleşmedi. Performans bütçesi net:
+   ilk içerik (LCP) 1.5–2 saniye arasında yüklenmesi kabul edilebilir düzeyde.
+3. **Erişilebilirlik/responsive kuralları somutlaştı:** tüm görsellerde `alt`
+   metni zorunlu, metin/arka plan kontrastı yeterli olmalı, mobil+masaüstü
+   tarayıcılarda tam responsive.
+4. **"Bitti" tanımı (Definition of Done) eklendi** — bir iş, (a) kod
+   çalışıyor, (b) sorun çıkarabilecek durumlar test ile yakalanıp önlenmiş,
+   (c) ilgili dökümantasyon güncellenmiş, (d) ilgili e2e "kapısından"
+   geçilmiş olmadan bitti sayılmaz. Proje sonunda tüm kritik akışları
+   kapsayan e2e paketi tek seferde çalıştırılır (son teslim kapısı).
+
+**Gerekçe:** Kullanıcı, sınırlı süreli (32 iş günü) tek kişilik bir stajda
+kapsamlı/sürekli test disiplininin zaman israfı olacağını, bunun yerine
+hedefli ve kritik noktalara odaklı bir yaklaşımın daha uygun olduğunu belirtti.
+Bu bağlam aynı zamanda önceki bazı kapsam-sınırlama kararlarını (hazır bölüm
+kütüphanesi, sınırlı sürükle-bırak, çoklu dil'in ertelenmesi vb.) da geriye
+dönük olarak açıklıyor.
+
+**Not:** `docs/test-stratejisi.md`'de bir açık soru var — Lighthouse
+kategorilerinde hedeflenen sayısal minimum skorlar netleşmedi.
+
+---
+
+## 2026-08-06 — Lighthouse eşiği: dört kategoride de ≥90
+
+**Karar:** `test-stratejisi.md`'deki açık soru çözüldü. Performance,
+Accessibility, Best Practices ve SEO kategorilerinin dördünde de minimum
+**90/100** hedeflenir.
+
+**Gerekçe:** Lighthouse'ta 90-100 aralığı sektör standardı olarak "iyi/yeşil"
+kabul edilir; kullanıcı özel bir sayı belirtmek yerine standart öneriyi kabul
+etti.
+
+---
+
+## 2026-08-06 — `docs/Mimari.md` oluşturuldu: hosting = Vercel Hobby, render = statik + on-demand ISR
+
+**Karar:** Kullanıcı ile birlikte projenin teknik mimarisi tek dosyada
+(`docs/Mimari.md`) toplandı — framework, dil, stil, backend zaten karara
+bağlanmıştı (Next.js 15, TypeScript strict, Tailwind, Supabase); bu oturumda
+iki yeni karar eklendi:
+
+1. **Hosting: Vercel, Hobby (ücretsiz) plan.** Vercel, Next.js'i native
+   barındıran, custom domain + otomatik SSL + edge middleware desteği olan
+   platform olduğu için seçildi. Vercel'in ücretsiz planı normalde ticari
+   kullanımı yasaklıyor; ancak kullanıcı bu proje kapsamında **gerçek bir
+   müşteriye canlıya alınmayacağını** belirtti (staj/geliştirme amaçlı bir
+   demo/ürün inşa ediliyor) — bu yüzden Hobby plan yeterli, maliyetsiz. Ürün
+   ileride gerçekten satılıp canlıya alınırsa Pro plana ($20/ay) geçilmesi
+   gerekecek; bu, mevcut staj kapsamının dışında.
+2. **Render stratejisi: statik üretim + panelden tetiklenen on-demand ISR.**
+   Tenant siteleri ve platform sahibinin tanıtım sitesi statik üretilir;
+   `panel`'den bir kayıt yapıldığında `revalidatePath`/`revalidateTag` ile
+   ilgili sayfa yeniden üretilir. `/panel`'in kendisi tamamen dinamik/SSR'dır.
+   Bu, hem Lighthouse ≥90 / LCP 1.5-2sn hedefine (bkz. `test-stratejisi.md`)
+   hem de "içerik değişikliği anında yansımalı" gereksinimine aynı anda
+   hizmet ediyor.
+
+**Gerekçe:** Kullanıcı bu kararları benim uzmanlığımla birlikte almak istedi
+("normalde bunları ben belirleyip söylemeliydim, seninle belirleyelim").
+Önerilerim mevcut kısıtlara (32 iş günü, tek geliştirici, Lighthouse/LCP
+hedefleri, çok kiracılı domain mimarisi) dayanılarak seçildi ve kullanıcı
+tarafından onaylandı.
+
+**Not:** "Gerçek müşteriye canlıya alınmayacak" bilgisi yeni — `durum.md`'ye
+proje bağlamı olarak eklendi.
