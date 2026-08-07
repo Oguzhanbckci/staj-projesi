@@ -1,4 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
+import type { Database } from "@/types/database.types";
 
 // RLS'i bypass eder — yalnızca sunucu tarafında (Server Component, Route
 // Handler) çağrılır. Tarayıcıya asla import edilmemeli.
@@ -12,7 +13,7 @@ export function createServiceRoleClient() {
     );
   }
 
-  return createClient(supabaseUrl, serviceRoleKey, {
+  return createClient<Database>(supabaseUrl, serviceRoleKey, {
     auth: { persistSession: false },
   });
 }

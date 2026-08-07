@@ -37,6 +37,9 @@ yarn-error.log*
 # vercel
 .vercel
 
+# supabase CLI yerel önbelleği (linked-project.json, postgres-version)
+supabase/.temp/
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts
