@@ -5,7 +5,7 @@ geçmişi) farklı bir iş görür: **bir özelliğin yapılıp yapılmayacağı
 karar vermek için tek referans**. Yeni bir özellik önerisi geldiğinde önce
 buraya bakılır. Kod içermez.
 
-**Son güncelleme:** 2026-08-06
+**Son güncelleme:** 2026-08-07
 
 ## 1. Ürün Tanımı (tek cümle)
 
@@ -50,8 +50,13 @@ bir kurumsal web sitesi hizmeti — "tek müşteri = tek kurulum" iş modelinde.
 
 - Kendi alan adında yayınlanan, herkese açık kurumsal site.
 - Hazır bölüm kütüphanesinden seçilmiş bölümler (Hero, Hakkımızda, Hizmetler,
-  Projeler, İletişim vb. — bkz. `rakip-analizi.md`; blog/haberler bölümü
-  kapsam dışı, bkz. madde 4).
+  Projeler, İletişim, **Referanslar, SSS, Ekip Üyeleri** — bkz.
+  `rakip-analizi.md`; blog/haberler bölümü kapsam dışı, bkz. madde 4).
+  Referanslar/SSS/Ekip Üyeleri kapsamı 2026-08-06'da netleşen ilk 5 bölümden
+  sonra, 2026-08-07'de demo içerik ihtiyacıyla eklendi (bkz.
+  `karar-gunlugu.md`).
+- **Ekip Üyeleri sadece tenant sitelerinde kullanılır, platform sahibinin
+  kendi tanıtım sitesinde yer almaz** (marka anonim kalma kuralı, aşağıda).
 - Açık/koyu tema desteği.
 - SEO, responsive, performans, KVKK uyumluluğu (bkz.
   `kurumsal-site-standartlari.md`).
@@ -72,6 +77,9 @@ aç/kapat) ve bölüm `sıra`sı (bölümler arası sürükle-bırak sıralama).
 | Hizmetler | Liste | başlık, açıklama, ikon, sıra |
 | Projeler | Liste | başlık, görsel, konum, yıl, sıra |
 | İletişim | Tekil | adres, telefon, e-posta (statik gösterim) + form (ad-soyad, telefon, mesaj) — form gönderiminde **o tenant'a** e-posta gider (alıcı adresi tenant ayarlarında tutulur, içerik verisi değil) |
+| Referanslar | Liste | referans veren kişi/firma adı, unvanı, yorum metni, puan (opsiyonel), sıra |
+| SSS | Liste | soru, cevap, sıra |
+| Ekip Üyeleri | Liste | ad-soyad, unvan, kısa biyografi, fotoğraf, sıra — **sadece tenant sitelerinde, platform sahibi kullanmaz** |
 
 Tenant başına ayrıca (bölüm değil, tenant meta verisi): **tema** (açık/koyu
 tercih, marka rengi), **domain**, **iletişim formu alıcı e-postası**.

@@ -8,13 +8,18 @@ Kod içermez — gerçek çalışır SQL
 değişirse önce `karar-gunlugu.md`'ye tarihli bir kayıt düşülür, sonra hem bu
 dosya hem migration güncellenir.
 
-**Son güncelleme:** 2026-08-06
+**Son güncelleme:** 2026-08-07
 
 **Durum:** Tablolar + kolonlar + kısıtlamalar tasarlandı ve SQL'e döküldü.
 2026-08-06'da dışarıdan gelen bir yönergeyle (BAĞLAM/İSTEK/KISITLAR/KABUL
 KRİTERİ formatında) karşılaştırılıp üç noktada revize edildi (aşağıda
 "Yönergeyle Karşılaştırma" bölümünde). RLS her tabloda açık ama policy'ler
-henüz yazılmadı. Henüz gerçek bir Supabase projesine uygulanmadı.
+henüz yazılmadı. **İlk 8 tablo 2026-08-07'de gerçek Supabase projesine
+uygulandı** (bkz. `karar-gunlugu.md`, "İlk migration gerçek Supabase
+projesine uygulandı"). Aynı gün, demo içerik ihtiyacıyla **3 yeni tablo**
+(`testimonials`, `faqs`, `team_members`) eklendi — toplam **11 tablo**; bu
+üçü ayrı bir migration'da (`20260807120000_add_testimonials_faqs_team_tables.sql`)
+yazıldı, henüz gerçek projeye uygulanmadı (bkz. `docs/durum.md`).
 
 ## Genel Kararlar ve Gerekçeleri
 
@@ -29,13 +34,14 @@ kuralı revize edildi (bkz. Yönergeyle Karşılaştırma madde 1).**
 - `id uuid default gen_random_uuid()`, `created_at timestamptz default now()`
   — gerçekten her tabloda.
 - `order_index integer default 0` — **sadece gerçekten sıralanabilir liste
-  içeriklerde** (`services`, `projects`). Tekil bölümlerde (bir tenant'ta bir
-  tane olan) sıralamanın hiçbir anlamı yok, o yüzden artık yok.
+  içeriklerde** (`services`, `projects`, `testimonials`, `faqs`,
+  `team_members`). Tekil bölümlerde (bir tenant'ta bir tane olan) sıralamanın
+  hiçbir anlamı yok, o yüzden artık yok.
 - `is_published boolean default false` — yayın kontrolü gereken içerik
   tablolarında (`tenants`, `hero_sections`, `about_sections`, `services`,
-  `projects`, `contact_sections`) var; ayar tablosunda (`site_settings`) ve
-  mesaj kaydında (`contact_messages`) yok — ikisi de "yayınlanan içerik"
-  kavramına girmiyor.
+  `projects`, `contact_sections`, `testimonials`, `faqs`, `team_members`) var;
+  ayar tablosunda (`site_settings`) ve mesaj kaydında (`contact_messages`)
+  yok — ikisi de "yayınlanan içerik" kavramına girmiyor.
 
 **Görseller Supabase Storage'da, tabloda yalnız dosya yolu (`*_path`,
 text).**
@@ -200,21 +206,71 @@ bilgisini tutar. Ziyaretçinin doldurduğu form `contact_messages`'ta.
 E-posta gönderimi başarısız olsa bile mesaj kaybolmasın diye DB'ye de
 kaydediliyor (bkz. `karar-gunlugu.md`, 2026-08-06).
 
+### `testimonials` — Referanslar (Liste)
+
+| Kolon | Tip | Açıklama |
+|---|---|---|
+| `id`, `created_at`, `order_index`, `is_published` | — | ortak |
+| `tenant_id` | uuid, not null, → tenants.id | |
+| `author_name` | text, not null | referans veren kişi/firma adı |
+| `author_title` | text, nullable | unvan/pozisyon veya firma bilgisi |
+| `quote` | text, not null | yorum metni |
+| `rating` | integer, nullable, check (1-5) | opsiyonel puan |
+
+Tablo adı **`testimonials`** — `references` SQL'de ayrılmış (reserved) bir
+kelime olduğu için (foreign key tanımlarında kullanılıyor) tablo adı olarak
+seçilmedi.
+
+### `faqs` — SSS (Liste)
+
+| Kolon | Tip | Açıklama |
+|---|---|---|
+| `id`, `created_at`, `order_index`, `is_published` | — | ortak |
+| `tenant_id` | uuid, not null, → tenants.id | |
+| `question` | text, not null | |
+| `answer` | text, not null | |
+
+### `team_members` — Ekip Üyeleri (Liste)
+
+| Kolon | Tip | Açıklama |
+|---|---|---|
+| `id`, `created_at`, `order_index`, `is_published` | — | ortak |
+| `tenant_id` | uuid, not null, → tenants.id | |
+| `full_name` | text, not null | |
+| `role` | text, not null | unvan |
+| `bio` | text, nullable | kısa biyografi |
+| `photo_path` | text, nullable | Storage yolu |
+
+Platform sahibi bu tabloyu kullanmaz (anonim kalma kuralı, bkz. `PRD.md`) —
+`about_sections` ile aynı kısıt.
+
 ## SQL Migration
 
-Yukarıdaki tasarım, çalışır SQL olarak
-`supabase/migrations/20260806120000_create_content_tables.sql`'de yazılı —
-`create table`, `check`/`unique` kısıtlamaları, `default` değerleri, her
-tabloya `comment on table` ve `enable row level security` satırları dahil.
-Bu dosya güncellenirse migration da eşlenik olarak güncellenmeli.
+İki migration dosyası var:
+
+1. `supabase/migrations/20260806120000_create_content_tables.sql` — ilk 8
+   tablo (`tenants`, `site_settings`, `hero_sections`, `about_sections`,
+   `services`, `projects`, `contact_sections`, `contact_messages`). **Gerçek
+   Supabase projesine uygulandı** (2026-08-07).
+2. `supabase/migrations/20260807120000_add_testimonials_faqs_team_tables.sql`
+   — sonradan eklenen 3 tablo (`testimonials`, `faqs`, `team_members`).
+   Henüz gerçek projeye uygulanmadı.
+
+Her ikisinde de `create table`, `check`/`unique` kısıtlamaları, `default`
+değerleri, her tabloya `comment on table` ve `enable row level security`
+satırları var. Bu dosya güncellenirse ilgili migration da eşlenik olarak
+güncellenmeli.
 
 ## Örnek Veri (Doğrulama)
 
-`supabase/seed.sql` — her tablo için 2 satırlık örnek `insert`. 2 tenant
-(Akme İnşaat, Yıldız Yapı) üzerinden kurulu; `tenant_id` UNIQUE olan
-tablolarda (site_settings, hero_sections, about_sections, contact_sections)
-2 satır = 2 farklı tenant, liste tablolarında (services, projects,
-contact_messages) 2 satır aynı tenant altında (gerçek liste davranışı).
+`supabase/seed.sql` — 2 tenant (Akme İnşaat, Yıldız Yapı) üzerinden kurulu.
+`tenant_id` UNIQUE olan tablolarda (site_settings, hero_sections,
+about_sections, contact_sections) 2 satır = 2 farklı tenant. Liste
+tablolarında `contact_messages` 2 satır aynı tenant altında; `services` (6),
+`projects` (8), `testimonials` (4), `faqs` (5), `team_members` (4) ise
+Akme İnşaat için hazırlanmış gerçekçi demo içeriği (bkz.
+`content/demo-icerik.md`) — `order_index` 10'ar artıyor, her tabloda yaklaşık
+yarısı `is_published = true` yarısı `false`.
 
 ## Açık Sorular
 
