@@ -2,7 +2,7 @@
 
 Bu dosya, projenin test yaklaşımını, kalite eşiklerini ve "bir işin bitti
 sayılması" için gereken koşulları tanımlar. `AI-KURALLARI.md` madde 7 buraya
-işaret eder; test kararı değişirse önce `karar-gunlugu.md`'ye kayıt düşülür,
+işaret eder; test kararı değişirse önce `KARAR-GUNLUGU.md`'ye kayıt düşülür,
 sonra bu dosya güncellenir. Kod içermez.
 
 **Son güncelleme:** 2026-08-06
@@ -55,7 +55,7 @@ Dört kategoride de minimum **90/100** hedeflenir:
 - Best Practices ≥ 90
 - SEO ≥ 90
 
-(bkz. `kurumsal-site-standartlari.md`, Core Web Vitals — Lighthouse'ta 90-100
+(bkz. `KURUMSAL-SITE-STANDARTLARI.md`, Core Web Vitals — Lighthouse'ta 90-100
 aralığı "iyi/yeşil" kabul edilir.)
 
 **Performans bütçesi (netleşti, 2026-08-06):** İlk içerik (LCP — Largest
@@ -66,9 +66,9 @@ arası kabul edilebilir bir yükleme süresi** olarak hedeflenir.
 
 - Tüm görsellerde açıklayıcı `alt` metni zorunludur.
 - Metin ve arka plan renkleri arasında yeterli kontrast sağlanır (WCAG 2.1 AA
-  eşiği — bkz. `kurumsal-site-standartlari.md`).
+  eşiği — bkz. `KURUMSAL-SITE-STANDARTLARI.md`).
 - Site sadece klavye ile kullanılabilir olmalıdır (bkz.
-  `kurumsal-site-standartlari.md`).
+  `KURUMSAL-SITE-STANDARTLARI.md`).
 
 ## 6. Responsive / Tarayıcı Desteği
 
@@ -87,8 +87,8 @@ Bir özellik/iş şu dört koşul sağlanmadan **bitti sayılmaz**:
    entegrasyon testi(leri) eklenmiş ve geçiyor; bilinen edge-case'ler
    düşünülmüş.
 3. **Dökümantasyon güncel** — özellik `PRD.md` kapsamını değiştiriyorsa
-   `PRD.md`, mimari bir karar içeriyorsa `karar-gunlugu.md`, genel durumu
-   etkiliyorsa `durum.md` güncellenmiş.
+   `PRD.md`, mimari bir karar içeriyorsa `KARAR-GUNLUGU.md`, genel durumu
+   etkiliyorsa `DURUM.md` güncellenmiş.
 4. **İlgili e2e "kapısından" geçilmiş** — özellik madde 3'teki kritik
    akışlardan birine giriyorsa, o akışın e2e testi yeşil.
 

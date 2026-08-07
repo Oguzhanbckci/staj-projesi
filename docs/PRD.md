@@ -1,6 +1,6 @@
 # PRD — Ürün Gereksinimleri (İstenen / İstenmeyen)
 
-Bu dosya, `durum.md` (anlık durum) ve `karar-gunlugu.md`'den (tarihli karar
+Bu dosya, `DURUM.md` (anlık durum) ve `KARAR-GUNLUGU.md`'den (tarihli karar
 geçmişi) farklı bir iş görür: **bir özelliğin yapılıp yapılmayacağına hızlıca
 karar vermek için tek referans**. Yeni bir özellik önerisi geldiğinde önce
 buraya bakılır. Kod içermez.
@@ -29,7 +29,7 @@ bir kurumsal web sitesi hizmeti — "tek müşteri = tek kurulum" iş modelinde.
 - Herkese açık, gezinilebilir bir ana sayfa.
 - Yapılan projelerin/örnek web sitelerinin gösterildiği bir bölüm (portfolyo).
 - Hizmetin vaat ettiği özelliklerin anlatıldığı bir bölüm (SEO, responsive,
-  sade/abartısız tasarım, güvenlik vb. — bkz. `kurumsal-site-standartlari.md`).
+  sade/abartısız tasarım, güvenlik vb. — bkz. `KURUMSAL-SITE-STANDARTLARI.md`).
 - İletişim bölümünde iki kanal: (1) **WhatsApp butonu**, (2) **iletişim formu**
   (ad-soyad, telefon numarası, serbest metin/istek textarea alanları). Form
   gönderildiğinde platform sahibine **e-posta** olarak iletilir.
@@ -51,15 +51,15 @@ bir kurumsal web sitesi hizmeti — "tek müşteri = tek kurulum" iş modelinde.
 - Kendi alan adında yayınlanan, herkese açık kurumsal site.
 - Hazır bölüm kütüphanesinden seçilmiş bölümler (Hero, Hakkımızda, Hizmetler,
   Projeler, İletişim, **Referanslar, SSS, Ekip Üyeleri** — bkz.
-  `rakip-analizi.md`; blog/haberler bölümü kapsam dışı, bkz. madde 4).
+  `RAKIP-ANALIZI.md`; blog/haberler bölümü kapsam dışı, bkz. madde 4).
   Referanslar/SSS/Ekip Üyeleri kapsamı 2026-08-06'da netleşen ilk 5 bölümden
   sonra, 2026-08-07'de demo içerik ihtiyacıyla eklendi (bkz.
-  `karar-gunlugu.md`).
+  `KARAR-GUNLUGU.md`).
 - **Ekip Üyeleri sadece tenant sitelerinde kullanılır, platform sahibinin
   kendi tanıtım sitesinde yer almaz** (marka anonim kalma kuralı, aşağıda).
 - Açık/koyu tema desteği.
 - SEO, responsive, performans, KVKK uyumluluğu (bkz.
-  `kurumsal-site-standartlari.md`).
+  `KURUMSAL-SITE-STANDARTLARI.md`).
 
 ### 3.4 İçerik Modeli (Veri Alanları)
 
@@ -101,7 +101,7 @@ tercih, marka rengi), **domain**, **iletişim formu alıcı e-postası**.
 - **Blog / Haberler kavramı hiçbir yerde kullanılmaz** — ne tanıtım sitesinde
   (pazarlama dilinde "blog motoru" gibi ifadeler dahil), ne de bölüm
   kütüphanesinde/tenant sitelerinde. Ürün "kurumsal site hizmeti" olarak
-  konumlanır, bir blog/CMS platformu değildir. (`rakip-analizi.md`'deki
+  konumlanır, bir blog/CMS platformu değildir. (`RAKIP-ANALIZI.md`'deki
   bölüm sıklığı tablosunda Blog/Haberler 7/8 site ile yaygın görünüyor olsa da,
   bu üründe bilinçli olarak dışarıda bırakıldı.)
 - Tenant'a (müşteriye) herhangi bir panel/login erişimi vermek. Tenant kendi
@@ -143,4 +143,4 @@ büyüklüğü gibi bilgiler paylaşılmaz, sadece yapılan işler görünür).
 Yeni bir özellik önerisi/isteği geldiğinde önce madde 4'teki (İstenmeyen)
 listeye bakılır. Listede açıkça yasaklanmış bir şeyse, uygulanmadan önce
 kullanıcıya sorulur — varsayım yapılmaz. Kapsam değişirse önce
-`karar-gunlugu.md`'ye tarihli bir kayıt eklenir, sonra bu dosya güncellenir.
+`KARAR-GUNLUGU.md`'ye tarihli bir kayıt eklenir, sonra bu dosya güncellenir.

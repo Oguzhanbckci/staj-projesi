@@ -4,7 +4,7 @@ Bu dosya, geliştirme ve demo amaçlı hazırlanmış **gerçekçi ama kurgusal*
 inşaat firması içeriğidir. Tenant olarak `supabase/seed.sql`'deki mevcut
 "Akme İnşaat" kaydı temel alındı. Beş kategori de (Hizmetler, Projeler,
 Referanslar, SSS, Ekip Üyeleri) artık `docs/PRD.md` kapsamında ve
-veritabanı şemasında var (bkz. `docs/VERİ-MODELİ.md`, `docs/karar-gunlugu.md`
+veritabanı şemasında var (bkz. `docs/VERİ-MODELİ.md`, `docs/KARAR-GUNLUGU.md`
 2026-08-07) — çalışır SQL karşılığı `supabase/seed.sql`'de.
 
 Görsel alanları (`image_path`, `photo_path`) gerçek dosya yolu değil,

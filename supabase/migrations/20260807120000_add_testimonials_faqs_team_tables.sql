@@ -1,5 +1,5 @@
 -- Yeni bölümler: Referanslar, SSS, Ekip Üyeleri.
--- Karar ve gerekçe: docs/karar-gunlugu.md, 2026-08-07 ("Referanslar/SSS/Ekip
+-- Karar ve gerekçe: docs/KARAR-GUNLUGU.md, 2026-08-07 ("Referanslar/SSS/Ekip
 -- Üyeleri yeni bölüm olarak eklendi"). İlk migration
 -- (20260806120000_create_content_tables.sql) zaten gerçek veritabanına
 -- uygulanmıştı, bu yüzden üstüne yazılmadı — ayrı bir migration.

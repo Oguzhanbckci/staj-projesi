@@ -3,14 +3,14 @@
 Bu dosya, projenin teknik mimarisini tek yerde toplar: framework, dil, stil,
 backend, hosting, render stratejisi ve klasör yapısı. `PRD.md` "ne
 yapılacağını" (özellik kapsamı), bu dosya "nasıl yapılacağını" (teknik
-seçimler) tanımlar. Kod içermez. Karar değişirse önce `karar-gunlugu.md`'ye
+seçimler) tanımlar. Kod içermez. Karar değişirse önce `KARAR-GUNLUGU.md`'ye
 kayıt düşülür, sonra bu dosya güncellenir.
 
 **Son güncelleme:** 2026-08-07
 
 ## 0. Bağlam
 
-Tek geliştirici, ~32 iş günlük süre (bkz. `durum.md`, "Proje bağlamı"). Bu
+Tek geliştirici, ~32 iş günlük süre (bkz. `DURUM.md`, "Proje bağlamı"). Bu
 proje kapsamında **gerçek bir müşteriye canlıya alınmıyor** — geliştirme ve
 staj değerlendirmesi amaçlı bir ürün/demo inşa ediliyor. Bu, aşağıdaki hosting
 kararını doğrudan etkiliyor (madde 5).
@@ -24,8 +24,8 @@ kararını doğrudan etkiliyor (madde 5).
   geldiğini ayırt eder (bkz. madde 7).
 - API route handler'ları (`app/api/`) — iletişim formu gönderimi gibi sunucu
   taraflı işlemler için.
-- Karar ve gerekçe: `karar-gunlugu.md`, 2026-08-05 ("Teknoloji seçildi");
-  versiyon 16'ya güncellendi — bkz. `karar-gunlugu.md`, 2026-08-06 ("Next.js
+- Karar ve gerekçe: `KARAR-GUNLUGU.md`, 2026-08-05 ("Teknoloji seçildi");
+  versiyon 16'ya güncellendi — bkz. `KARAR-GUNLUGU.md`, 2026-08-06 ("Next.js
   16'ya güncellendi").
 
 ## 2. Dil
@@ -63,7 +63,7 @@ kurulurken bu `@theme` bloğu genişletilir.
   RLS ile bir tenant'ın verisi başka bir tenant'a asla sızmaz (bkz.
   `AI-KURALLARI.md` madde 6).
 - **Auth** — tek kullanıcı: platform sahibi. `/panel` girişi bununla korunur;
-  tenant'ların kendi Auth hesabı yoktur (bkz. `karar-gunlugu.md`, 2026-08-06,
+  tenant'ların kendi Auth hesabı yoktur (bkz. `KARAR-GUNLUGU.md`, 2026-08-06,
   "Panel mimarisi düzeltildi").
 - **Storage** — proje/portfolyo görselleri, tenant site görselleri.
 
@@ -83,11 +83,38 @@ oluşturur.
 |---|---|---|
 | `NEXT_PUBLIC_SUPABASE_URL` | Supabase dashboard → **Integrations → Data API** → Project URL | Kopyalanan adresin sonunda `/rest/v1/` geliyorsa silinmeli — `@supabase/supabase-js` sadece kök adresi bekler, yolu kendisi ekler. |
 | `SUPABASE_SERVICE_ROLE_KEY` | Supabase dashboard → **Configuration → API Keys** → `service_role` (secret) | RLS'i bypass eder, yalnızca `lib/supabase/server.ts` gibi sunucu tarafı kodda kullanılır; `NEXT_PUBLIC_` öneki yoktur, tarayıcıya asla gönderilmez (bkz. `AI-KURALLARI.md` madde 6.4). |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase dashboard → **Configuration → API Keys** → `anon`/`public` | RLS'e tabidir (bypass etmez), tarayıcıya gönderilmesi güvenlidir. Panel auth (Supabase Auth oturumu) ve RLS testleri (`scripts/test-rls.mjs`) için kullanılır. |
 
 **Not:** Supabase, panel arayüzünü yakın zamanda değiştirdi — eski
 "Project Settings → API" tek sayfası artık "Integrations → Data API"
 (URL için) ve "Configuration → API Keys" (anahtarlar için) olarak ikiye
 bölünmüş durumda.
+
+### 4.2 Şema Tipleri (Supabase CLI)
+
+`types/database.types.ts`, Supabase CLI ile `supabase/migrations/`'daki
+gerçek şemadan **otomatik üretilir** — elle düzenlenmez. `lib/supabase/`
+altındaki sorgu fonksiyonları bu tipi kullanır (`createClient<Database>`),
+bu sayede `select("yanlis_kolon_adi")` gibi bir yazım hatası derleme
+zamanında yakalanır.
+
+Şema her değiştiğinde (yeni migration eklendiğinde) yeniden üretmek için:
+```
+npm run types:generate
+```
+(`package.json`'daki script, `supabase gen types typescript --project-id
+<ref> --schema public > types/database.types.ts` komutunu çalıştırır.)
+
+**Önemli:** Bu komut ham haliyle (`npx supabase gen types ...`) doğrudan
+Windows PowerShell'de çalıştırılırsa, `>` yönlendirmesi dosyayı **UTF-16**
+kodlamasıyla yazar (TypeScript için geçersiz) — `npm run types:generate`
+kullanılmalı, çünkü npm script'leri Windows'ta `cmd.exe` üzerinden çalışır
+ve bu sorunu yaşamaz. Ayrıca komut `SUPABASE_ACCESS_TOKEN` ortam
+değişkenini (hesap düzeyinde bir Personal Access Token, Dashboard → hesap
+simgesi → Access Tokens) gerektirir — kalıcı olarak `.env.local`'e
+eklenmedi, gerektiğinde geçici olarak `$env:SUPABASE_ACCESS_TOKEN="..."`
+ile o oturuma özel ayarlanır. Detay ve karşılaşılan CLI sorunları:
+`KARAR-GUNLUGU.md`, 2026-08-07 ("Supabase CLI ile şema tipleri üretildi").
 
 ## 5. Hosting
 
@@ -107,7 +134,7 @@ Regeneration).**
 
 - Tenant siteleri ve platform sahibinin tanıtım sitesi **statik üretilir** —
   ziyaretçi neredeyse-statik hızında bir sayfa görür (Lighthouse ≥90, LCP
-  1.5-2sn hedefine uygun, bkz. `test-stratejisi.md`).
+  1.5-2sn hedefine uygun, bkz. `TEST-STRATEJISI.md`).
 - `panel`'den bir içerik/tema kaydı yapıldığında, Next.js'in
   `revalidatePath`/`revalidateTag` mekanizmasıyla **ilgili sayfa yeniden
   üretilir** — yeni bir deploy beklemeden değişiklik anında yansır.
@@ -130,7 +157,7 @@ eşleştirir:
   sadece o tenant'ın herkese açık `(site)` sayfaları render edilir; `panel`
   orada hiç yoktur/erişilemez.
 
-Karar ve gerekçe: `karar-gunlugu.md`, 2026-08-06 ("Domain stratejisi: her
+Karar ve gerekçe: `KARAR-GUNLUGU.md`, 2026-08-06 ("Domain stratejisi: her
 tenant kendi alan adını kullanır", "Panel mimarisi düzeltildi",
 "Platform sahibi tenants tablosunda birleştirildi").
 
@@ -158,8 +185,8 @@ scaffold'ı (`create-next-app`, 2026-08-06) kurulduktan sonra oluşturuldu.
     input, kart vb.) — henüz boş, `panel` ve `(site)` inşa edilirken
     doldurulacak.
   - **`components/site/`** — hazır bölüm kütüphanesi (Hero, Hakkımızda,
-    Hizmetler, Projeler, İletişim — bkz. `PRD.md` madde 3.3, `rakip-analizi.md`).
-    Henüz boş; `docs/durum.md`'deki sıradaki adımda ilk bileşenler buraya
+    Hizmetler, Projeler, İletişim — bkz. `PRD.md` madde 3.3, `RAKIP-ANALIZI.md`).
+    Henüz boş; `docs/DURUM.md`'deki sıradaki adımda ilk bileşenler buraya
     yazılacak.
 - **`lib/`** — sunucu/iş mantığı yardımcıları:
   - **`lib/supabase/`** — client/server Supabase istemcileri ve sorgu
@@ -169,12 +196,16 @@ scaffold'ı (`create-next-app`, 2026-08-06) kurulduktan sonra oluşturuldu.
     henüz yok.
   - **`lib/utils.ts`** — genel yardımcı fonksiyonlar (tarih/metin formatlama
     vb.). Henüz placeholder.
-- **`types/`** — paylaşılan TypeScript tipleri (`Tenant`, `Section`, `Theme`
-  vb. — veri modeli Supabase şeması tasarlanınca netleşecek). Henüz
-  placeholder.
+- **`types/`** — paylaşılan TypeScript tipleri. `database.types.ts`,
+  Supabase CLI ile gerçek şemadan otomatik üretilir (bkz. madde 4.2),
+  elle düzenlenmez. `index.ts` henüz placeholder.
+- **`scripts/`** — tek seferlik/geçici geliştirme araçları (uygulamanın
+  parçası değil). `test-rls.mjs` — RLS politikalarını anon/authenticated
+  rolleriyle karşılaştırmalı test eden doğrulama script'i (bkz.
+  `KARAR-GUNLUGU.md`, 2026-08-07).
 - **`supabase/migrations/`** — iki dosya: `20260806120000_create_content_tables.sql`
   (8 tablo) ve `20260807120000_add_testimonials_faqs_team_tables.sql`
-  (`testimonials`, `faqs`, `team_members` — bkz. `karar-gunlugu.md`,
+  (`testimonials`, `faqs`, `team_members` — bkz. `KARAR-GUNLUGU.md`,
   2026-08-07). Toplam 11 tablo, RLS açık ama henüz policy yok (bkz.
   `VERİ-MODELİ.md`). Her ikisi de gerçek Supabase projesine uygulandı;
   `supabase/seed.sql` (11 tablonun tamamı için gerçekçi demo veri) de

@@ -2,7 +2,7 @@
 
 Bu dosya, bu projede AI ile nasıl çalışılacağını ve projenin kurallarını tanımlar.
 Yeni bir AI oturumuna başlarken önce bu dosya okunur. Kural değişirse dosya
-güncellenir ve nedeni `karar-gunlugu.md`'ye eklenir.
+güncellenir ve nedeni `KARAR-GUNLUGU.md`'ye eklenir.
 
 ## 1. Proje Özeti
 
@@ -13,8 +13,8 @@ giriş yapar; tüm müşterilerin (tenant) içeriğini, temasını ve aktif böl
 buradan yönetir. Müşterinin kendi sitesinde (kendi domaininde) hiçbir panel/login
 yoktur — müşteri ve onun ziyaretçileri sadece herkese açık siteyi görür, içerik
 değişikliği talebini platform sahibine iletir. Geliştirmenin büyük kısmı AI ile
-yürütülüyor; site kalite kriterleri için `kurumsal-site-standartlari.md`'ye,
-mimari gerekçe için `karar-gunlugu.md` (2026-08-06, "Panel mimarisi düzeltildi")
+yürütülüyor; site kalite kriterleri için `KURUMSAL-SITE-STANDARTLARI.md`'ye,
+mimari gerekçe için `KARAR-GUNLUGU.md` (2026-08-06, "Panel mimarisi düzeltildi")
 dosyasına bakılır.
 
 ## 2. Teknoloji
@@ -25,7 +25,7 @@ dosyasına bakılır.
 - Paket yöneticisi: npm
 
 Hosting, render stratejisi ve mimari gerekçeler için tek referans:
-**`docs/Mimari.md`** (Vercel Hobby plan, statik üretim + panelden tetiklenen
+**`docs/MIMARI.md`** (Vercel Hobby plan, statik üretim + panelden tetiklenen
 on-demand ISR).
 
 ## 3. Klasör Yapısı
@@ -57,12 +57,12 @@ staj-projesi/
 zaman `panel`'e ait bir bileşeni import etmez. `panel` rotası yalnızca platform
 sahibinin kendi domaininde aktiftir — middleware, isteğin `Host` başlığına göre
 bir tenant domaininde `panel`'i tamamen erişilmez kılar. Mimari detay ve gerekçe
-için `karar-gunlugu.md` (2026-08-06, "Panel mimarisi düzeltildi: tek panel, tek
+için `KARAR-GUNLUGU.md` (2026-08-06, "Panel mimarisi düzeltildi: tek panel, tek
 kullanıcı, tam yönetilen hizmet").
 
 Bu ağaç yapısı 2026-08-06'da fiilen oluşturuldu (`app/`, `components/`, `lib/`,
 `types/`, `supabase/migrations/`) — her klasörün ne için var olduğunun
-ayrıntılı gerekçesi için **`docs/Mimari.md` madde 8**'e bakılır. `app/api/`
+ayrıntılı gerekçesi için **`docs/MIMARI.md` madde 8**'e bakılır. `app/api/`
 henüz oluşturulmadı, ilk gerçek ihtiyaç doğduğunda eklenecek.
 
 ## 4. Kod Standartları
@@ -87,7 +87,7 @@ henüz oluşturulmadı, ilk gerçek ihtiyaç doğduğunda eklenecek.
   ekle.
 - İçerik/tema verisini component prop'u olarak değil, `panel`'den çekilen veri
   olarak tasarla.
-- Büyük bir mimari kararı uygulamadan önce `docs/karar-gunlugu.md`'ye yaz.
+- Büyük bir mimari kararı uygulamadan önce `docs/KARAR-GUNLUGU.md`'ye yaz.
 
 **Yapma:**
 1. Supabase service role key'ini client tarafında (tarayıcıda çalışan kodda) kullanma.
@@ -118,14 +118,14 @@ henüz oluşturulmadı, ilk gerçek ihtiyaç doğduğunda eklenecek.
    RLS politikaları bir tenant'ın verisinin başka bir tenant tarafından
    okunamayacağını/değiştirilemeyeceğini garanti eder.
 7. Genel site kalite/güvenlik kriterleri (SSL, KVKK, çerez politikası) için
-   `kurumsal-site-standartlari.md`'ye bakılır.
+   `KURUMSAL-SITE-STANDARTLARI.md`'ye bakılır.
 
 ## 7. Test Stratejisi
 
 Detaylı test yaklaşımı, kalite eşikleri ve "bitti" tanımı için tek referans:
-**`docs/test-stratejisi.md`**. Özet: Vitest + React Testing Library (unit —
+**`docs/TEST-STRATEJISI.md`**. Özet: Vitest + React Testing Library (unit —
 sürekli, her özellikle birlikte yazılır) + Playwright (e2e — sadece belli
-kritik noktalarda, madde/madde listesi `test-stratejisi.md`'de). Test miktarı
+kritik noktalarda, madde/madde listesi `TEST-STRATEJISI.md`'de). Test miktarı
 bilinçli olarak sınırlı tutulur; tek geliştirici + ~32 iş günlük süre kısıtı
 göz önünde bulundurulur.
 
@@ -148,7 +148,7 @@ tutulur.
 1. AI, attığı her adımı kullanıcıya açıklayarak ilerler.
 2. Terminal/kurulum komutlarını kullanıcı kendisi çalıştırır; AI komutu açıklar,
    kullanıcı çalıştırır, AI çıktıyı yorumlar.
-3. Mimari/teknoloji kararları önce `docs/karar-gunlugu.md`'ye yazılır, sonra
+3. Mimari/teknoloji kararları önce `docs/KARAR-GUNLUGU.md`'ye yazılır, sonra
    uygulanır.
 4. AI, belirsiz bir karar noktasında (isim, kapsam, teknoloji vb.) varsayım
    yapmadan kullanıcıya sorar.
@@ -158,7 +158,7 @@ tutulur.
    "İstenmeyen" listesine bakılır; orada açıkça yasaklanmış bir şeyse
    uygulanmadan önce kullanıcıya sorulur.
 7. AI, `docs/` içinde açıkça istenmeyen yeni bir dosya oluşturmadan önce
-   kullanıcıya sorar (bkz. `karar-gunlugu.md`, 2026-08-06,
+   kullanıcıya sorar (bkz. `KARAR-GUNLUGU.md`, 2026-08-06,
    "`docs/veritabani-semasi.md` kaldırıldı..." — AI bunu sormadan
    oluşturmuştu, kullanıcı düzeltti). Mevcut bir dosyayı güncellemek bu
    kuralın dışında, serbesttir.

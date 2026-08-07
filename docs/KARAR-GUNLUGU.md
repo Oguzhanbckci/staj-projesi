@@ -10,7 +10,7 @@ Yeni bir karar alındığında en alta eklenir, önceki kayıtlar değiştirilme
 **Karar:** Staj kapsamındaki çalışmalar için `C:\Users\toffe\Projects\staj-projesi`
 adında, mevcut `next-project`'ten bağımsız yeni bir proje klasörü açıldı. İçine,
 kod içermeyen, sadece kararları ve açıklamaları tutan bir `docs/` klasörü kuruldu
-(`README.md`, `karar-gunlugu.md`, `durum.md`).
+(`README.md`, `KARAR-GUNLUGU.md`, `DURUM.md`).
 
 **Gerekçe:** Kullanıcı stajda hem terminalden AI kullanmayı hem web sitesi yapım
 sürecini öğreniyor ve patronun vereceği görevleri takip edebilmek için, sohbetin
@@ -28,7 +28,7 @@ eklenecek.
 
 **Karar:** Ayrı bir `README.md` dosyası gereksiz bulundu (sadece diğer dosyaları
 anlatan meta bir dosyaydı, kendi başına karar/durum bilgisi taşımıyordu). Kullanıcı
-tarafından `rm` ile silindi; içeriğindeki kısa açıklama `durum.md`'nin başına
+tarafından `rm` ile silindi; içeriğindeki kısa açıklama `DURUM.md`'nin başına
 taşındı.
 
 **Gerekçe:** İki dosyanın (durum + karar günlüğü) amacı zaten birbirinden farklı ve
@@ -39,7 +39,7 @@ yeterli; üçüncü bir "meta" dosya gereksiz katman ekliyordu.
 ## 2026-08-05 — "İyi kurumsal site" ölçütleri araştırıldı ve kaydedildi
 
 **Karar:** Web araştırması yapılarak kurumsal web sitesi standartları derlendi ve
-`docs/kurumsal-site-standartlari.md` dosyasına kaydedildi. Kapsam: performans (Core
+`docs/KURUMSAL-SITE-STANDARTLARI.md` dosyasına kaydedildi. Kapsam: performans (Core
 Web Vitals), mobil uyumluluk, erişilebilirlik (WCAG 2.1 AA), SEO, güvenlik/KVKK
 uyumluluğu, güven unsurları, marka/içerik tutarlılığı.
 
@@ -74,7 +74,7 @@ commit kuralları ve AI ile çalışma ilkelerini tek bir referans dosyada toplu
 
 **Gerekçe:** Bu sohbette baştan beri uygulanan çalışma kurallarını (terminal
 komutlarını kullanıcının çalıştırması, her adımın açıklanması, kararların
-`karar-gunlugu.md`'ye işlenmesi vb.) yazılı hale getirip projenin kalıcı parçası
+`KARAR-GUNLUGU.md`'ye işlenmesi vb.) yazılı hale getirip projenin kalıcı parçası
 yapmak — böylece yeni bir oturumda veya başka bir AI aracında da bu kurallar
 görünür ve uygulanabilir olur.
 
@@ -121,7 +121,7 @@ kullanıcı adı/şifre girişi yeterli ve geliştirmeyi hızlandırıyor.
 **Karar:** 8 gerçek firma sitesi (Limak, Rönesans İnşa, Nurol İnşaat, Fabrika
 Mimarlık, OSO Mimarlık, Two Plus Architects, FEINE Mimarlık, Tabanlıoğlu
 Architects) doğrudan ziyaret edilerek incelendi, bölüm karşılaştırma tablosu ve
-"her kurumsal sitede olması gereken 6 bölüm" listesi `docs/rakip-analizi.md`'ye
+"her kurumsal sitede olması gereken 6 bölüm" listesi `docs/RAKIP-ANALIZI.md`'ye
 kaydedildi. Sonuç: İletişim (8/8), Hakkımızda (8/8), Hero (7/8), Projeler/Portföy
 (7/8), Blog/Haberler (7/8), Hizmetler (4/8) en sık görülen 6 bölüm.
 
@@ -146,7 +146,7 @@ taraflarının anlatılmasıyla, önceden açık kalan sorular netleştirildi:
    - **Platform paneli** (`/platform` rotası, sadece geliştirici/satıcı "Ben"
      erişir) — yeni bir müşteri (tenant) oluşturma ve o müşteri için hangi
      bölümlerin (Hero, Hakkımızda, Hizmetler, Projeler, Blog, İletişim ve
-     varyasyonları — bkz. `rakip-analizi.md`) aktif olacağını seçme, temel tema
+     varyasyonları — bkz. `RAKIP-ANALIZI.md`) aktif olacağını seçme, temel tema
      ayarını yapma. Müşterinin bu panelin varlığından haberi yok, erişimi de yok.
    - **Tenant admin paneli** (2026-08-05'te karar verilen "tek yönetici rolü,
      Supabase Auth login") — müşterinin kendisi, platform panelinde kendisi için
@@ -164,7 +164,7 @@ taraflarının anlatılmasıyla, önceden açık kalan sorular netleştirildi:
 4. **Çoklu dil desteği:** v1 kapsamı dışında bırakıldı, ileride ayrı bir faz olarak
    ele alınacak. Açık/koyu tema v1'de var.
 
-Bu kararlarla `durum.md`'deki iki açık soru ("ayrı Supabase mi tek altyapı mı" ve
+Bu kararlarla `DURUM.md`'deki iki açık soru ("ayrı Supabase mi tek altyapı mı" ve
 "sabit şablon mu page builder mı") çözülmüş oldu.
 
 **Gerekçe:** Kullanıcı staj sürecinde ürünün iş modelini ve teknik mimarisini aynı
@@ -222,7 +222,7 @@ mimarinin son temel parçası olarak netleştirildi.
 
 **Gerekçe:** Ürün "gerçek bir kurumsal site" olarak satılıyor; inşaat firması
 için kendi markalı alan adı olmayan bir site ikna edici olmaz, güven unsuru
-zedelenir (bkz. `kurumsal-site-standartlari.md`, "Güven Unsurları").
+zedelenir (bkz. `KURUMSAL-SITE-STANDARTLARI.md`, "Güven Unsurları").
 
 **Teknik not (henüz uygulanmadı, ileride kod aşamasında ele alınacak):** Next.js
 middleware, gelen isteğin `Host` başlığına bakıp bir `domain → tenant_id`
@@ -285,7 +285,7 @@ aktif olur (login korumalı); istek bir tenant'ın kendi domainineyse sadece
 ## 2026-08-06 — `docs/PRD.md` oluşturuldu
 
 **Karar:** `docs/PRD.md` eklendi — ürünün "istenen/istenmeyen" özellik
-listesini tutan, `durum.md` (anlık durum) ve `karar-gunlugu.md`'den (tarihli
+listesini tutan, `DURUM.md` (anlık durum) ve `KARAR-GUNLUGU.md`'den (tarihli
 karar geçmişi) ayrı, üçüncü bir referans dosyası. İçeriği: aktörler, kapsam içi
 özellikler (tanıtım sitesi, panel, tenant siteleri) ve kapsam dışı bırakılanlar
 — bu oturumda netleşen "tanıtım sitesinde fiyat/abonelik bilgisi yok, 'blog
@@ -294,7 +294,7 @@ arayüzü görür, panel her zaman kullanıcı adı/şifre ister" kuralları dah
 
 **Gerekçe:** Kullanıcı, bir özelliğin yapılıp yapılmayacağına hızlıca karar
 verebilmek için tek bir kapsam referansı istedi. Kararların kronolojik
-geçmişini (`karar-gunlugu.md`) her seferinde taramak yerine, güncel kapsamı
+geçmişini (`KARAR-GUNLUGU.md`) her seferinde taramak yerine, güncel kapsamı
 tek bir yerde (Yap/Yapma listesi olarak) tutmak bunu sağlıyor.
 
 **Not:** `PRD.md`'de iki açık soru bırakıldı — "blog motoru" ifadesinin tenant
@@ -326,7 +326,7 @@ tanınırlıkla değil.
    `PRD.md`'de "blog motoru ifadesi sadece pazarlama dilini mi kapsıyor"
    şeklinde açık bir soru bırakılmıştı. Kullanıcı bunu netleştirdi: blog/haber
    kavramı ürünün hiçbir yerinde (tanıtım sitesi, bölüm kütüphanesi, tenant
-   siteleri) bulunmayacak. `rakip-analizi.md`'deki bulgunun (Blog/Haberler
+   siteleri) bulunmayacak. `RAKIP-ANALIZI.md`'deki bulgunun (Blog/Haberler
    7/8 sitede yaygın) aksine, bilinçli bir kapsam dışı bırakma kararı.
 2. **Tanıtım sitesi iletişimi revize edildi.** Bir önceki kayıtta "statik
    e-posta/telefon, form değil" denilmişti; kullanıcı bunu somutlaştırıp
@@ -364,16 +364,16 @@ hızlı ve daha az konfigürasyon gerektiriyor).
 
 **Not:** Bu karar `AI-KURALLARI.md`'nin madde numaralarını kaydırdı — eski
 madde 7 (Commit Kuralları) madde 8, eski madde 8 (AI ile Çalışma İlkeleri)
-madde 9 oldu. `karar-gunlugu.md`'deki "madde 6" referansı (Güvenlik) hâlâ
+madde 9 oldu. `KARAR-GUNLUGU.md`'deki "madde 6" referansı (Güvenlik) hâlâ
 geçerli, değişmedi.
 
 ---
 
-## 2026-08-06 — Proje bağlamı netleşti + `docs/test-stratejisi.md` oluşturuldu
+## 2026-08-06 — Proje bağlamı netleşti + `docs/TEST-STRATEJISI.md` oluşturuldu
 
 **Karar:** Kullanıcı projenin somut kısıtlarını verdi: **tek geliştirici,
 toplam ~32 iş günlük süre**. Bu bağlamda test stratejisi revize edildi ve
-`docs/test-stratejisi.md` adında yeni bir referans dosyası oluşturuldu
+`docs/TEST-STRATEJISI.md` adında yeni bir referans dosyası oluşturuldu
 (`AI-KURALLARI.md` madde 7 artık buraya işaret ediyor, kendisi özet bilgiye
 indirildi). Değişenler:
 
@@ -382,7 +382,7 @@ indirildi). Değişenler:
    süreyle uyuşmadığını belirtti. Yeni yaklaşım: **unit test sürekli/rutin**
    (özellikle birlikte yazılır), **e2e/entegrasyon testleri sadece "belli
    noktalarda"** (kritik akışlarda) — hangi akışların kritik sayıldığı
-   `test-stratejisi.md` madde 3'te listelendi (panel auth, tenant oluşturma,
+   `TEST-STRATEJISI.md` madde 3'te listelendi (panel auth, tenant oluşturma,
    içerik düzenleme, iletişim formu, tema geçişi, panel'in tenant domaininde
    erişilemez olduğunun doğrulanması).
 2. **Kalite eşikleri tanımlanmaya başladı.** Lighthouse (Performance,
@@ -405,14 +405,14 @@ Bu bağlam aynı zamanda önceki bazı kapsam-sınırlama kararlarını (hazır 
 kütüphanesi, sınırlı sürükle-bırak, çoklu dil'in ertelenmesi vb.) da geriye
 dönük olarak açıklıyor.
 
-**Not:** `docs/test-stratejisi.md`'de bir açık soru var — Lighthouse
+**Not:** `docs/TEST-STRATEJISI.md`'de bir açık soru var — Lighthouse
 kategorilerinde hedeflenen sayısal minimum skorlar netleşmedi.
 
 ---
 
 ## 2026-08-06 — Lighthouse eşiği: dört kategoride de ≥90
 
-**Karar:** `test-stratejisi.md`'deki açık soru çözüldü. Performance,
+**Karar:** `TEST-STRATEJISI.md`'deki açık soru çözüldü. Performance,
 Accessibility, Best Practices ve SEO kategorilerinin dördünde de minimum
 **90/100** hedeflenir.
 
@@ -422,10 +422,10 @@ etti.
 
 ---
 
-## 2026-08-06 — `docs/Mimari.md` oluşturuldu: hosting = Vercel Hobby, render = statik + on-demand ISR
+## 2026-08-06 — `docs/MIMARI.md` oluşturuldu: hosting = Vercel Hobby, render = statik + on-demand ISR
 
 **Karar:** Kullanıcı ile birlikte projenin teknik mimarisi tek dosyada
-(`docs/Mimari.md`) toplandı — framework, dil, stil, backend zaten karara
+(`docs/MIMARI.md`) toplandı — framework, dil, stil, backend zaten karara
 bağlanmıştı (Next.js 15, TypeScript strict, Tailwind, Supabase); bu oturumda
 iki yeni karar eklendi:
 
@@ -441,7 +441,7 @@ iki yeni karar eklendi:
    Tenant siteleri ve platform sahibinin tanıtım sitesi statik üretilir;
    `panel`'den bir kayıt yapıldığında `revalidatePath`/`revalidateTag` ile
    ilgili sayfa yeniden üretilir. `/panel`'in kendisi tamamen dinamik/SSR'dır.
-   Bu, hem Lighthouse ≥90 / LCP 1.5-2sn hedefine (bkz. `test-stratejisi.md`)
+   Bu, hem Lighthouse ≥90 / LCP 1.5-2sn hedefine (bkz. `TEST-STRATEJISI.md`)
    hem de "içerik değişikliği anında yansımalı" gereksinimine aynı anda
    hizmet ediyor.
 
@@ -451,7 +451,7 @@ iki yeni karar eklendi:
 hedefleri, çok kiracılı domain mimarisi) dayanılarak seçildi ve kullanıcı
 tarafından onaylandı.
 
-**Not:** "Gerçek müşteriye canlıya alınmayacak" bilgisi yeni — `durum.md`'ye
+**Not:** "Gerçek müşteriye canlıya alınmayacak" bilgisi yeni — `DURUM.md`'ye
 proje bağlamı olarak eklendi.
 
 ---
@@ -467,7 +467,7 @@ yanlış klasör silindi.
 Taşıma sırasında scaffold edilen sürümün **Next.js 16.3.0** olduğu görüldü —
 önceki karar (2026-08-05, "Teknoloji seçildi") Next.js 15'i belirtiyordu.
 Kullanıcı, zaten kurulu olan 16.3.0 ile devam edilmesine karar verdi; yeniden
-kuruluma gerek yok. `AI-KURALLARI.md`, `Mimari.md` ve `durum.md` "Next.js 16"
+kuruluma gerek yok. `AI-KURALLARI.md`, `MIMARI.md` ve `DURUM.md` "Next.js 16"
 olarak güncellendi.
 
 **Gerekçe:** Yanlış klasöre kurulum, git deposu içermediği için düşük riskliydi
@@ -495,7 +495,7 @@ uygulandı:
   ihtiyaçta (ilk route handler / ilk migration) eklenecek.
 - `npm run build` ile doğrulandı: üç route (`/`, `/panel`, `/_not-found`)
   hatasız derleniyor.
-- `docs/Mimari.md`'ye yeni bir madde (8, "Proje Klasör Yapısı") eklendi — her
+- `docs/MIMARI.md`'ye yeni bir madde (8, "Proje Klasör Yapısı") eklendi — her
   klasörün ne için var olduğunun ayrıntılı gerekçesi burada; ayrıca Stil
   (madde 3) ve Dil (madde 2) bölümlerine gerçek scaffold detayları eklendi:
   **Tailwind CSS v4** (config dosyası yok, `app/globals.css` içinde `@theme`
@@ -503,7 +503,7 @@ uygulandı:
   zaten tanımlı), **ESLint 9 flat config**.
 
 **Gerekçe:** Kullanıcı, klasörlerin fiilen oluşturulmasını ve her birinin
-amacının `Mimari.md`'de belgelenmesini istedi — daha önce sadece planlanmış
+amacının `MIMARI.md`'de belgelenmesini istedi — daha önce sadece planlanmış
 (AI-KURALLARI.md'deki ağaç şeması) bir yapıyı gerçek koda dönüştürme adımı.
 
 ---
@@ -581,7 +581,7 @@ Bu birleştirmenin doğal/zorunlu sonucu olarak her içerik tablosuna bir
 `projects` tablosuna platform sahibinin kullanacağı `live_url` (nullable)
 kolonu eklendi; `contact_sections`'da ayrı bir `whatsapp_number` kolonuna
 gerek kalmadı (WhatsApp butonu aynı `phone` alanından üretilecek).
-Middleware mantığı (`Mimari.md` madde 7) buna göre güncellendi: `Host` →
+Middleware mantığı (`MIMARI.md` madde 7) buna göre güncellendi: `Host` →
 `tenants.domain` eşleşir, satırda `is_platform_owner = true` ise `/panel`
 aktif olur.
 
@@ -621,7 +621,7 @@ policy'siz de olsa açık başlatılması `AI-KURALLARI.md` madde 6.1'in ("RLS
 varsayılan olarak açık tutulur") doğrudan gereği.
 
 **Not:** RLS policy'leri ayrı bir migration'da, panel auth'u kodlanınca
-eklenecek (bkz. `docs/durum.md` sıradaki adım).
+eklenecek (bkz. `docs/DURUM.md` sıradaki adım).
 
 ---
 
@@ -633,7 +633,7 @@ fark edip sorguladı; AI durumu doğrudan kabul etti (kullanıcı istememişti,
 kendi kararıydı). Kullanıcı, aynı bilgiyi (her tablo, alanları, neden öyle
 tasarlandığı) **`docs/VERİ-MODELİ.md`** adıyla, tasarım gerekçelerine daha
 çok ağırlık vererek istedi. `veritabani-semasi.md` silindi (hiç commit
-edilmemişti, kayıp yok); tüm çapraz referanslar (`Mimari.md`, `durum.md`)
+edilmemişti, kayıp yok); tüm çapraz referanslar (`MIMARI.md`, `DURUM.md`)
 `VERİ-MODELİ.md`'ye güncellendi.
 
 **Gerekçe:** Kullanıcı, veritabanı tasarım bilgisini tek, kendi belirlediği
@@ -706,7 +706,7 @@ kurulmadı, bu hâlâ açık bir sonraki adım.
 **Karar:** Kullanıcı gerçekçi demo içeriği (6 hizmet, 8 proje, 4 referans, 5
 SSS, 4 ekip üyesi) istedi. Hizmet ve Proje zaten kapsamdaydı; Referanslar/
 SSS/Ekip Üyeleri ise `PRD.md`'nin mevcut 5 bölümlük kapsamında (Hero,
-Hakkımızda, Hizmetler, Projeler, İletişim) yoktu — `rakip-analizi.md`'de de
+Hakkımızda, Hizmetler, Projeler, İletişim) yoktu — `RAKIP-ANALIZI.md`'de de
 bilinçli olarak "olması gereken 6 bölüm" listesine alınmamışlardı (Referanslar
 3/8 sitede, Ekip 2/8 sitede görülmüş, SSS hiç incelenmemiş).
 
@@ -754,10 +754,200 @@ Doğrulama için geçici bir `app/test-services/page.tsx` sayfası yazıldı;
 karışık) ekranda görüldü — bağlantı uçtan uca çalışıyor.
 
 **Gerekçe:** Kod yazılıp doğrulanmadan "bitti" sayılmaz
-(`test-stratejisi.md`, Definition of Done). Bu adım, önceki oturumda
+(`TEST-STRATEJISI.md`, Definition of Done). Bu adım, önceki oturumda
 yazılmış ama hiç çalıştırılmamış istemci kodunun (kullanıcı `.env.local`
 oluşturmadığı, paket kurulmadığı için) fiilen doğrulanmasını sağladı.
 
 **Not:** `.env.local` gitignore'lu, hiçbir zaman commit'lenmedi/edilmeyecek;
 service role key sohbet geçmişine yazılmadı, kullanıcı dosyayı doğrudan
 kendisi düzenledi (AI-KURALLARI madde 6.4).
+
+---
+
+## 2026-08-07 — RLS okuma/yazma politikaları eklendi (istisnasız tüm tablolar)
+
+**Karar:** Kullanıcı iki net kural verdi: (1) anonim ziyaretçi her tabloda
+sadece `is_published = true` satırları okuyabilsin, ayar tablosunda hangi
+alanların dışarı açıldığına dikkat edilsin; (2) insert/update/delete
+istisnasız sadece kimliği doğrulanmış (authenticated) kullanıcıya açık olsun,
+anon hiçbir koşulda yazamasın. Bu kurallar
+`supabase/migrations/20260807130000_add_rls_policies.sql`'e işlendi (11
+tablonun tamamı, önceki iki migration'daki `enable row level security`
+satırlarının üzerine, ayrı bir migration'da).
+
+**Uygulama detayları:**
+- `site_settings`'in kendi `is_published` kolonu yok (bkz. `VERİ-MODELİ.md`)
+  — anon select policy'si, bağlı `tenants` satırının `is_published`'ına
+  bakan bir `exists (...)` alt sorgusuyla yazıldı.
+- `tenants.contact_recipient_email` (form bildiriminin gideceği operasyonel
+  e-posta) RLS'in satır bazlı olup kolon gizleyemediği için ayrıca
+  `revoke select ... from anon` + `grant select (belirli kolonlar) ...`
+  ile anon'dan tamamen gizlendi. `site_settings.contact_email/contact_phone`
+  ise bilinçli olarak herkese açık bırakıldı — bunlar operasyonel değil,
+  sitede gösterilmesi gereken üstbilgi/altbilgi bilgisi.
+- `authenticated` rolüne (= platform sahibi, tek kullanıcı — bkz.
+  AI-KURALLARI madde 6.3) her tabloda taslak dahil tam okuma + tam
+  insert/update/delete verildi; tenant bazlı bir ayrım yok çünkü sistemde
+  tüm tenant'ları yöneten tek bir kullanıcı var.
+- **İstisna — `contact_messages`:** Ziyaretçi kişisel verisi (ad, telefon,
+  mesaj) içerdiği için anon'a select bile açılmadı, tamamen kilitli. Ama
+  ürün gereksinimi anonim ziyaretçinin iletişim formunu doldurabilmesini
+  gerektiriyor (bkz. `PRD.md`) — bu RLS/anon key üzerinden değil, henüz
+  yazılmamış bir `app/api/contact/` route handler'ı (sunucu tarafı, service
+  role client, RLS'i bypass eder) üzerinden çözülecek. Bu, "anon hiçbir
+  koşulda yazamasın" kuralını bozmuyor; service role anon key'den ayrı bir
+  güven seviyesi.
+
+**Gerekçe:** Kullanıcı, panel auth'u henüz kodlanmamış olsa bile RLS
+politikalarının erken ve eksiksiz tanımlanmasını istedi — güvenlik
+varsayımlarının koda değil şemaya bağlı olması için (`AI-KURALLARI.md`
+madde 6.1).
+
+**Not:** Migration dosyası yazıldı ama henüz gerçek Supabase projesine
+uygulanmadı — kullanıcı SQL Editor'den çalıştıracak (önceki iki migration'la
+aynı akış).
+
+---
+
+## 2026-08-07 — RLS politikaları gerçek veriyle test edildi: anon vs authenticated
+
+**Karar/Olay:** Migration uygulandıktan sonra kullanıcı, anon key ile
+authenticated (giriş yapmış) kullanıcının aynı sorguları çalıştırıp
+sonuçların karşılaştırılmasını istedi. `scripts/test-rls.mjs` yazıldı — iki
+ayrı Supabase client (biri hep anon kalan, biri test kullanıcısıyla sign-in
+yapan) ile `services`/`contact_messages` üzerinde okuma ve yazma denemeleri
+yapıp sonucu karşılaştırıyor.
+
+**Kurulum sürecinde çıkan engeller (ileride benzer kurulumlar için not):**
+- Supabase dashboard'da test kullanıcısı önce yanlış/uyuşmayan şifreyle
+  oluşturulduğu için `signInWithPassword` "Invalid login credentials" hatası
+  verdi — e-posta onay durumu (`Email Confirmed At`) doğruydu, sorun şifrenin
+  dashboard'a ve `.env.local`'e elle iki kez yazılırken farklı girilmesiydi.
+  Kopyala-yapıştır ile (Not Defteri → dashboard → `.env.local`) çözüldü.
+- İlk test çalıştırmasında script'in kendisinde bir hata vardı: aynı
+  `anon` client örneği üzerinde `signInWithPassword` çağrılmıştı — bu, o
+  client'ın oturumunu authenticated'e yükseltiyor, sign-in sonrası "anon"
+  diye kullanılan tüm sorgular aslında authenticated olarak çalışıyordu. Bu
+  yüzden ilk çalıştırmada `contact_messages` anon'a açıkmış ve `services`'e
+  anon insert edilebiliyormuş gibi görünen **yanlış pozitif** sonuçlar
+  alındı. Script, `anonClient`/`authClient` diye iki bağımsız client
+  kullanacak şekilde düzeltildi.
+- Düzeltilmiş script ile 6/6 test "OK": anon sadece `is_published=true`
+  satırları görüyor (services: 3/6), authenticated tümünü görüyor (taslaklar
+  dahil); `contact_messages` anon'a tamamen kapalı (0 satır) ama
+  authenticated görebiliyor; anon insert denemesi RLS tarafından reddedildi
+  ("new row violates row-level security policy"), authenticated insert
+  başarılı oldu ve service role ile temizlendi.
+- İlk (hatalı) çalıştırmada authenticated olarak eklenmiş bir test satırı
+  (`services`, "RLS test - anon insert") temizlenmeden kalmıştı — service
+  role ile ayrıca silindi.
+
+**Gerekçe:** RLS politikalarının sadece migration dosyasında "doğru
+görünmesi" yeterli değil — gerçek anon/authenticated rolleriyle uçtan uca
+test edilmeden "bitti" sayılmaz (`TEST-STRATEJISI.md`, Definition of Done).
+
+**Not:** `scripts/test-rls.mjs` repoda kalıyor, yeniden kullanılabilir bir
+doğrulama aracı (yeni bir tablo/policy eklendiğinde tekrar çalıştırılabilir).
+`.env.local`'deki `TEST_AUTH_EMAIL`/`TEST_AUTH_PASSWORD` geçiciydi, kalıcı
+uygulama config'i değil — kullanıcı isterse silebilir ya da ileride panel
+auth'un gerçek girişi olarak kullanabilir.
+
+---
+
+## 2026-08-07 — Supabase CLI ile şema tipleri üretildi (`types/database.types.ts`)
+
+**Karar:** Kullanıcı, veri çekme kodunun elle yazılan tiplere değil,
+Supabase CLI'nin şemadan ürettiği gerçek tiplere dayanmasını istedi — yanlış
+tablo/kolon adı yazılınca editörün uyarması için. `supabase` paketi
+devDependency olarak kuruldu, `types/database.types.ts` üretildi,
+`lib/supabase/server.ts` (`createClient<Database>`) ve `lib/supabase/queries.ts`
+(elle yazılan `Service` tipi ve `.returns<Service[]>()` cast'i kaldırıldı,
+dönüş tipi artık `select(...)` string'inden otomatik çıkarılıyor) bu tipi
+kullanacak şekilde güncellendi. `package.json`'a `npm run types:generate`
+script'i eklendi (tekrar üretim için).
+
+**Kurulum sürecinde çıkan engeller (önemli — ileride tip yeniden üretilirken
+tekrar yaşanmasın diye kayıt altına alınıyor):**
+1. `supabase link --project-ref ...` CLI'nin bilinen bir hatasına takıldı
+   (Management API'den dönen bir `inserted_at` tarihi CLI'nin beklediği katı
+   regex'e uymuyor — `SchemaError`). CLI zaten en güncel sürümdü (2.112.0),
+   güncelleme çözmedi.
+2. `--db-url` ile doğrudan bağlantı denendi; `db.<ref>.supabase.co` adresi
+   IPv6-only olduğu için kullanıcının ağında DNS çözülemedi (`ENOTFOUND`).
+   **Session pooler** adresine (`aws-X-<bölge>.pooler.supabase.com`, IPv4
+   uyumlu) geçildi.
+3. Pooler bağlantısıyla bu sefer CLI yerel bir Docker container'ı ("shadow
+   database") istedi — kullanıcıda Docker kurulu değildi, ağır bir kurulum
+   olacağı için bu yol terk edildi.
+4. Bunun yerine **Management API + Personal Access Token** yöntemine
+   geçildi: hesap düzeyinde bir access token (`sbp_...`, Dashboard → hesap
+   simgesi → Access Tokens) `SUPABASE_ACCESS_TOKEN` ortam değişkenine
+   atanıp `supabase gen types typescript --project-id <ref>` çalıştırıldı —
+   ne DB bağlantısı ne Docker gerektirdi, bu çözüm işe yaradı.
+5. Token'ı doğru kopyalamak birkaç denemede sorun çıkardı — dashboard,
+   token'ı sadece oluşturulduğu an açık gösteriyor, sonra maskeli (`••••`)
+   gösteriyor; maskeli halin kopyalanması "Invalid access token format"
+   hatası veriyor. Ayrıca VS Code'un entegre terminalinde yapıştırma
+   sırasında bozulma oldu — bağımsız bir PowerShell penceresine geçildi.
+   O pencerede de önce yanlış klasörde (`C:\WINDOWS\System32`) ve bir ara
+   yanlışlıkla cmd.exe'de (`$env:` PowerShell'e özel, cmd'de `set` kullanılır)
+   çalıştırılınca ek hatalar çıktı.
+6. **En son ve en sinsi sorun:** `npx supabase gen types ... > types/database.types.ts`
+   komutu PowerShell 5.1'de çalıştırıldığında, `>` yönlendirmesi (`Out-File`
+   takma adı) dosyayı **UTF-16LE** kodlamasıyla yazdı — terminalde "çıktı
+   vermedi" gibi göründü (aslında sessiz başarıydı) ama üretilen dosya
+   TypeScript/Node için geçersizdi (her karakter arasında null byte). AI
+   tarafında `iconv` ile UTF-8'e çevrilerek düzeltildi. **`npm run
+   types:generate` script'i eklenmesinin sebebi tam olarak bu** — npm
+   script'leri Windows'ta `cmd.exe` üzerinden çalışır, `cmd`'nin `>`
+   yönlendirmesi bu encoding sorununu yaşamıyor; ileride tip yeniden
+   üretilirken ham `npx supabase gen types ... > ...` komutu PowerShell'de
+   doğrudan çalıştırılmamalı, `npm run types:generate` kullanılmalı.
+
+**Gerekçe:** Elle yazılan tipler şema değiştikçe kolayca eskir/hatalı olur;
+CLI'den üretilen tipler her zaman gerçek şemayla birebir eşleşir ve derleme
+zamanında yanlış alan adlarını yakalar.
+
+**Not:** `types/database.types.ts` otomatik üretilir, elle düzenlenmez; şema
+her değiştiğinde `npm run types:generate` ile yeniden üretilmeli.
+
+---
+
+## 2026-08-07 — `docs/GUVENLIK.md` oluşturuldu, tüm docs dosya adları büyük harfe çevrildi
+
+**Karar:** Kullanıcı iki istek verdi: (1) `docs/GUVENLIK.md` adında,
+projenin güvenlik duruşunu tek dosyada toplayan bir referans — beş sabit
+başlıkla (Tehdit modeli, RLS politikaları, Anahtar Yönetimi, Test Sonuçları,
+Yayın öncesi güvenlik kontrol listesi), içeriği projenin en baştan bugüne
+kadarki gelişimine göre doldurulmuş; (2) `docs/` klasöründeki tüm dosya
+adlarının `.md` öncesi kısmının büyük harfe çevrilmesi (ör. `MIMARI.md`).
+
+**Uygulama:**
+- `GUVENLIK.md` yazıldı — tehdit modeli (roller: anon/authenticated/service
+  role, korunan veriler, tehdit-karşılık tablosu), RLS politikaları özeti
+  (2026-08-06 RLS açma + 2026-08-07 policy ekleme kararlarına referansla),
+  anahtar yönetimi tablosu (hangi sır nerede tutuluyor, kim kullanıyor),
+  test sonuçları (2026-08-07 RLS testinin 6/6 "OK" tablosu) ve yayın öncesi
+  kontrol listesi (tamamlanan + henüz açık maddeler, dürüstçe ayrılmış —
+  panel auth, middleware, iletişim formu route'u gibi henüz yapılmamış
+  işler "açık madde" olarak işaretlendi, tamamlanmış gibi gösterilmedi).
+- `git mv` ile 6 dosya yeniden adlandırıldı (geçmiş korunarak):
+  `durum.md`→`DURUM.md`, `Mimari.md`→`MIMARI.md`,
+  `karar-gunlugu.md`→`KARAR-GUNLUGU.md`,
+  `test-stratejisi.md`→`TEST-STRATEJISI.md`,
+  `kurumsal-site-standartlari.md`→`KURUMSAL-SITE-STANDARTLARI.md`,
+  `rakip-analizi.md`→`RAKIP-ANALIZI.md`. `PRD.md`, `AI-KURALLARI.md`,
+  `VERİ-MODELİ.md` zaten büyük harfliydi, değişmedi.
+- Bu 6 isme yapılan **tüm** çapraz referanslar (13 dosyada bulunmuştu:
+  docs içindeki tüm dosyalar, kök `CLAUDE.md`, `lib/supabase/queries.ts`
+  yorumu, iki migration dosyasının yorumları, `content/demo-icerik.md`)
+  `sed` ile toplu güncellendi, ardından tekrar arama yapılarak eski (küçük
+  harfli) referans kalmadığı doğrulandı.
+- `CLAUDE.md`'deki okuma sırasına 7. madde olarak `GUVENLIK.md` eklendi.
+
+**Gerekçe:** Kullanıcının kendi ifadesiyle: "Güvenlik, unutulduğunda fark
+edilmeyen tek konudur. Yazılı kontrol listesi olmadan yayına çıkmak kumar
+oynamaktır." — RLS/anahtar/test bilgisi şu ana kadar `KARAR-GUNLUGU.md`
+içinde dağınık haldeydi (birçok farklı tarihli kayıtta); tek, taranabilir
+bir güvenlik referansı istendi. Dosya adı büyük harf kuralı, projenin geri
+kalanıyla (`PRD.md`, `AI-KURALLARI.md`, `VERİ-MODELİ.md`) tutarlılık için.

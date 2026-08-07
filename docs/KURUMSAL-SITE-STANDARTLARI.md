@@ -2,7 +2,7 @@
 
 Bu notlar, web araştırması yapılarak derlenmiştir (2026-08-05). Amaç: staj projesinde
 web sitesi tasarlarken/geliştirirken referans alınacak bir kriter listesi oluşturmak.
-Aşağıdaki maddeler proje ilerledikçe uygulanıp uygulanmadığı `karar-gunlugu.md`'de
+Aşağıdaki maddeler proje ilerledikçe uygulanıp uygulanmadığı `KARAR-GUNLUGU.md`'de
 işaretlenecek.
 
 ## 1. Performans (Core Web Vitals)

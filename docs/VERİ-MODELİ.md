@@ -5,7 +5,7 @@ Bu dosya, Supabase (Postgres) veritabanındaki her tabloyu, alanlarını ve
 modelinin (hangi bölüm hangi veri alanlarını tutar) somut tablo tasarımıdır.
 Kod içermez — gerçek çalışır SQL
 `supabase/migrations/20260806120000_create_content_tables.sql`'de. Şema
-değişirse önce `karar-gunlugu.md`'ye tarihli bir kayıt düşülür, sonra hem bu
+değişirse önce `KARAR-GUNLUGU.md`'ye tarihli bir kayıt düşülür, sonra hem bu
 dosya hem migration güncellenir.
 
 **Son güncelleme:** 2026-08-07
@@ -15,11 +15,11 @@ dosya hem migration güncellenir.
 KRİTERİ formatında) karşılaştırılıp üç noktada revize edildi (aşağıda
 "Yönergeyle Karşılaştırma" bölümünde). RLS her tabloda açık ama policy'ler
 henüz yazılmadı. **İlk 8 tablo 2026-08-07'de gerçek Supabase projesine
-uygulandı** (bkz. `karar-gunlugu.md`, "İlk migration gerçek Supabase
+uygulandı** (bkz. `KARAR-GUNLUGU.md`, "İlk migration gerçek Supabase
 projesine uygulandı"). Aynı gün, demo içerik ihtiyacıyla **3 yeni tablo**
 (`testimonials`, `faqs`, `team_members`) eklendi — toplam **11 tablo**; bu
 üçü ayrı bir migration'da (`20260807120000_add_testimonials_faqs_team_tables.sql`)
-yazıldı, henüz gerçek projeye uygulanmadı (bkz. `docs/durum.md`).
+yazıldı, henüz gerçek projeye uygulanmadı (bkz. `docs/DURUM.md`).
 
 ## Genel Kararlar ve Gerekçeleri
 
@@ -204,7 +204,7 @@ bilgisini tutar. Ziyaretçinin doldurduğu form `contact_messages`'ta.
 | `message` | text, not null | |
 
 E-posta gönderimi başarısız olsa bile mesaj kaybolmasın diye DB'ye de
-kaydediliyor (bkz. `karar-gunlugu.md`, 2026-08-06).
+kaydediliyor (bkz. `KARAR-GUNLUGU.md`, 2026-08-06).
 
 ### `testimonials` — Referanslar (Liste)
 
@@ -275,4 +275,4 @@ yarısı `is_published = true` yarısı `false`.
 ## Açık Sorular
 
 Şu an aktif açık soru yok. RLS policy metinleri, panel auth'u kodlanınca ayrı
-bir migration'da yazılacak (bkz. `docs/durum.md` sıradaki adım).
+bir migration'da yazılacak (bkz. `docs/DURUM.md` sıradaki adım).
