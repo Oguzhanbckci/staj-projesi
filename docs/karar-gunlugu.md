@@ -688,3 +688,76 @@ commit'lenmemişti, bu yüzden yeniden yazıldı (ayrı bir ALTER migration
 eklenmedi). Kullanıcı ayrıca doğrulama için her tabloya 2 satırlık örnek
 `insert` istedi — `supabase/seed.sql` bu amaçla oluşturuldu (2 tenant üzerinde
 kurulu örnek veri).
+
+---
+
+## 2026-08-07 — İlk migration gerçek Supabase projesine uygulandı
+
+**Karar/Olay:** Kullanıcı supabase.com'da gerçek bir proje oluşturdu,
+`20260806120000_create_content_tables.sql` içeriği SQL Editor'e yapıştırılıp
+çalıştırıldı — hatasız ("Success. No rows returned"). 8 tablo artık gerçek
+veritabanında var. `.env.local` ve `lib/supabase/` istemcileri henüz
+kurulmadı, bu hâlâ açık bir sonraki adım.
+
+---
+
+## 2026-08-07 — Referanslar, SSS, Ekip Üyeleri yeni bölüm olarak eklendi (kapsam genişletildi)
+
+**Karar:** Kullanıcı gerçekçi demo içeriği (6 hizmet, 8 proje, 4 referans, 5
+SSS, 4 ekip üyesi) istedi. Hizmet ve Proje zaten kapsamdaydı; Referanslar/
+SSS/Ekip Üyeleri ise `PRD.md`'nin mevcut 5 bölümlük kapsamında (Hero,
+Hakkımızda, Hizmetler, Projeler, İletişim) yoktu — `rakip-analizi.md`'de de
+bilinçli olarak "olması gereken 6 bölüm" listesine alınmamışlardı (Referanslar
+3/8 sitede, Ekip 2/8 sitede görülmüş, SSS hiç incelenmemiş).
+
+Kullanıcıya önce "içeriği hazırla ama şemaya ekleme" mi yoksa "yeni tablo
+olarak ekle" mi diye soruldu; kullanıcı hazırlanan içerik için gerçek SQL
+`insert` istediğini netleştirince (BAĞLAM/İSTEK/KISITLAR/KABUL KRİTERİ
+formatında bir yönergeyle), **kapsamı resmen genişletmeye** karar verdi.
+
+**Uygulama:**
+- 3 yeni tablo: **`testimonials`** (Referanslar — `references` SQL'de
+  ayrılmış/reserved kelime olduğu için bu ad seçildi), **`faqs`** (SSS),
+  **`team_members`** (Ekip Üyeleri). Üçü de sıralanabilir liste
+  (`order_index`) + yayın kontrollü (`is_published`), `tenant_id` ile
+  `tenants`'a bağlı, aynı `on delete cascade` kuralı.
+- `team_members`, `about_sections` ile aynı kısıta tabi: **platform sahibi bu
+  tabloyu kullanmaz** (anonim kalma kuralı, `PRD.md`).
+- Ayrı bir migration dosyasında yazıldı
+  (`20260807120000_add_testimonials_faqs_team_tables.sql`) — ilk migration
+  zaten gerçek veritabanına uygulanmış olduğu için üstüne yazılmadı, `ALTER`
+  yerine yeni `CREATE TABLE`'lar eklendi.
+- `PRD.md` (madde 3.3, 3.4) ve `VERİ-MODELİ.md` bu 3 tabloyu içerecek şekilde
+  güncellendi; toplam tablo sayısı 8'den 11'e çıktı.
+
+**Gerekçe:** Kullanıcının somut, çalışır SQL isteği (yönerge formatında,
+"şemamla birebir uyumlu, hatasız çalışsın" kabul kriteriyle) var olmayan
+tablolar için mümkün değildi; AI kapsamı sessizce genişletmek yerine önce
+sordu (AI-KURALLARI.md madde 9.4/9.6), kullanıcı onayladı.
+
+---
+
+## 2026-08-07 — Supabase istemcisi kuruldu ve gerçek veriyle doğrulandı
+
+**Karar/Olay:** `.env.local` + `lib/supabase/` istemcileri adımı tamamlandı.
+`@supabase/supabase-js` kuruldu; `lib/supabase/server.ts` (service role
+client) ve `lib/supabase/queries.ts` (`getServices()`) yazıldı. Supabase
+dashboard'daki API sayfa düzeni değişmiş olduğu için Project URL
+`Integrations → Data API`'den, service_role key `Configuration → API
+Keys`'ten alındı (eski "Project Settings → API" tek sayfası artık ikiye
+bölünmüş). İlk denemede Data API sayfasından kopyalanan URL'in sonunda
+`/rest/v1/` yolu da vardı — `@supabase/supabase-js`'in beklediği sadece proje
+kök adresi olduğu için bu kısım elle temizlendi.
+
+Doğrulama için geçici bir `app/test-services/page.tsx` sayfası yazıldı;
+`npm run dev` ile açılıp gerçek seed verisindeki 6 hizmet (yayında/taslak
+karışık) ekranda görüldü — bağlantı uçtan uca çalışıyor.
+
+**Gerekçe:** Kod yazılıp doğrulanmadan "bitti" sayılmaz
+(`test-stratejisi.md`, Definition of Done). Bu adım, önceki oturumda
+yazılmış ama hiç çalıştırılmamış istemci kodunun (kullanıcı `.env.local`
+oluşturmadığı, paket kurulmadığı için) fiilen doğrulanmasını sağladı.
+
+**Not:** `.env.local` gitignore'lu, hiçbir zaman commit'lenmedi/edilmeyecek;
+service role key sohbet geçmişine yazılmadı, kullanıcı dosyayı doğrudan
+kendisi düzenledi (AI-KURALLARI madde 6.4).

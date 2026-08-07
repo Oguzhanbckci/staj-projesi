@@ -6,7 +6,7 @@ yapılacağını" (özellik kapsamı), bu dosya "nasıl yapılacağını" (tekni
 seçimler) tanımlar. Kod içermez. Karar değişirse önce `karar-gunlugu.md`'ye
 kayıt düşülür, sonra bu dosya güncellenir.
 
-**Son güncelleme:** 2026-08-06
+**Son güncelleme:** 2026-08-07
 
 ## 0. Bağlam
 
@@ -72,6 +72,23 @@ Sorgular bileşen içine yazılmaz, `lib/supabase/` altındaki fonksiyonlar
 
 Tablo/kolon tasarımı için tek referans: **`docs/VERİ-MODELİ.md`**.
 
+### 4.1 Ortam Değişkenleri
+
+Şablon dosya: **`.env.local.example`** (commit'li, sadece değişken adlarını
+gösterir). Gerçek değerleri içeren **`.env.local`** `.gitignore`'da (`.env*`
+kuralı) — **asla commit'lenmez**, her geliştirici kendi makinesinde kendisi
+oluşturur.
+
+| Değişken | Nereden alınır | Not |
+|---|---|---|
+| `NEXT_PUBLIC_SUPABASE_URL` | Supabase dashboard → **Integrations → Data API** → Project URL | Kopyalanan adresin sonunda `/rest/v1/` geliyorsa silinmeli — `@supabase/supabase-js` sadece kök adresi bekler, yolu kendisi ekler. |
+| `SUPABASE_SERVICE_ROLE_KEY` | Supabase dashboard → **Configuration → API Keys** → `service_role` (secret) | RLS'i bypass eder, yalnızca `lib/supabase/server.ts` gibi sunucu tarafı kodda kullanılır; `NEXT_PUBLIC_` öneki yoktur, tarayıcıya asla gönderilmez (bkz. `AI-KURALLARI.md` madde 6.4). |
+
+**Not:** Supabase, panel arayüzünü yakın zamanda değiştirdi — eski
+"Project Settings → API" tek sayfası artık "Integrations → Data API"
+(URL için) ve "Configuration → API Keys" (anahtarlar için) olarak ikiye
+bölünmüş durumda.
+
 ## 5. Hosting
 
 **Vercel, Hobby (ücretsiz) plan.**
@@ -133,6 +150,9 @@ scaffold'ı (`create-next-app`, 2026-08-06) kurulduktan sonra oluşturuldu.
     eklenecek.
   - **`app/api/`** — henüz oluşturulmadı; ilk route handler (ör. iletişim
     formu → e-posta gönderimi, bkz. `PRD.md`) eklendiğinde açılacak.
+  - **`app/test-services/`** — geçici doğrulama sayfası (2026-08-07), Supabase
+    bağlantısının gerçek veriyle çalıştığını göstermek için yazıldı. Gerçek
+    Hizmetler bölüm bileşeni (`components/site/`) yazılınca silinecek.
 - **`components/`** — React bileşenleri, ikiye ayrılır:
   - **`components/ui/`** — sayfa/tema bağımsız genel UI parçaları (buton,
     input, kart vb.) — henüz boş, `panel` ve `(site)` inşa edilirken
@@ -143,18 +163,22 @@ scaffold'ı (`create-next-app`, 2026-08-06) kurulduktan sonra oluşturuldu.
     yazılacak.
 - **`lib/`** — sunucu/iş mantığı yardımcıları:
   - **`lib/supabase/`** — client/server Supabase istemcileri ve sorgu
-    fonksiyonları (bkz. madde 4). Henüz boş; Supabase projesi kurulunca
-    dolacak.
+    fonksiyonları (bkz. madde 4). `server.ts` (service role client) ve
+    `queries.ts` (`getServices()`) yazıldı ve gerçek veriyle doğrulandı
+    (2026-08-07); tarayıcı tarafı client (`client.ts`, panel auth için)
+    henüz yok.
   - **`lib/utils.ts`** — genel yardımcı fonksiyonlar (tarih/metin formatlama
     vb.). Henüz placeholder.
 - **`types/`** — paylaşılan TypeScript tipleri (`Tenant`, `Section`, `Theme`
   vb. — veri modeli Supabase şeması tasarlanınca netleşecek). Henüz
   placeholder.
-- **`supabase/migrations/`** — `20260806120000_create_content_tables.sql`
-  (8 tablo, RLS açık ama henüz policy yok — bkz. `VERİ-MODELİ.md`).
-  `supabase/seed.sql` — her tablo için 2 satırlık doğrulama verisi. Henüz
-  gerçek bir Supabase projesine uygulanmadı (proje henüz kurulmadı, bkz.
-  `docs/durum.md` sıradaki adım).
+- **`supabase/migrations/`** — iki dosya: `20260806120000_create_content_tables.sql`
+  (8 tablo) ve `20260807120000_add_testimonials_faqs_team_tables.sql`
+  (`testimonials`, `faqs`, `team_members` — bkz. `karar-gunlugu.md`,
+  2026-08-07). Toplam 11 tablo, RLS açık ama henüz policy yok (bkz.
+  `VERİ-MODELİ.md`). Her ikisi de gerçek Supabase projesine uygulandı;
+  `supabase/seed.sql` (11 tablonun tamamı için gerçekçi demo veri) de
+  çalıştırıldı — veritabanı dolu.
 - **`public/`** — statik dosyalar. Şu an sadece `create-next-app`'in
   varsayılan SVG'leri var (`next.svg`, `vercel.svg` vb.); gerçek
   marka/portfolyo görselleri eklenince temizlenecek.

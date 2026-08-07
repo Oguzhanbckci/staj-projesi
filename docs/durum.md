@@ -8,7 +8,7 @@ mimari: framework/dil/stil/backend/hosting/render), `test-stratejisi.md`'yi
 (Supabase tablo/kolon tasarımı + gerekçeler), gerekirse `karar-gunlugu.md`'yi
 (tarihli, hiç silinmeyen karar geçmişi) oku.
 
-**Son güncelleme:** 2026-08-06
+**Son güncelleme:** 2026-08-07
 
 ## Proje bağlamı
 
@@ -114,19 +114,49 @@ Sonuç: **8 tablo** (`tenants`, `site_settings`, `hero_sections`,
 tabloda açık, policy henüz yok) + `supabase/seed.sql` (her tabloya 2 satırlık
 doğrulama verisi). Detay: `docs/VERİ-MODELİ.md`.
 
+**Gerçek Supabase projesi kuruldu + ilk migration uygulandı (2026-08-07):**
+Kullanıcı supabase.com'da gerçek bir proje oluşturdu, `supabase/migrations/
+20260806120000_create_content_tables.sql` içeriği SQL Editor'e yapıştırılıp
+çalıştırıldı — hatasız ("Success. No rows returned"), 8 tablo artık gerçek
+veritabanında var. `.env.local` ve `lib/supabase/` istemcileri henüz kurulmadı.
+
+**Kapsam genişletildi: Referanslar, SSS, Ekip Üyeleri (2026-08-07):**
+Kullanıcı gerçekçi demo içeriği istedi (6 hizmet, 8 proje, 4 referans, 5 SSS,
+4 ekip üyesi) — Referanslar/SSS/Ekip Üyeleri PRD kapsamında yoktu, kullanıcı
+onayıyla yeni bölüm olarak eklendi (bkz. `karar-gunlugu.md`). 3 yeni tablo
+(`testimonials`, `faqs`, `team_members`) ayrı bir migration'da yazıldı:
+`supabase/migrations/20260807120000_add_testimonials_faqs_team_tables.sql`.
+Toplam tablo sayısı: **11**.
+
+**Migration + demo verisi gerçek projeye uygulandı (2026-08-07):** İki
+migration da (8 tablo + 3 tablo) ve güncellenmiş `supabase/seed.sql` (11
+tablonun tamamı, Akme İnşaat için gerçekçi içerik — 6 hizmet, 8 proje, 4
+referans, 5 SSS, 4 ekip üyesi; insan-okunur hâli `content/demo-icerik.md`'de)
+SQL Editor'den sırayla çalıştırıldı, sonunda "Success". Veritabanı artık
+gerçek/gerçekçi demo veriyle dolu.
+
+**Supabase istemcisi kuruldu + gerçek veriyle doğrulandı (2026-08-07):**
+`@supabase/supabase-js` paketi kuruldu (`package.json`'a `^2.112.2` olarak
+eklendi). `lib/supabase/server.ts` (service role client — RLS bypass eder,
+yalnızca sunucu tarafında kullanılır) ve `lib/supabase/queries.ts`
+(`getServices()` sorgu fonksiyonu) yazıldı. `.env.local` (gitignore'lu, gerçek
+Supabase Project URL + service_role key ile) ve `.env.local.example` (şablon,
+commit'li) oluşturuldu. Doğrulama için geçici bir `app/test-services/page.tsx`
+sayfası yazıldı — `npm run dev` ile açılıp gerçek seed verisi (6 hizmet,
+yayında/taslak karışık) ekranda görüldü, bağlantı çalışıyor. Bu test sayfası
+geçici; gerçek Hizmetler bölüm bileşeni (`components/site/`) yazılınca
+silinecek.
+
 ## Sıradaki adım
 
 1. Vitest ve Playwright'ı kur (bkz. `test-stratejisi.md`).
-2. Gerçek bir Supabase projesi oluştur (supabase.com), migration'ı ona
-   uygula (`supabase link` + `supabase db push`, veya SQL editöründen
-   yapıştır); `lib/supabase/` istemcilerini kur.
-3. Panel auth'u (Supabase Auth, platform sahibi girişi) kodlanınca RLS
+2. Panel auth'u (Supabase Auth, platform sahibi girişi) kodlanınca RLS
    policy'lerini ayrı bir migration'da ekle.
-4. Hazır bölüm kütüphanesindeki ilk bileşenleri (Hero, İletişim gibi en sık
+3. Hazır bölüm kütüphanesindeki ilk bileşenleri (Hero, İletişim gibi en sık
    görülenlerden başlayarak) `components/site/` altına kodla + birim
    testlerini yaz; en az bir örnek "demo" (bölüm kombinasyonu + örnek içerik)
-   hazırla.
-5. Site tasarımı ilerledikçe `kurumsal-site-standartlari.md`'deki kontrol listesini
+   hazırla. Bu adımda `app/test-services/page.tsx` geçici sayfası silinecek.
+4. Site tasarımı ilerledikçe `kurumsal-site-standartlari.md`'deki kontrol listesini
    madde madde işaretle.
 
 ## Açık sorular

@@ -1,0 +1,18 @@
+import { createClient } from "@supabase/supabase-js";
+
+// RLS'i bypass eder — yalnızca sunucu tarafında (Server Component, Route
+// Handler) çağrılır. Tarayıcıya asla import edilmemeli.
+export function createServiceRoleClient() {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+  if (!supabaseUrl || !serviceRoleKey) {
+    throw new Error(
+      "Supabase ortam değişkenleri eksik — .env.local dosyasını kontrol et (bkz. .env.local.example)."
+    );
+  }
+
+  return createClient(supabaseUrl, serviceRoleKey, {
+    auth: { persistSession: false },
+  });
+}
