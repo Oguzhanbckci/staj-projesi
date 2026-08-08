@@ -5,11 +5,13 @@ Yeni bir oturuma başlarken önce bu dosyayı (güncel durum), sonra `PRD.md`'yi
 (özellik bazlı yapılacak/yapılmayacak referansı), `MIMARI.md`'yi (teknik
 mimari: framework/dil/stil/backend/hosting/render), `TEST-STRATEJISI.md`'yi
 (test yaklaşımı, kalite eşikleri, "bitti" tanımı) ve `VERİ-MODELİ.md`'yi
-(Supabase tablo/kolon tasarımı + gerekçeler) ve `GUVENLIK.md`'yi (tehdit
-modeli, RLS politikaları, anahtar yönetimi, güvenlik kontrol listesi),
-gerekirse `KARAR-GUNLUGU.md`'yi (tarihli, hiç silinmeyen karar geçmişi) oku.
+(Supabase tablo/kolon tasarımı + gerekçeler), `GUVENLIK.md`'yi (tehdit
+modeli, RLS politikaları, anahtar yönetimi, güvenlik kontrol listesi) ve
+`TASARIM-SISTEMI.md`'yi (renk/tipografi/boşluk/köşe/gölge token'ları,
+kontrast doğrulaması), gerekirse `KARAR-GUNLUGU.md`'yi (tarihli, hiç
+silinmeyen karar geçmişi) oku.
 
-**Son güncelleme:** 2026-08-07
+**Son güncelleme:** 2026-08-08
 
 ## Proje bağlamı
 
@@ -185,18 +187,44 @@ referanslar (bu dosya dahil, `CLAUDE.md`, kod içindeki yorumlar) güncellendi.
 `PRD.md`, `AI-KURALLARI.md`, `VERİ-MODELİ.md` zaten büyük harfliydi,
 değişmedi.
 
+**2026-08-07 oturumu commit'lenip push'landı:** Bugünkü tüm iş (RLS
+politikaları, Supabase şema tipleri, `GUVENLIK.md`, docs isimlendirme) 3
+ayrı commit'te (`90fcd9c`, `f5c6c3b`, `bd87ec6`) `main`'e push'landı,
+`git status` temiz. `npm run build` hatasız geçti — bu doğrulama tamamlandı.
+
+**Tasarım sistemi kuruldu (2026-08-08):** Dışarıdan gelen tasarım
+yönergeleri (renk paleti + tipografi/boşluk/köşe/gölge ölçekleri) üzerine
+`docs/TASARIM-SISTEMI.md` oluşturuldu ve `app/globals.css`'e kodlandı
+(Tailwind v4 `@theme`/`@theme inline`, config dosyası yok). Kapsam: 1 marka
+rengi (varsayılan, tenant'a göre değişebilir) + 7 adımlı nötr gri ölçeği +
+3 semantik renk (başarı/uyarı/hata), hepsi açık/koyu tema karşılığıyla;
+16px taban + 1.25 oranlı tipografi ölçeği (caption + gövde + h1-h6); 4px
+ritimli boşluk ölçeği (Tailwind varsayılanıyla zaten örtüşüyor, ek kod
+gerekmedi); köşe yarıçapı ve gölge seviyeleri (açık/koyu tema ayrı gölge
+değerleriyle). Tüm metin/zemin çiftleri WCAG AA (gövde ≥4.5:1, büyük
+başlık ≥3:1) için hesaplanıp doğrulandı — 36/36 çift geçti, detay ve
+gerekçe `TASARIM-SISTEMI.md`'de. Tema, `prefers-color-scheme` yerine
+`[data-theme="dark"]`'a bağlandı çünkü `tenants.theme_mode` panelden
+seçilen açık bir ayar (VERİ-MODELİ.md), tarayıcı tercihi değil.
+
+Token'lar henüz hiçbir gerçek bileşende kullanılmıyor — `components/site/`
+hâlâ boş, `app/(site)/page.tsx` hâlâ `create-next-app` scaffold'ı. Bu iş,
+sıradaki adım 3'ün (ilk bölüm bileşenleri) önkoşulu; `npm run build`
+hatasız geçti, henüz commit'lenmedi.
+
 ## Sıradaki adım
 
-1. `npm run build` ile bu değişikliklerin (tipli client, iki yeni migration)
-   hâlâ hatasız derlendiğini doğrula.
+1. Bugünkü tasarım sistemi işini (`TASARIM-SISTEMI.md` + `globals.css` +
+   bu dosya + `CLAUDE.md`) commit'le.
 2. Vitest ve Playwright'ı kur (bkz. `TEST-STRATEJISI.md`).
 3. Panel auth'u (Supabase Auth, platform sahibi girişi) kodla — test için
    oluşturulan kullanıcı bunun için gerçek giriş olarak kullanılabilir veya
    silinip yeniden oluşturulabilir.
 4. Hazır bölüm kütüphanesindeki ilk bileşenleri (Hero, İletişim gibi en sık
-   görülenlerden başlayarak) `components/site/` altına kodla + birim
-   testlerini yaz; en az bir örnek "demo" (bölüm kombinasyonu + örnek içerik)
-   hazırla. Bu adımda `app/test-services/page.tsx` geçici sayfası silinecek.
+   görülenlerden başlayarak) `components/site/` altına, artık kurulu olan
+   `TASARIM-SISTEMI.md` token'larını kullanarak kodla + birim testlerini
+   yaz; en az bir örnek "demo" (bölüm kombinasyonu + örnek içerik) hazırla.
+   Bu adımda `app/test-services/page.tsx` geçici sayfası silinecek.
 5. İletişim formu için `app/api/contact/` route handler'ı yaz (service role
    ile `contact_messages`'a insert + e-posta gönderimi).
 6. Site tasarımı ilerledikçe `KURUMSAL-SITE-STANDARTLARI.md`'deki kontrol listesini

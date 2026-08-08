@@ -14,3 +14,5 @@ bir oturuma başlarken şu sırayla oku:
    çalışma ilkeleri (terminal komutlarını kullanıcı çalıştırır, AI açıklar).
 7. `docs/GUVENLIK.md` — tehdit modeli, RLS politikaları, anahtar yönetimi,
    test sonuçları, yayın öncesi güvenlik kontrol listesi.
+8. `docs/TASARIM-SISTEMI.md` — renk/tipografi/boşluk/köşe/gölge token'ları,
+   kontrast doğrulama sonuçları, tema (açık/koyu) ilkeleri.

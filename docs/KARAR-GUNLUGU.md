@@ -951,3 +951,69 @@ oynamaktır." — RLS/anahtar/test bilgisi şu ana kadar `KARAR-GUNLUGU.md`
 içinde dağınık haldeydi (birçok farklı tarihli kayıtta); tek, taranabilir
 bir güvenlik referansı istendi. Dosya adı büyük harf kuralı, projenin geri
 kalanıyla (`PRD.md`, `AI-KURALLARI.md`, `VERİ-MODELİ.md`) tutarlılık için.
+
+---
+
+## 2026-08-08 — `docs/TASARIM-SISTEMI.md` oluşturuldu, görsel token sistemi kuruldu
+
+**Karar:** Kullanıcı dışarıdan gelen tasarım yönergeleriyle çalışırken,
+tasarım kararlarının yazılı olmaması durumunda her sayfada yeniden
+tartışılıp ürünün dağılacağını belirtti — tema sisteminin bu token'lar
+üzerine kurulacağını da ekleyerek `docs/TASARIM-SISTEMI.md` oluşturulmasını
+istedi. Dosya, üç ayrı yönerge turunda (renk paleti; tipografi/boşluk/
+köşe/gölge; nihai BAĞLAM/İSTEK/KISITLAR/KABUL KRİTERİ formatında gelen
+netleştirme) üretilen tüm görsel token kararlarını tek referansta topluyor.
+
+**Uygulama:**
+- **Renk paleti:** 1 marka rengi (217° hue, çelik-mavi — varsayılan,
+  `site_settings.primary_color` ile tenant başına değişebilir), 7 adımlı
+  nötr gri ölçeği (aynı hue, %14 doygunluk — "marka rengine hafif eğilim"
+  isteği için), 3 semantik renk (başarı/uyarı/hata — `info` kullanıcının
+  son netleştirmesiyle kapsam dışı bırakıldı), yüzey ve metin renkleri.
+  Hepsi açık/koyu tema karşılığıyla ayrı ayrı tanımlandı.
+- **Kontrast doğrulama:** WCAG 2.1 relative-luminance formülüyle (AI
+  tarafından yazılan geçici bir Node script'i, repoya eklenmedi) 36
+  metin/zemin çifti hesaplandı — gövde metni ≥4.5:1, büyük başlık ≥3:1
+  eşiklerinin **tamamı geçti** (en düşük marj 4.72:1). İlk taslakta iki
+  değer sınırda kalmıştı (`neutral-500` 4.53:1, `warning-dark` 4.60:1) —
+  kullanıcıya sorulmadan, daha güvenli marj bırakmak için hafifçe
+  koyulaştırılıp yeniden doğrulandı.
+- **Tipografi ölçeği:** 16px taban, 1.25 oran (Major Third) — modüler
+  ölçek `caption` + `text-base` (gövde) + `h6`→`h1`. Satır yüksekliği
+  boyut büyüdükçe daralıyor (1.6→1.1); font ağırlığı en fazla 700'de
+  sınırlandı (Lighthouse Performance ≥90 hedefi için daha az font dosyası).
+- **Boşluk ölçeği:** Kullanıcının verdiği 4/8/12/16/24/32/48/64 değerleri
+  Tailwind v4'ün varsayılan 4px'lik spacing çarpanıyla birebir örtüştüğü
+  için ayrı bir token eklenmedi — sadece px→Tailwind utility eşleştirme
+  tablosu dokümante edildi.
+- **Köşe yarıçapı ve gölge:** Boşluk ölçeğiyle aynı 4px ritmine hizalı
+  4 adımlı radius skalası (Tailwind'in kendi sm/md/lg/xl'i bu ritme
+  uymadığı için override edildi); açık temada palet renginden (neutral-900)
+  türetilen, koyu temada ayrı (daha opak siyah) gölge seviyeleri —
+  koyu temada asıl "yükselti" sinyali `surface`→`surface-raised` zemin
+  geçişi, gölge ikincil.
+- **Kod:** Tüm token'lar `app/globals.css`'e Tailwind v4 CSS-first
+  `@theme`/`@theme inline` sözdizimiyle eklendi (`tailwind.config.js`
+  yok, bkz. `MIMARI.md` madde 3). Tema `@media (prefers-color-scheme)`
+  değil `[data-theme="dark"]` seçicisiyle yönetiliyor — çünkü
+  `tenants.theme_mode` panelden seçilen açık bir ayar, tarayıcı tercihi
+  değil (`VERİ-MODELİ.md`). Sözdizimi doğruluğu, kurulu Tailwind
+  sürümünün (`4.3.3`) kendi `theme.css`'i incelenerek ve `text-h1`/
+  `rounded-lg`/`shadow-md`/`text-caption` sınıfları geçici olarak
+  `app/(site)/page.tsx`'e eklenip derlenmiş CSS çıktısı kontrol edilerek
+  (sonra geri alınarak) doğrulandı. `npm run build` her adımda hatasız
+  geçti.
+- `CLAUDE.md`'nin okuma sırasına 8. madde olarak `TASARIM-SISTEMI.md`
+  eklendi; `docs/DURUM.md`'nin baştaki okuma listesi ve "Sıradaki adım"ı
+  güncellendi.
+
+**Gerekçe:** Tasarım kararları (renk, tipografi, boşluk, radius, gölge)
+kod içine dağınık/hardcoded yazılırsa hem tutarsızlık hem de gelecekteki
+tema/marka rengi değişikliklerinde (tenant özelleştirmesi) her yeri tek
+tek bulup değiştirme riski doğar — `AI-KURALLARI.md` madde 5'teki "tema/
+renk/metin gibi içerik değerlerini kod içine sabit yazma" kuralının görsel
+token'lara doğal bir genişlemesi.
+
+**Not:** Token'lar henüz hiçbir gerçek bileşende kullanılmıyor
+(`components/site/` hâlâ boş) — bu iş, ilk bölüm bileşenlerinin (Hero,
+İletişim) önkoşulu olarak yapıldı, onların yerine geçmiyor.
