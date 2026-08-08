@@ -245,31 +245,65 @@ data-theme="dark" style="--color-brand:#24a8a4;...">` doğru şekilde geldi,
 gerçek veriden geldiği doğrulandı (bir tanı script'iyle DB'nin doğru veriyi
 döndürdüğü de ayrıca teyit edildi, sonra script silindi). Bu bulgu ve
 prod'daki karşılığı (mimaride zaten var olan on-demand ISR,
-`revalidatePath`/`revalidateTag`) `TEMA-MIMARISI.md` madde 6'ya eklendi.
-`npm run build` hatasız geçti, henüz commit'lenmedi.
+`revalidatePath`/`revalidateTag`) `TEMA-MIMARISI.md` madde 6'ya eklendi. Bu
+iş commit'lendi (`edac6ac`).
+
+**İlk `components/ui/` bileşenleri kuruldu (2026-08-08):** `Button`
+(primary/secondary/ghost × sm/md/lg, `disabled`/`isLoading`, gerçek
+`<button>`), `Container`, `SectionHeader` (`headingLevel` dışarıdan
+verilir), `TextField`/`TextareaField`/`SelectField` (label/hata/yardım
+metni, `useId()` ile otomatik `htmlFor`/`id` bağı). Hepsi Server Component,
+≤60 satır, token class'larıyla (hardcoded renk yok). Geçici vitrin:
+`app/test-components/page.tsx`. Klavye ile doğrulandı (Tab sırası, odak
+halkası, devre dışı buton atlanıyor). Kod ve kurallar
+`docs/TASARIM-SISTEMI.md` madde 8-9'a işlendi. Bu iş commit'lendi.
+
+**Hero bölümü + varyant deseni + Navbar kuruldu (2026-08-08, aynı gün):**
+`components/site/hero/` — `types.ts` (veri arayüzü + `HeroVariant` union),
+`HeroVariantA`/`B` (aynı veri, farklı düzen), `registry.ts`
+(`Record<HeroVariant, Component>` — varyant seçimi tek burada çözülüyor),
+`Hero.tsx` (çözümleyici). Yeni bölüm eklemek: 4 adım (types → varyant
+bileşeni → registry satırı → resolver/sorgu), bkz. sohbet geçmişi.
+`components/site/Navbar.tsx` + `MobileMenu.tsx` (kaydırınca zemin
+değişimi, mobilde hamburger menü — odak tuzağı, Escape ile kapanma, body
+scroll kilidi, kapanınca odak tetikleyiciye döner). Yeni:
+`components/ui/LinkButton.tsx` (CTA'lar gezinme olduğu için gerçek `<a>`,
+`Button`'a asChild eklenmedi), `lib/supabase/storage.ts` (`*_path` →
+gerçek Storage URL'i), `next.config.ts`'e `images.remotePatterns`
+(Supabase Storage host'u, `next/image` için zorunlu). Geçici doğrulama:
+`app/test-sections/page.tsx` (Navbar + Hero, varyant A/B arası canlı geçiş
+butonu). Yol boyunca 2 gerçek hata bulundu ve düzeltildi: `Container`'da
+boş interface (ESLint), demo sayfasında iki varyantı üst üste
+gösterirken oluşan `id="hero"` çakışması (geçersiz HTML — toggle'a
+çevrilerek çözüldü). `npm run build`/`lint` temiz, henüz commit'lenmedi.
+
+Yeni bir migration yazıldı: `supabase/migrations/
+20260808140000_add_hero_variant_and_secondary_cta.sql`
+(`hero_sections.variant` + `secondary_cta_text`/`secondary_cta_link`) —
+**henüz gerçek Supabase projesine uygulanmadı.**
 
 ## Sıradaki adım
 
-1. Bugünkü tema mimarisi işini (`TEMA-MIMARISI.md`, `lib/theme/`,
-   `lib/supabase/queries.ts` + `server.ts`, `app/layout.tsx`, yeni
-   migration, güncellenmiş `seed.sql`/`types/database.types.ts`/
-   `VERİ-MODELİ.md`, `CLAUDE.md`) commit'le.
-2. Vitest ve Playwright'ı kur (bkz. `TEST-STRATEJISI.md`).
-3. Panel auth'u (Supabase Auth, platform sahibi girişi) kodla — test için
-   oluşturulan kullanıcı bunun için gerçek giriş olarak kullanılabilir veya
-   silinip yeniden oluşturulabilir.
-4. Hazır bölüm kütüphanesindeki ilk bileşenleri (Hero, İletişim gibi en sık
-   görülenlerden başlayarak) `components/site/` altına, artık kurulu olan
-   `TASARIM-SISTEMI.md`/`TEMA-MIMARISI.md` token'larını kullanarak kodla +
-   birim testlerini yaz; en az bir örnek "demo" (bölüm kombinasyonu +
-   örnek içerik) hazırla. Bu adımda `app/test-services/page.tsx` geçici
-   sayfası silinecek.
-5. İletişim formu için `app/api/contact/` route handler'ı yaz (service role
+1. Bugünkü Hero/Navbar/varyant deseni işini commit'le.
+2. Yeni migration'ı (`20260808140000_add_hero_variant_and_secondary_cta.sql`)
+   Supabase SQL Editor'de çalıştır, sonra `npm run types:generate` ile
+   tipleri yenile; ardından `getHeroSection()`'ı `createServiceRoleClient()`'e
+   taşı (bkz. `lib/supabase/queries.ts` yorumu — `theme_preset`'te
+   yapılan aynı adım).
+3. Vitest ve Playwright'ı kur (bkz. `TEST-STRATEJISI.md`) — hâlâ yarım
+   kalmış bir kurulum, `npm install` adımları henüz çalıştırılmadı.
+4. Panel auth'u (Supabase Auth, platform sahibi girişi) kodla.
+5. Kalan bölümleri (Hakkımızda, Hizmetler, Projeler, İletişim, Referanslar,
+   SSS, Ekip Üyeleri) Hero'daki desene göre `components/site/` altına
+   kodla; gerçek bir sayfa kompozisyonunda (Navbar + bölümler) birleştir
+   — şu an her bölüm/parça ayrı geçici sayfalarda izole test ediliyor,
+   henüz gerçek bir sayfa yok. Bu adımda `app/test-services/page.tsx`
+   geçici sayfası silinecek.
+6. İletişim formu için `app/api/contact/` route handler'ı yaz (service role
    ile `contact_messages`'a insert + e-posta gönderimi).
-6. Site tasarımı ilerledikçe `KURUMSAL-SITE-STANDARTLARI.md`'deki kontrol listesini
+7. Site tasarımı ilerledikçe `KURUMSAL-SITE-STANDARTLARI.md`'deki kontrol listesini
    madde madde işaretle.
-7. Panelden preset seçimi (dropdown → `site_settings.theme_preset`
-   güncelleme) arayüzü, panel auth'tan sonra ele alınacak.
+8. Panelden preset/varyant seçimi arayüzü, panel auth'tan sonra ele alınacak.
 
 ## Açık sorular
 

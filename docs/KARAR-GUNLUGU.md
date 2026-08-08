@@ -1164,3 +1164,136 @@ eski görünüyor) tekrar yaşanmasına yol açardı.
 **Not:** Platform sahibinin gerçek tanıtım sitesi içeriği (hero/services/
 projects/contact) hâlâ yok — bu ekleme sadece `theme_preset`
 doğrulaması içindi, kapsamı genişletmiyor (bkz. `DURUM.md`).
+
+---
+
+## 2026-08-08 — İlk `components/ui/` bileşenleri: Button, Container, SectionHeader, form alanları
+
+**Karar:** Kullanıcı BAĞLAM/İSTEK/KISITLAR/KABUL KRİTERİ formatında bir
+yönergeyle, yeniden kullanılabilir genel UI bileşenleri istedi: `Button`
+(primary/secondary/ghost × sm/md/lg, devre dışı/yükleniyor durumları,
+gerçek `<button>`), bir kap (`Container`) bileşeni, bölüm başlığı
+(`SectionHeader`, başlık seviyesi dışarıdan verilebilir), ve etiket/hata/
+yardım metni destekli form alanları (metin, çok satır, seçim kutusu).
+Kısıt: varyant/boyut TypeScript ile tip güvenli, `asChild`/polymorphic
+karmaşıklığı yok, renkler token class'larıyla, odak halkası klavye
+kullanıcısına görünür, kod 60 satırı geçmesin, aşırı soyutlama yapılmasın.
+
+**Uygulama:**
+- 6 bileşen `components/ui/`'a eklendi (`Button.tsx` 57 satır,
+  `Container.tsx` 17, `SectionHeader.tsx` 37, `SelectField.tsx` 51,
+  `TextField.tsx` 50, `TextareaField.tsx` 49) — hepsi Server Component
+  (state/etkileşim gerekmiyor, `"use client"` yok), hepsi native HTML
+  elementi (`<button>`, `<input>`, `<textarea>`, `<select>`) kullanıyor.
+- Form alanları arasında ortak markup (etiket/hata/yardım metni kalıbı)
+  olmasına rağmen **bilinçli olarak** paylaşılan bir soyutlamaya
+  çıkarılmadı — kullanıcının "aşırı soyutlama yapma" isteğiyle tutarlı,
+  her dosya kendi başına okunabilir kaldı.
+- Etiket-alan bağı `useId()` ile otomatik `htmlFor`/`id`; hata/yardım
+  metni `aria-describedby` ile bağlı, hata `role="alert"` taşıyor.
+- `Button`'da yükleniyor durumu `aria-busy` + görünmez (`sr-only`) metinle
+  ekran okuyucuya bildiriliyor; devre dışı durum native `disabled` ile
+  (ek kod gerekmiyor — hem tıklamayı engelliyor hem tab sırasından
+  çıkarıyor).
+- Odak halkası `focus-visible:ring-2 focus-visible:ring-brand` — sadece
+  klavye odağında görünür, mouse tıklamasında çıkmıyor.
+- Geçici vitrin sayfası: `app/test-components/page.tsx` (tüm bileşenler,
+  tüm varyantlarıyla) — klavye ile (Tab, odak halkası, devre dışı
+  butonun atlanması) doğrulandı, derlenmiş HTML çıktısından teyit edildi
+  (`disabled=""`, `aria-busy` doğru değerlerle).
+- `docs/TASARIM-SISTEMI.md`'ye madde 8 (Bileşen Envanteri, tablo) ve
+  madde 9 (Bileşen API Kuralları, 9 madde + klavye doğrulama adımları)
+  eklendi.
+
+**Gerekçe:** Kullanıcının kendi ifadesiyle önemli bir aşama — tasarım
+sisteminin (token'lar) ilk kez gerçek, yeniden kullanılabilir bileşenlere
+dönüştüğü an. Kuralların (native element, token renk, görünür odak,
+etiket bağı) yazılı hale getirilmesi, ileride yazılacak her yeni
+bileşenin aynı standarda uymasını sağlıyor.
+
+---
+
+## 2026-08-08 — Hero bölümü + varyant deseni + Navbar/MobileMenu kuruldu
+
+**Karar:** Kullanıcı, 11 bölümlü bir kurumsal sitede her bölümün 2-3
+görsel varyantı olacağını ve hangi varyantın kullanılacağının veritabanı
+ayarından (panelden değiştirilebilir) geleceğini belirtti; bir desen
+önerilmesini ve örnek kodunu (Hero üzerinden) istedi. Ardından sırayla:
+ortak bölüm arayüzü + `MIMARI.md` ile uyumlu klasör düzeni, Navbar (logo +
+bölüm linkleri + iletişim butonu, kaydırınca görünüm değişimi, sayfa içi
+linkler), mobil menü (odak tuzağı, Escape, scroll kilidi), Hero varyant A
+(tam genişlik arka plan + 2 buton) ve varyant B (iki kolonlu, aynı veri),
+görsel optimizasyonu (`next/image`, `sizes`/`priority`) istendi. Kısıt:
+varyant seçimi tek yerde çözülsün (tekrarlanan if/else yok), varyant
+adları tip güvenli (geçersiz varyant derlemede yakalansın), bölümler
+mümkün olduğunca Server Component kalsın, yeni varyant eklemek tek dosya +
+bir kayıt satırı olsun.
+
+**Şema kararı (kullanıcıya sorulmadan, gerekçeyle uygulandı):**
+`hero_sections`'ta varyant seçimi için bir kolon yoktu, ve "varyant A iki
+eylem butonu" isteği mevcut tek `cta_text`/`cta_link` çiftiyle
+karşılanamıyordu. Yeni migration eklendi:
+`supabase/migrations/20260808140000_add_hero_variant_and_secondary_cta.sql`
+— `hero_sections.variant` (`'a'`/`'b'`, check constraint, varsayılan
+`'a'`) + `secondary_cta_text`/`secondary_cta_link` (nullable, ikinci/
+opsiyonel buton). `theme_preset`'teki gibi aynı desen: küçük, net
+gerekçeli bir şema eklemesi, kullanıcıya şeffaf bildirildi. **Henüz
+gerçek Supabase projesine uygulanmadı.**
+
+**Uygulama:**
+- **Desen:** `components/site/<bölüm>/` altında 4 dosya — `types.ts`
+  (veri arayüzü + varyant string literal union), `<Bölüm>VariantX.tsx`
+  (her varyant AYNI veri arayüzünü props olarak alır, sadece düzen
+  değişir), `registry.ts` (`Record<HeroVariant, ComponentType<...>>` —
+  varyant seçimi tek burada), `<Bölüm>.tsx` (çözümleyici — registry'den
+  seçip render eder). Tip güvenliği: `Record<HeroVariant, ...>` sayesinde
+  union'a yeni bir varyant eklenip registry'de karşılığı unutulursa
+  TypeScript eksik anahtar hatası verir.
+- `components/site/hero/` — `HeroVariantA` (tam genişlik arka plan,
+  metin/butonlar üzerinde; görsel salt dekoratif → `alt=""`), `HeroVariantB`
+  (iki kolonlu, aynı veri; görsel metnin yanında ayrı öğe → `alt={title}`,
+  bilinen bir sınırlama — özel alt-metin kolonu yok). İkisi de `id="hero"`
+  taşıyor (Navbar'ın `#hero` linki için).
+- `components/site/Navbar.tsx` + `MobileMenu.tsx` — ikisi de `"use client"`
+  (kaydırma algılama ve menü state'i gerçek etkileşim, kısıttaki "mümkün
+  olduğunca Server Component" ifadesi Hero gibi *bölümler* içindi, Navbar
+  değil). Mobil menüde: açılınca odak ilk öğeye taşınıyor, Tab/Shift+Tab
+  menü içinde dönüyor (focus trap), `Escape` kapatıyor, `body`'nin
+  `overflow`'u `hidden` yapılıyor (scroll kilidi), kapanınca odak
+  tetikleyici hamburger butonuna dönüyor.
+- **Yeni:** `components/ui/LinkButton.tsx` — CTA'lar gezinme olduğu için
+  gerçek `<a>` (Button'a `asChild` eklenmedi, önceki kararla tutarlı,
+  ayrı küçük bir bileşen); `lib/supabase/storage.ts` — `*_path`
+  kolonlarını gerçek Storage URL'ine çeviren, client oluşturmayan (salt
+  string birleştirme) yardımcı; `next.config.ts`'e `images.remotePatterns`
+  (Supabase Storage host'u — bu olmadan `next/image` hiç yüklenmez,
+  runtime hatası verir).
+- `lib/supabase/queries.ts` → `getHeroSection()` — `theme_preset` ile
+  aynı geçici desen (tipsiz client, migration henüz uygulanmadığı için;
+  Supabase erişilemezse/satır yoksa `null` döner, sayfa çökmez).
+- Geçici doğrulama: `app/test-sections/page.tsx` — Navbar + Hero, varyant
+  A/B arasında canlı geçiş yapan bir toggle (`HeroVariantToggle.tsx`,
+  sadece bu geçici sayfaya özel `"use client"`) ile.
+
+**Yol boyunca bulunan ve düzeltilen 2 gerçek hata:**
+1. `components/ui/Container.tsx`'te boş `interface` — ESLint hatası
+   (`@typescript-eslint/no-empty-object-type`); `type` alias'a çevrilerek
+   düzeltildi.
+2. İlk taslakta doğrulama sayfası iki Hero varyantını üst üste
+   gösteriyordu, ikisi de `id="hero"` taşıdığından derlenmiş HTML'de
+   **iki kez** `id="hero"` çıktı (geçersiz HTML, erişilebilirlik
+   sorunu) — `grep -c` bunu ilk seferde gizledi (dosya tek satır,
+   satır sayıyor, tekrar saymıyor), `grep -o | wc -l` ile yakalandı.
+   Sayfa, ikisini aynı anda göstermek yerine bir geçiş butonuna
+   çevrilerek düzeltildi — bu aynı zamanda seçim mekanizmasının çalışma
+   anında da doğru çalıştığını kanıtladı.
+
+**Gerekçe:** Kullanıcı bunun önemli bir aşama olduğunu vurguladı — çok
+sayıda bölüm/varyant kombinasyonunun bakımı, seçim mantığının TEK bir
+yerde (registry) toplanmasını gerektiriyor; aksi halde her bölümde
+tekrarlanan if/else, zamanla tutarsızlık ve unutulan varyant riski
+doğurur. `Record<Variant, Component>` deseni, TypeScript'in kendi tip
+sistemini bu tutarlılığı garanti etmek için kullanıyor.
+
+**Not:** `npm run build`/`lint` temiz, ama henüz commit'lenmedi; yeni
+migration da henüz gerçek projeye uygulanmadı.

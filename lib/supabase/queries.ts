@@ -1,10 +1,14 @@
-import { createServiceRoleClient } from "@/lib/supabase/server";
+import {
+  createServiceRoleClient,
+  createUntypedServiceRoleClient,
+} from "@/lib/supabase/server";
 import {
   DEFAULT_THEME_PRESET,
   THEME_PRESET_KEYS,
   type ThemePresetKey,
 } from "@/lib/theme/presets";
 import type { SiteThemeSettings } from "@/lib/theme/resolve";
+import type { HeroSectionData, HeroVariant } from "@/components/site/hero/types";
 
 // Dönüş tipi types/database.types.ts'ten otomatik çıkarılır — yanlış tablo/
 // kolon adı yazılırsa derleme zamanında hata verir. Tipleri yeniden üretmek
@@ -80,5 +84,62 @@ export async function getSiteThemeSettings(): Promise<SiteThemeSettings> {
     };
   } catch {
     return FALLBACK_THEME_SETTINGS;
+  }
+}
+
+function isHeroVariant(value: unknown): value is HeroVariant {
+  return value === "a" || value === "b";
+}
+
+/**
+ * Şu an platform sahibinin tenant kaydını okuyor (bkz.
+ * getSiteThemeSettings yorumu — aynı geçici Host-çözümleme kısıtı).
+ *
+ * hero_sections.variant/secondary_cta_* kolonları henüz types/
+ * database.types.ts'te yok (migration uygulanıp `npm run types:generate`
+ * çalıştırılmadı, bkz. supabase/migrations/
+ * 20260808140000_add_hero_variant_and_secondary_cta.sql) — bu yüzden
+ * bilinçli olarak tipsiz client kullanılıyor. Satır hiç yoksa (henüz
+ * içerik girilmemişse) veya Supabase'e erişilemiyorsa null döner —
+ * çağıran taraf (sayfa) Hero'yu hiç render etmemeyi seçebilir.
+ */
+export async function getHeroSection(): Promise<HeroSectionData | null> {
+  try {
+    const supabase = createUntypedServiceRoleClient();
+    const { data, error } = await supabase
+      .from("tenants")
+      .select("hero_sections(*)")
+      .eq("is_platform_owner", true)
+      .maybeSingle();
+
+    if (error || !data) {
+      throw error ?? new Error("Platform sahibi tenant bulunamadı.");
+    }
+
+    const hero = Array.isArray(data.hero_sections)
+      ? data.hero_sections[0]
+      : data.hero_sections;
+
+    if (!hero || typeof hero.title !== "string") {
+      return null;
+    }
+
+    return {
+      variant: isHeroVariant(hero.variant) ? hero.variant : "a",
+      title: hero.title,
+      subtitle: typeof hero.subtitle === "string" ? hero.subtitle : null,
+      backgroundImagePath:
+        typeof hero.background_image_path === "string"
+          ? hero.background_image_path
+          : null,
+      ctaText: typeof hero.cta_text === "string" ? hero.cta_text : null,
+      ctaLink: typeof hero.cta_link === "string" ? hero.cta_link : null,
+      secondaryCtaText:
+        typeof hero.secondary_cta_text === "string" ? hero.secondary_cta_text : null,
+      secondaryCtaLink:
+        typeof hero.secondary_cta_link === "string" ? hero.secondary_cta_link : null,
+    };
+  } catch {
+    return null;
   }
 }

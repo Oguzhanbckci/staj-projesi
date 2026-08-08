@@ -1,6 +1,6 @@
 import type { HTMLAttributes } from "react";
 
-export interface ContainerProps extends HTMLAttributes<HTMLDivElement> {}
+export type ContainerProps = HTMLAttributes<HTMLDivElement>;
 
 // Hem sayfa bölümlerini (varsayılan max-w-6xl) hem içerik kartlarını
 // (className ile daha dar bir max-w override edilerek) sarmak için tek,
