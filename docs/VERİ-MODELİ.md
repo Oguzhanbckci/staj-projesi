@@ -8,18 +8,19 @@ Kod içermez — gerçek çalışır SQL
 değişirse önce `KARAR-GUNLUGU.md`'ye tarihli bir kayıt düşülür, sonra hem bu
 dosya hem migration güncellenir.
 
-**Son güncelleme:** 2026-08-07
+**Son güncelleme:** 2026-08-08
 
 **Durum:** Tablolar + kolonlar + kısıtlamalar tasarlandı ve SQL'e döküldü.
 2026-08-06'da dışarıdan gelen bir yönergeyle (BAĞLAM/İSTEK/KISITLAR/KABUL
 KRİTERİ formatında) karşılaştırılıp üç noktada revize edildi (aşağıda
-"Yönergeyle Karşılaştırma" bölümünde). RLS her tabloda açık ama policy'ler
-henüz yazılmadı. **İlk 8 tablo 2026-08-07'de gerçek Supabase projesine
-uygulandı** (bkz. `KARAR-GUNLUGU.md`, "İlk migration gerçek Supabase
-projesine uygulandı"). Aynı gün, demo içerik ihtiyacıyla **3 yeni tablo**
-(`testimonials`, `faqs`, `team_members`) eklendi — toplam **11 tablo**; bu
-üçü ayrı bir migration'da (`20260807120000_add_testimonials_faqs_team_tables.sql`)
-yazıldı, henüz gerçek projeye uygulanmadı (bkz. `docs/DURUM.md`).
+"Yönergeyle Karşılaştırma" bölümünde). **RLS her tabloda açık VE
+okuma/yazma politikaları da yazılıp gerçek veriyle test edildi** (bkz.
+`GUVENLIK.md`, `KARAR-GUNLUGU.md` 2026-08-07). Toplam **12 tablo**,
+hepsi gerçek Supabase projesine uygulandı (bkz. madde "SQL Migration").
+Bu dosyanın en güncel/otoriter kaynak olduğu unutulmamalı — bazı kolonlar
+(bkz. her tablonun altındaki "2026-08-08 eklendi" notları) tasarım
+aşamasından SONRA, gerçek bileşen/sayfa yazımı sırasında ortaya çıkan
+ihtiyaçlarla eklendi.
 
 ## Genel Kararlar ve Gerekçeleri
 
@@ -132,6 +133,7 @@ yapıldı:
 | `seo_description` | text, nullable | varsayılan meta açıklama |
 | `contact_email` | text, nullable | üstbilgi/altbilgi/SEO gösterim amaçlı |
 | `contact_phone` | text, nullable | üstbilgi/altbilgi/SEO gösterim amaçlı |
+| `theme_preset` | text, not null, default 'kurumsal-mavi', check | *(2026-08-08 eklendi)* `kurumsal-mavi`\|`modern-koyu` — hazır tema ön ayarı (marka rengi/radius/font kombinasyonu), bkz. `TEMA-MIMARISI.md` |
 
 ### `hero_sections` — Hero (Tekil)
 
@@ -144,6 +146,9 @@ yapıldı:
 | `background_image_path` | text, nullable | Storage yolu |
 | `cta_text` | text, nullable | |
 | `cta_link` | text, nullable | |
+| `variant` | text, not null, default 'a', check | *(2026-08-08 eklendi)* `a`\|`b` — görsel varyant (a: tam genişlik arka plan, b: iki kolonlu), bkz. `components/site/hero/` |
+| `secondary_cta_text` | text, nullable | *(2026-08-08 eklendi)* ikinci/opsiyonel eylem butonu metni |
+| `secondary_cta_link` | text, nullable | *(2026-08-08 eklendi)* ikinci/opsiyonel eylem butonu linki |
 
 ### `about_sections` — Hakkımızda (Tekil)
 
@@ -155,6 +160,7 @@ yapıldı:
 | `description` | text, nullable | |
 | `image_path` | text, nullable | Storage yolu |
 | `founded_year` | integer, nullable, check (1800-2100) | |
+| `core_values` | text[], nullable | *(2026-08-08 eklendi)* kısa değerler listesi (ör. "Kalite", "Şeffaflık") |
 
 Platform sahibi bu tabloyu kullanmaz (anonim kalma kuralı, bkz. `PRD.md`).
 
@@ -166,7 +172,8 @@ Platform sahibi bu tabloyu kullanmaz (anonim kalma kuralı, bkz. `PRD.md`).
 | `tenant_id` | uuid, not null, → tenants.id | UNIQUE değil |
 | `title` | text, not null | |
 | `description` | text, nullable | |
-| `icon` | text, nullable | |
+| `icon` | text, nullable | Lucide ikon adı (ör. `home`, `hammer`) — bkz. `components/site/services/icons.tsx` |
+| `image_path` | text, nullable | *(2026-08-08 eklendi)* Storage yolu — "görselli büyük kart" varyantı için |
 
 ### `projects` — Projeler / Portfolyo (Liste)
 
@@ -179,6 +186,8 @@ Platform sahibi bu tabloyu kullanmaz (anonim kalma kuralı, bkz. `PRD.md`).
 | `location` | text, nullable | tenant kullanımı |
 | `year` | integer, nullable, check (1800-2100) | tenant kullanımı |
 | `live_url` | text, nullable | platform sahibi kullanımı — gerçek URL, Storage path değil |
+| `category` | text, nullable | *(2026-08-08 eklendi)* serbest metin kategori (ör. "Konut", "Ticari", "Altyapı") — check constraint yok, filtre listesi kodda sabit yazılmıyor, veriden türetiliyor |
+| `description` | text, nullable | *(2026-08-08 eklendi)* proje detay penceresinde gösterilen açıklama |
 
 ### `contact_sections` — İletişim (Tekil, Statik Bilgi)
 
@@ -216,6 +225,7 @@ kaydediliyor (bkz. `KARAR-GUNLUGU.md`, 2026-08-06).
 | `author_title` | text, nullable | unvan/pozisyon veya firma bilgisi |
 | `quote` | text, not null | yorum metni |
 | `rating` | integer, nullable, check (1-5) | opsiyonel puan |
+| `logo_path` | text, nullable | *(2026-08-08 eklendi)* Storage yolu — müşteri/firma logosu, opsiyonel |
 
 Tablo adı **`testimonials`** — `references` SQL'de ayrılmış (reserved) bir
 kelime olduğu için (foreign key tanımlarında kullanılıyor) tablo adı olarak
@@ -244,40 +254,77 @@ seçilmedi.
 Platform sahibi bu tabloyu kullanmaz (anonim kalma kuralı, bkz. `PRD.md`) —
 `about_sections` ile aynı kısıt.
 
+### `stats` — İstatistikler (Liste) *(2026-08-08 eklendi)*
+
+| Kolon | Tip | Açıklama |
+|---|---|---|
+| `id`, `created_at`, `order_index`, `is_published` | — | ortak |
+| `tenant_id` | uuid, not null, → tenants.id | |
+| `label` | text, not null | ör. "Tamamlanan Proje" |
+| `value` | integer, not null | ham sayısal değer — Türkçe biçimlendirme (`Intl.NumberFormat("tr-TR")`) gerçek bir sayı üzerinden yapılabilsin diye hazır biçimlendirilmiş metin değil, tam sayı |
+| `suffix` | text, nullable | ör. "+", "%" |
+
+**Neden ayrı bir tablo, mevcut tablolardan hesaplama değil (kullanıcıya
+soruldu, bkz. `KARAR-GUNLUGU.md`):** "Tamamlanan proje" = yayınlanmış
+`projects` sayısı, "yıllık deneyim" = `about_sections.founded_year`'dan
+hesap gibi seçenekler vardı, ama gerçek kurumsal sitelerde bu rakamlar
+genelde pazarlama amaçlı yuvarlak sayılardır (ör. dijitalleşmeden önceki
+projeler DB'de yok) — panelden serbestçe girilebilen bir tablo tercih
+edildi.
+
 ## SQL Migration
 
-İki migration dosyası var:
+Altı migration dosyası var, sırayla:
 
-1. `supabase/migrations/20260806120000_create_content_tables.sql` — ilk 8
-   tablo (`tenants`, `site_settings`, `hero_sections`, `about_sections`,
-   `services`, `projects`, `contact_sections`, `contact_messages`). **Gerçek
-   Supabase projesine uygulandı** (2026-08-07).
-2. `supabase/migrations/20260807120000_add_testimonials_faqs_team_tables.sql`
-   — sonradan eklenen 3 tablo (`testimonials`, `faqs`, `team_members`).
-   Henüz gerçek projeye uygulanmadı.
+1. `20260806120000_create_content_tables.sql` — ilk 8 tablo (`tenants`,
+   `site_settings`, `hero_sections`, `about_sections`, `services`,
+   `projects`, `contact_sections`, `contact_messages`).
+2. `20260807120000_add_testimonials_faqs_team_tables.sql` — 3 tablo daha
+   (`testimonials`, `faqs`, `team_members`) → toplam 11 tablo.
+3. `20260807130000_add_rls_policies.sql` — RLS okuma/yazma politikaları
+   (bkz. `GUVENLIK.md`).
+4. `20260808120000_add_theme_preset_to_site_settings.sql` —
+   `site_settings.theme_preset`.
+5. `20260808140000_add_hero_variant_and_secondary_cta.sql` —
+   `hero_sections.variant`/`secondary_cta_text`/`secondary_cta_link`.
+6. `20260808150000_add_services_image_and_about_values.sql` —
+   `services.image_path`, `about_sections.core_values`.
+7. `20260808160000_add_projects_category_and_description.sql` —
+   `projects.category`/`description` (+ Akme demo verisine backfill).
+8. `20260808170000_add_testimonial_logo_and_stats_table.sql` —
+   `testimonials.logo_path` + yeni `stats` tablosu (RLS dahil) → toplam
+   **12 tablo**.
 
-Her ikisinde de `create table`, `check`/`unique` kısıtlamaları, `default`
-değerleri, her tabloya `comment on table` ve `enable row level security`
-satırları var. Bu dosya güncellenirse ilgili migration da eşlenik olarak
-güncellenmeli.
+**Hepsi gerçek Supabase projesine uygulandı** (2026-08-08 itibarıyla).
+Her migration'da `create table`/`alter table`, `check`/`unique`
+kısıtlamaları, `default` değerleri, `comment on table`/`comment on
+column` ve (4-8 için) ilgili `enable row level security` + politikalar
+var. Bu dosya güncellenirse ilgili migration da eşlenik olarak
+güncellenmeli — sıra bu tabloda korunmalı, her yeni şema değişikliği bu
+listeye eklenmeli (silinmez).
 
 ## Örnek Veri (Doğrulama)
 
-`supabase/seed.sql` — 2 müşteri tenant'ı (Akme İnşaat, Yıldız Yapı) +
-platform sahibinin kendi tenant satırı (`is_platform_owner = true`,
-2026-08-08'de eklendi — bkz. `KARAR-GUNLUGU.md`) üzerinden kurulu, toplam
-**3 tenant**. `tenant_id` UNIQUE olan tablolarda (site_settings,
-hero_sections, about_sections, contact_sections) Akme/Yıldız için 2 satır;
-platform tenant'ı için şu an sadece `site_settings` var (`theme_preset`
-doğrulaması amacıyla eklendi, gerçek tanıtım sitesi içeriği — hero/
-services/projects/contact — henüz yok, bkz. `DURUM.md`). Liste
-tablolarında `contact_messages` 2 satır aynı tenant altında; `services` (6),
-`projects` (8), `testimonials` (4), `faqs` (5), `team_members` (4) ise
-Akme İnşaat için hazırlanmış gerçekçi demo içeriği (bkz.
-`content/demo-icerik.md`) — `order_index` 10'ar artıyor, her tabloda yaklaşık
-yarısı `is_published = true` yarısı `false`.
+`supabase/seed.sql` + `20260808160000`/`20260808170000` migration'larının
+içindeki `update`/`insert` satırları — 2 müşteri tenant'ı (Akme İnşaat,
+Yıldız Yapı) + platform sahibinin kendi tenant satırı (`is_platform_owner
+= true`) üzerinden kurulu, toplam **3 tenant**. `tenant_id` UNIQUE olan
+tablolarda (site_settings, hero_sections, about_sections, contact_sections)
+Akme/Yıldız için 2 satır; platform tenant'ı için `site_settings` +
+`stats` (3 örnek istatistik) var, ama **hero/services/projects/
+about_sections/testimonials/faqs içeriği hâlâ yok** — bu yüzden geçici
+önizleme sayfaları (`app/test-*`) bu bölümler için örnek/mock veriye
+düşüyor (bkz. `DURUM.md`). Liste tablolarında `contact_messages` 2 satır
+aynı tenant altında; `services` (6, artık kategorize + backfill'li),
+`projects` (8, artık kategori/açıklamalı), `testimonials` (4, biri logo
+yolu backfill'li), `faqs` (5), `team_members` (4) ise Akme İnşaat için
+hazırlanmış gerçekçi demo içeriği (bkz. `content/demo-icerik.md`) —
+`order_index` 10'ar artıyor, her tabloda yaklaşık yarısı
+`is_published = true` yarısı `false`.
 
 ## Açık Sorular
 
-Şu an aktif açık soru yok. RLS policy metinleri, panel auth'u kodlanınca ayrı
-bir migration'da yazılacak (bkz. `docs/DURUM.md` sıradaki adım).
+Şu an aktif açık soru yok. Platform sahibinin gerçek tanıtım sitesi
+içeriği (hero/services/about/projects/testimonials/faqs) henüz girilmedi
+— panel auth'u kodlanınca bu içeriğin nasıl gireceği netleşecek (bkz.
+`DURUM.md` sıradaki adım).

@@ -48,7 +48,7 @@ export default async function SectionsPreviewPage() {
     <div className="min-h-full bg-surface text-text">
       <Navbar logoText="Akme İnşaat" links={NAV_LINKS} contactHref="#iletisim" />
 
-      <p className="bg-warning px-6 py-2 text-center text-caption text-white">
+      <p className="border-b-2 border-warning bg-surface-raised px-6 py-2 text-center text-caption text-text">
         Geçici doğrulama sayfası — yayınlanmayacak. Gerçek Hero verisi:{" "}
         {realHero ? "bulundu ✓" : "yok, örnek veri gösteriliyor"}
       </p>

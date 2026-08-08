@@ -1521,3 +1521,107 @@ zorlaştıran bir dokümantasyon alışkanlığı.
 
 **Not:** `npm run build`/`lint` temiz, henüz commit'lenmedi; yeni
 migration da henüz gerçek projeye uygulanmadı.
+
+---
+
+## 2026-08-08 — Referanslar + İstatistikler + SSS bölümleri, gerçek bir kontrast hatası bulundu ve düzeltildi
+
+**Karar:** Kullanıcı erişilebilir bir SSS akordiyonu + Referanslar
+(isim/firma/yorum/varsa logo, mobilde kaydırmalı/masaüstünde ızgara) +
+İstatistikler (rakamlar Türkçe biçimde) bölümlerini istedi; her ikisine
+ikinci bir varyant (Referanslar: tek büyük alıntı, SSS: iki kolon)
+eklendi; hareket tercihine (`prefers-reduced-motion`) saygı istendi; son
+olarak bu üç bölümü otomatik bir erişilebilirlik aracıyla tarayıp
+bulguları not almam istendi. Kısıt: tam klavye desteği, `aria-expanded` +
+panel-başlık ilişkisi, aynı anda birden fazla panel açık kalabilsin,
+hazır kütüphane yok (sade React), kod 90 satırı geçmesin.
+
+**Şema kararı — bu sefer kullanıcıya soruldu (mekanik bir ekleme değil,
+gerçek bir mimari tercih olduğu için):** İstatistikler için hiç tablo
+yoktu. Seçenek sunuldu: mevcut tablolardan hesaplama (projects/testimonials
+sayısı, `founded_year`'dan yıl hesabı — gerçek kayıt sayısına kilitli) vs.
+yeni bir `stats` tablosu (panelden serbestçe "50+" gibi girilen). Kullanıcı
+**yeni tablo** seçti. `testimonials`'ta da "varsa logo" için kolon yoktu.
+Yeni migration: `supabase/migrations/
+20260808170000_add_testimonial_logo_and_stats_table.sql` —
+`testimonials.logo_path` + yeni `stats` tablosu (`label`, `value integer`,
+`suffix` — Türkçe sayı biçimlendirmesi gerçek bir sayı üzerinden
+yapılabilsin diye `value` tam sayı, hazır biçimlendirilmiş metin değil).
+RLS politikaları diğer liste tablolarıyla (`testimonials`/`faqs`) birebir
+aynı desende yazıldı. Platform tenant'a 3 örnek istatistik + Akme'nin bir
+referansına (Kaya Holding) logo yolu backfill edildi. **Henüz gerçek
+Supabase projesine uygulanmadı.**
+
+**Uygulama:**
+- `components/site/faqs/FaqAccordionItem.tsx` — gerçek `<button>`
+  (Tab/Enter/Space native çalışır), `aria-expanded` + `aria-controls` +
+  panelde `role="region"`/`aria-labelledby`. Her öğe **kendi** `useState`'ini
+  tutuyor — "diğerlerini kapat" mantığı yok, kısıtın gereği ("aynı anda
+  birden fazla panel açılabilsin") zaten varsayılan davranış. Başlık
+  seviyesi `headingLevel` prop'uyla ayarlanabilir (`SectionHeader`'daki
+  `const Heading = headingLevel; <Heading>` deseniyle aynı — bu desenin
+  `react-hooks/static-components` kuralını TETİKLEMEDİĞİ daha önce
+  doğrulanmıştı, çünkü kaynak bir string prop, bir fonksiyon çağrısı
+  değil).
+- Genişleme animasyonu `grid-template-rows: 0fr → 1fr` CSS tekniğiyle
+  (JS yükseklik ölçümü gerekmez, modern tarayıcılarda çalışır);
+  `motion-reduce:transition-none` (Tailwind'in yerleşik varyantı) ile
+  `prefers-reduced-motion: reduce` kullanıcılarında animasyon tamamen
+  kapanıyor. Derlenmiş CSS'te `@media (prefers-reduced-motion:reduce)`
+  bloğunun doğru üretildiği doğrulandı.
+- SSS'nin 2. varyantı ("iki kolon") için ayrı bir `registry.ts` **bilinçli
+  olarak açılmadı** — fark salt native CSS `columns-2` (öğeleri JS'le
+  bölmeye gerek yok, `break-inside-avoid` ile tek öğenin bölünmesi
+  engelleniyor); Hero/Hizmetler/Projeler'in aksine burada iki farklı JSX
+  yapısı yok, tek bileşen + bir prop yeterliydi (aşırı soyutlama
+  yapılmadı).
+- `components/site/testimonials/` — `TestimonialCard` (ortak kart, `large`
+  prop'uyla iki varyantta da kullanılıyor), `TestimonialsGrid` (mobilde
+  `snap-x` ile yatay kaydırma, `sm:` üzerinde ızgara — tek CSS, JS yok),
+  `TestimonialsFeatured` (tek büyük alıntı + ok butonlarıyla geçiş —
+  sadece ilk referansı gösterip diğerlerini görünmez kılmak yerine, tüm
+  veriyi kullanan bir çözüm tercih edildi), `registry.ts` (bu ikisi
+  gerçekten farklı JSX yapıları olduğu için Hero'daki gibi tam registry).
+- `components/site/stats/StatsSection.tsx` — `Intl.NumberFormat("tr-TR")`
+  ile binlik ayraç noktalı Türkçe biçim + `suffix` eklenmesi. Tamamen
+  Server Component, hiç etkileşim yok.
+
+**Erişilebilirlik taraması (gerçekten çalıştırıldı, istenen son adım):**
+`npm run build` + `npm run start` + yerel Chrome ile
+`npx @axe-core/cli http://localhost:3000/test-social-proof`. İlk tarama
+**13 bulgu** verdi. **Gerçek, actionable bir bulgu:** `color-contrast` —
+kendi geçici "geçici doğrulama sayfası" banner'larımda (üç ayrı test
+sayfasında tekrarlanan) kullandığım `bg-warning text-white` deseni, site
+şu an platform tenant'ın `theme_mode='dark'` ayarı yüzünden koyu temada
+render olduğundan, koyu temanın `warning` rengi (`#cb850b`) üzerinde
+beyaz metin sadece **3.04:1** veriyordu (4.5:1 gerekli) — bu spesifik
+"renk dolgu + üzerinde sabit metin rengi" senaryosu `TASARIM-SISTEMI.md`
+madde 2'deki kontrast denetiminde hiç test edilmemişti (sadece "semantik
+renk metin olarak" senaryosu doğrulanmıştı). Üç dosyada da
+`border-b-2 border-warning bg-surface-raised text-text` (tema-bağımsız,
+`--color-text` zaten doğru temaya göre çözülüyor) ile düzeltildi, tarama
+tekrarlanıp **12 bulguya** düştüğü ve kontrast ihlalinin tamamen
+kaybolduğu doğrulandı.
+
+Kalan 12 bulgu (`landmark-one-main`, `page-has-heading-one`,
+`landmark-unique` ×4, `region` ×6) incelendi ve **gerçek bileşen hatası
+olmadığı** sonucuna varıldı — hepsi ya demo sayfasının kendi yapısına
+özgü (aynı örnek SSS verisi karşılaştırma amacıyla sayfada iki kez
+gösterildiği için "eşsiz olmayan" landmark adı; demo sayfasında Hero
+olmadığı için `<h1>` yok) ya da kök `app/layout.tsx`'te `<main>`
+landmark'ının henüz eklenmemiş olması — bu sonuncusu bilerek şimdi
+yamanmadı çünkü Navbar şu an her sayfanın kendi içinde render ediliyor,
+`{children}`'ı körü körüne `<main>`'e sarmak Navbar'ı yanlışlıkla
+`<main>` içine alırdı (semantik olarak yanlış); gerçek global layout/
+Navbar yerleşimi kurulduğunda doğru yapılmalı (bkz. `DURUM.md` sıradaki
+adım 5).
+
+**Gerekçe:** Otomatik bir aracın gerçek bir hatayı yakalaması (kontrast),
+elle yazılan kontrast tablosunun (`TASARIM-SISTEMI.md`) bile eksik
+kalabileceğini gösterdi — "renk X metin olarak test edildi" ile "renk X
+dolgu + sabit metin rengiyle test edildi" farklı senaryolar, ikisi de
+ayrı ayrı doğrulanmalı. Bu, ileride yeni bir renk kullanım deseni (ör.
+bir Alert/Toast bileşeni) yazılırken hatırlanması gereken bir ders.
+
+**Not:** `npm run build`/`lint` temiz, henüz commit'lenmedi; yeni
+migration da henüz gerçek projeye uygulanmadı.

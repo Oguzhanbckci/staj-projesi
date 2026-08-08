@@ -8,8 +8,10 @@ mimari: framework/dil/stil/backend/hosting/render), `TEST-STRATEJISI.md`'yi
 (Supabase tablo/kolon tasarımı + gerekçeler), `GUVENLIK.md`'yi (tehdit
 modeli, RLS politikaları, anahtar yönetimi, güvenlik kontrol listesi) ve
 `TASARIM-SISTEMI.md`'yi (renk/tipografi/boşluk/köşe/gölge token'ları,
-kontrast doğrulaması), gerekirse `KARAR-GUNLUGU.md`'yi (tarihli, hiç
-silinmeyen karar geçmişi) oku.
+kontrast doğrulaması, bileşen envanteri/API kuralları) ve `TEMA-MIMARISI.md`'yi
+(tema değerlerinin DB'den `<html>`'e akışı, tema ön ayarları, FOUC
+önlemi), gerekirse `KARAR-GUNLUGU.md`'yi (tarihli, hiç silinmeyen karar
+geçmişi) oku.
 
 **Son güncelleme:** 2026-08-08
 
@@ -391,18 +393,93 @@ yeni token oluşturulup çözüldü). `getProjects()` tipli
 `createServiceRoleClient()`'e taşındı, `createUntypedServiceRoleClient()`
 tekrar (üçüncü kez) tamamen kaldırıldı.
 
-`npm run build`/`lint` temiz, henüz commit'lenmedi.
+`npm run build`/`lint` temiz. Bu iş commit'lendi (`9b65905`) ve push'landı.
+
+**Referanslar + İstatistikler + SSS bölümleri kuruldu (2026-08-08, aynı
+gün):** `components/site/testimonials/` — 2 varyant: `TestimonialsGrid`
+(mobilde yatay kaydırmalı/`snap-x`, masaüstünde ızgara — tek CSS düzeni,
+JS yok) ve `TestimonialsFeatured` (tek büyük alıntı, ok butonlarıyla
+referanslar arasında geçiş — veri kaybolmasın diye sadece ilkini
+göstermek yerine). `components/site/stats/StatsSection.tsx` — sayılar
+`Intl.NumberFormat("tr-TR")` ile Türkçe biçimde (binlik ayraç ".");
+tamamen Server Component, etkileşim yok. `components/site/faqs/` —
+`FaqAccordionItem` (gerçek `<button>`, `aria-expanded`/`aria-controls`/
+`role="region"`, her öğe kendi state'ini tutar — birden fazla panel aynı
+anda açık kalabilir; genişleme animasyonu `grid-template-rows` fr-birimi
+tekniğiyle, JS yükseklik ölçümü gerekmez; `motion-reduce:` varyantı
+`prefers-reduced-motion`'a saygı gösterir), `FaqList` (2. varyant —
+"iki kolon" — native CSS `columns-2` ile, ayrı bir registry açılmadı
+çünkü fark salt bir CSS class'ı, bkz. `TASARIM-SISTEMI.md` madde 9.8).
+Hazır kütüphane kullanılmadı, sade React.
+
+**Şema kararı (kullanıcıya soruldu, bu sefer gerçek bir mimari tercih
+olduğu için — theme_preset/hero.variant gibi mekanik eklemelerden
+farklı):** İstatistikler için hiç tablo yoktu. İki seçenek sunuldu:
+mevcut tablolardan hesaplama (gerçek kayıt sayısına kilitli) vs. yeni bir
+`stats` tablosu (panelden serbestçe girilen etiket+değer). **Kullanıcı
+yeni tablo seçti** — gerçek kurumsal sitelerde bu rakamların genelde
+pazarlama amaçlı yuvarlak sayılar olduğu, DB'deki gerçek kayıt sayısıyla
+birebir örtüşmesi gerekmediği gerekçesiyle. Yeni migration:
+`supabase/migrations/20260808170000_add_testimonial_logo_and_stats_table.sql`
+— `testimonials.logo_path` (opsiyonel) + yeni `stats` tablosu (`label`,
+`value` integer, `suffix` — RLS politikaları diğer liste tablolarıyla
+birebir aynı desende). Platform tenant'a 3 örnek istatistik seed'lendi.
+**Henüz gerçek Supabase projesine uygulanmadı.**
+
+**Performans/erişilebilirlik ölçümü tamamlandı (gerçekten çalıştırıldı):**
+`npm run build` + `npm run start` + yerel Chrome ile `npx @axe-core/cli`
+`/test-social-proof` sayfasına karşı çalıştırıldı. **Gerçek bir kontrast
+hatası bulundu ve düzeltildi:** kendi geçici "geçici doğrulama sayfası"
+banner'larımda (`test-sections`/`test-projects`/`test-social-proof`)
+kullandığım `bg-warning text-white` deseni, site şu an koyu temada
+render olduğu için (`--color-warning` koyu değeri `#cb850b`'ye çözülüyor)
+sadece **3.04:1** kontrast veriyordu (4.5:1 gerekli) — daha önce sadece
+"warning metin olarak" senaryosu doğrulanmıştı, "warning dolgu + beyaz
+metin" hiç test edilmemişti. Üç dosyada da `bg-warning`/`text-white` →
+`border-b-2 border-warning bg-surface-raised text-text` yapılarak
+düzeltildi (tema-bağımsız güvenli desen), tarama tekrarlanıp
+doğrulandı (13 → 12 bulgu, kontrast ihlali kayboldu).
+
+Kalan 12 bulgu (`landmark-one-main`, `page-has-heading-one`,
+`landmark-unique` ×4, `region` ×6) **gerçek bileşen hatası değil, demo
+sayfasının kendi yapısına özgü**: kök `app/layout.tsx`'te hiç `<main>`
+yok (bilerek şimdi yamanmadı — Navbar şu an her sayfanın kendi içinde
+render ediliyor, `<main>`'i `{children}`'a sarmak Navbar'ı yanlışlıkla
+`<main>` içine alırdı; gerçek sayfa kompozisyonu/global layout
+kurulduğunda doğru yapılmalı), demo sayfasında Hero olmadığı için `<h1>`
+yok, ve aynı örnek SSS verisi karşılaştırma amacıyla sayfada İKİ KEZ
+gösterildiği için (tek sütun + iki sütun varyant demosu) aynı soru
+metnine sahip `role="region"` panelleri "eşsiz değil" olarak işaretlendi
+— gerçek kullanımda bir SSS verisi sayfada bir kez görünür, bu sorun
+oluşmaz.
+
+**Lighthouse (önceki oturumdan, karşılaştırma için hatırlatma):**
+Performance 96, görsel isteği 0 (henüz gerçek görsel yok) — bkz. önceki
+kayıt.
+
+**Migration uygulandı, tipler yenilendi, tipli client'a taşındı, gerçek
+veriyle doğrulandı (2026-08-08, aynı gün, günün son işlemi):** Kullanıcı
+`20260808170000_...` migration'ını SQL Editor'de çalıştırdı, `npm run
+types:generate` hatasız tamamlandı. `getTestimonials()`/`getStats()`
+tipli `createServiceRoleClient()`'e taşındı, `createUntypedServiceRoleClient()`
+(ve onu kullanan import'lar) tamamen kaldırıldı — şu an hiçbir sorgu
+fonksiyonu tipsiz client kullanmıyor. `npm run build` sonrası üretilen
+`/test-social-proof` HTML'inde platform tenant'a seed'lenen 3 istatistik
+gerçek veriden geldiği doğrulandı: "50+", "12+", **"1.200+"** (1200
+değerinin Türkçe binlik ayraçla — nokta — doğru biçimlendiği görüldü).
+`npm run build`/`lint` temiz.
 
 ## Sıradaki adım
 
-1. Bugünkü Projeler bölümü işini commit'le.
+1. Bugünkü Referanslar/İstatistikler/SSS işini commit'le ve push'la.
 2. Vitest ve Playwright'ı kur (bkz. `TEST-STRATEJISI.md`) — hâlâ yarım
    kalmış bir kurulum, `npm install` adımları henüz çalıştırılmadı.
 3. Panel auth'u (Supabase Auth, platform sahibi girişi) kodla.
-4. Kalan bölümleri (İletişim, Referanslar, SSS, Ekip Üyeleri) aynı desene
-   göre kodla; gerçek bir sayfa kompozisyonunda (Navbar + bölümler,
-   `app/(site)/page.tsx`) birleştir — şu an her bölüm/parça ayrı geçici
-   sayfalarda izole test ediliyor, henüz gerçek bir sayfa yok.
+4. Kalan bölümü (İletişim, Ekip Üyeleri) aynı desene göre kodla; gerçek
+   bir sayfa kompozisyonunda (Navbar + tüm bölümler, `app/(site)/page.tsx`)
+   birleştir — bu adımda Navbar'ın nereye taşınacağına (global layout mı,
+   sadece (site) route group'una mı) karar verilmeli ve `<main>` landmark'ı
+   doğru yere eklenmeli (bkz. yukarıdaki axe bulgusu).
 5. İletişim formu için `app/api/contact/` route handler'ı yaz (service role
    ile `contact_messages`'a insert + e-posta gönderimi).
 6. Site tasarımı ilerledikçe `KURUMSAL-SITE-STANDARTLARI.md`'deki kontrol listesini

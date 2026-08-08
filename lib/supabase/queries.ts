@@ -9,6 +9,9 @@ import type { HeroSectionData, HeroVariant } from "@/components/site/hero/types"
 import type { ServiceItem } from "@/components/site/services/types";
 import type { AboutSectionData } from "@/components/site/about/types";
 import type { ProjectItem } from "@/components/site/projects/types";
+import type { FaqItem } from "@/components/site/faqs/types";
+import type { TestimonialItem } from "@/components/site/testimonials/types";
+import type { StatItem } from "@/components/site/stats/types";
 
 /**
  * Şu an platform sahibinin tenant kaydına scope'lu (bkz.
@@ -263,6 +266,126 @@ export async function getProjects(): Promise<ProjectItem[]> {
     }));
   } catch (err) {
     console.error("getProjects sorgu hatası:", err);
+    return [];
+  }
+}
+
+/**
+ * faqs tablosunda yeni kolon yok, tipli client yeterli. getServices()'le
+ * aynı desen (iki sorgu: tenant id, sonra filtreli/sıralı liste).
+ */
+export async function getFaqs(): Promise<FaqItem[]> {
+  try {
+    const supabase = createServiceRoleClient();
+    const { data: tenant, error: tenantError } = await supabase
+      .from("tenants")
+      .select("id")
+      .eq("is_platform_owner", true)
+      .maybeSingle();
+
+    if (tenantError || !tenant) {
+      throw tenantError ?? new Error("Platform sahibi tenant bulunamadı.");
+    }
+
+    const { data, error } = await supabase
+      .from("faqs")
+      .select("id, question, answer")
+      .eq("tenant_id", tenant.id)
+      .eq("is_published", true)
+      .order("order_index");
+
+    if (error || !data) {
+      throw error ?? new Error("SSS alınamadı.");
+    }
+
+    return data.map((row) => ({
+      id: row.id,
+      question: row.question,
+      answer: row.answer,
+    }));
+  } catch (err) {
+    console.error("getFaqs sorgu hatası:", err);
+    return [];
+  }
+}
+
+/**
+ * testimonials.logo_path için tip artık var (migration uygulandı +
+ * `npm run types:generate` çalıştırıldı, 2026-08-08) — tipli client.
+ */
+export async function getTestimonials(): Promise<TestimonialItem[]> {
+  try {
+    const supabase = createServiceRoleClient();
+    const { data: tenant, error: tenantError } = await supabase
+      .from("tenants")
+      .select("id")
+      .eq("is_platform_owner", true)
+      .maybeSingle();
+
+    if (tenantError || !tenant) {
+      throw tenantError ?? new Error("Platform sahibi tenant bulunamadı.");
+    }
+
+    const { data, error } = await supabase
+      .from("testimonials")
+      .select("id, author_name, author_title, quote, logo_path")
+      .eq("tenant_id", tenant.id)
+      .eq("is_published", true)
+      .order("order_index");
+
+    if (error || !data) {
+      throw error ?? new Error("Referanslar alınamadı.");
+    }
+
+    return data.map((row) => ({
+      id: String(row.id),
+      authorName: String(row.author_name),
+      authorTitle: typeof row.author_title === "string" ? row.author_title : null,
+      quote: String(row.quote),
+      logoPath: typeof row.logo_path === "string" ? row.logo_path : null,
+    }));
+  } catch (err) {
+    console.error("getTestimonials sorgu hatası:", err);
+    return [];
+  }
+}
+
+/**
+ * stats tablosu için tip artık var (aynı migration + types:generate) —
+ * tipli client.
+ */
+export async function getStats(): Promise<StatItem[]> {
+  try {
+    const supabase = createServiceRoleClient();
+    const { data: tenant, error: tenantError } = await supabase
+      .from("tenants")
+      .select("id")
+      .eq("is_platform_owner", true)
+      .maybeSingle();
+
+    if (tenantError || !tenant) {
+      throw tenantError ?? new Error("Platform sahibi tenant bulunamadı.");
+    }
+
+    const { data, error } = await supabase
+      .from("stats")
+      .select("id, label, value, suffix")
+      .eq("tenant_id", tenant.id)
+      .eq("is_published", true)
+      .order("order_index");
+
+    if (error || !data) {
+      throw error ?? new Error("İstatistikler alınamadı.");
+    }
+
+    return data.map((row) => ({
+      id: String(row.id),
+      label: String(row.label),
+      value: typeof row.value === "number" ? row.value : 0,
+      suffix: typeof row.suffix === "string" ? row.suffix : null,
+    }));
+  } catch (err) {
+    console.error("getStats sorgu hatası:", err);
     return [];
   }
 }

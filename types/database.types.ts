@@ -369,6 +369,47 @@ export type Database = {
           },
         ]
       }
+      stats: {
+        Row: {
+          created_at: string
+          id: string
+          is_published: boolean
+          label: string
+          order_index: number
+          suffix: string | null
+          tenant_id: string
+          value: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_published?: boolean
+          label: string
+          order_index?: number
+          suffix?: string | null
+          tenant_id: string
+          value: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_published?: boolean
+          label?: string
+          order_index?: number
+          suffix?: string | null
+          tenant_id?: string
+          value?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stats_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       team_members: {
         Row: {
           bio: string | null
@@ -453,6 +494,7 @@ export type Database = {
           created_at: string
           id: string
           is_published: boolean
+          logo_path: string | null
           order_index: number
           quote: string
           rating: number | null
@@ -464,6 +506,7 @@ export type Database = {
           created_at?: string
           id?: string
           is_published?: boolean
+          logo_path?: string | null
           order_index?: number
           quote: string
           rating?: number | null
@@ -475,6 +518,7 @@ export type Database = {
           created_at?: string
           id?: string
           is_published?: boolean
+          logo_path?: string | null
           order_index?: number
           quote?: string
           rating?: number | null

@@ -23,7 +23,7 @@ const EXAMPLE_CATEGORIES = Array.from(new Set(EXAMPLE_PROJECTS.map((p) => p.cate
 export default function ProjectsPreviewPage() {
   return (
     <div className="min-h-full bg-surface text-text">
-      <p className="bg-warning px-6 py-2 text-center text-caption text-white">
+      <p className="border-b-2 border-warning bg-surface-raised px-6 py-2 text-center text-caption text-text">
         Geçici doğrulama sayfası — yayınlanmayacak.
       </p>
 
