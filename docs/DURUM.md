@@ -324,27 +324,91 @@ Supabase projesine uygulanmadı.**
 Ayrıca yeni: `components/ui/Card.tsx` (genel amaçlı kart zemini —
 Container'la aynı minimalist ilke, kendi iç düzen dayatmıyor).
 `app/test-services/page.tsx` silindi (yerini gerçek `ServicesSection`
-aldı). `npm run build`/`lint` temiz, henüz commit'lenmedi.
+aldı). Bu iş commit'lendi (`010f607`) ve push'landı; migration'lar
+uygulandı, tipler yenilendi, `getHeroSection()`/`getServices()`/
+`getAboutSection()` tipli client'a taşındı (`createUntypedServiceRoleClient`
+tamamen kaldırıldı).
+
+**Projeler bölümü + kategori filtresi + detay penceresi kuruldu
+(2026-08-08, aynı gün):** `components/site/projects/` — `types.ts`
+(`ProjectItem`, `GalleryVariant` union: ızgara/mozaik), `ProjectCard.tsx`
+(her iki galeri düzeninde de kullanılan TEK kart — `fill` prop'uyla sabit
+oran/hücre-doldurma arasında geçiş), `ProjectsGridLayout`/
+`ProjectsMosaicLayout` (mozaik gerçek CSS masonry değil, `auto-rows` +
+her 5 projede bir 2x2 span veren, tüm tarayıcılarda çalışan bir grid
+tekniği), `registry.ts`, `ProjectsSection.tsx` (Server Component — veriyi
+çeker, kategori listesini `Array.from(new Set(...))` ile veriden türetir,
+sabit yazılmaz), `ProjectsExplorer.tsx` (**"use client" — sunucu/istemci
+sınırının çizildiği dosya**, sadece filtre + hangi projenin detay
+penceresinde açık olduğu state'ini tutuyor, kendi veri çekmiyor),
+`ProjectDetailModal.tsx` (büyük görsel, açıklama, künye — konum/yıl/
+kategori — ve varsa `live_url` linki).
+
+Filtre butonları `aria-pressed` ile seçili durumu ekran okuyucuya
+bildiriyor, `role="group"` ile gruplanıyor; filtre değişince sayfa hiç
+yeniden yüklenmiyor (React state). Kayıt yoksa/filtre sonucu boşsa
+anlamlı mesaj var. `next/image`'da ilk 3 kart `priority`, gerisi
+varsayılan (lazy).
+
+**Yeni paylaşılan hook:** `lib/hooks/useDialogBehavior.ts` — odak tuzağı/
+Escape/scroll kilidi mantığı `MobileMenu`'den çıkarılıp
+`ProjectDetailModal`'la paylaşılan tek bir hook'a taşındı (bu ikisi
+arasındaki tekrar, form alanlarındaki basit markup'ın aksine, karmaşık/
+hataya açık olduğu için bilinçli olarak soyutlandı — `MobileMenu` de
+retroaktif olarak buna geçirildi).
+
+**Şema kararı (kullanıcıya sorulmadan, gerekçeyle uygulandı):**
+`projects.category` ve `projects.description` yoktu (BAĞLAM "category,
+cover_path, city" diyordu, gerçek şema `location`/`image_path` kullanıyor
+ve kategori/açıklama hiç yoktu) — yeni migration: `supabase/migrations/
+20260808160000_add_projects_category_and_description.sql`, ayrıca demo
+verideki 8 Akme projesine gerçekçi kategori/açıklama backfill edildi
+(filtreleme test edilebilsin diye). **Henüz gerçek Supabase projesine
+uygulanmadı.**
+
+**Lighthouse ölçümü yapıldı:** `npm run build` + `npm run start` ile
+prod sunucu ayağa kaldırılıp `npx lighthouse` (yerel Chrome ile, headless)
+`/test-projects` sayfasına karşı çalıştırıldı — Performance skoru **96**,
+LCP 2.7s, CLS 0, toplam sayfa ağırlığı 253 KiB. **Önemli not:** görsel
+isteği sayısı **0** çıktı çünkü Storage'da henüz hiç gerçek görsel yok
+(`coverPath`/`image_path` hep `null`) — yani bu ölçüm şu an "görsellerin
+etkisi yok" demiyor, "henüz hiç görsel yüklenmedi" diyor. Gerçek fotoğraf
+eklenince yeniden ölçülmeli.
+
+`npm run build`'da tutarlı biçimde sadece `getProjects()`'te (diğerlerinde
+değil) bir "JWT issued at future" hatası gözlendi — izole bir script'le
+doğrulandı, bu ortama özgü/geçici bir zamanlama tuhaflığı, kod hatası
+değil (script'te aynı sorgu net/beklenen "column does not exist" hatasını
+veriyor). Her iki durumda da mevcut hata yönetimi (catch/log/boş dön)
+sayfayı çökertmeden karşılıyor.
+
+**Migration uygulandı, tipler yenilendi, tipli client'a taşındı
+(2026-08-08, aynı gün):** Kullanıcı `20260808160000_...` migration'ını
+SQL Editor'de çalıştırdı, `npm run types:generate` çalıştırdı (bu sefer
+bir token sorunu çıktı — `Unauthorized` hatası, sebebi eski/iptal
+edilmiş token'ın veya token'ın yeni pencerede yeniden ayarlanmamasıydı;
+yeni token oluşturulup çözüldü). `getProjects()` tipli
+`createServiceRoleClient()`'e taşındı, `createUntypedServiceRoleClient()`
+tekrar (üçüncü kez) tamamen kaldırıldı.
+
+`npm run build`/`lint` temiz, henüz commit'lenmedi.
 
 ## Sıradaki adım
 
-1. Bugünkü Hizmetler/Hakkımızda işini commit'le.
-2. İki bekleyen migration'ı (`20260808140000_...`,
-   `20260808150000_add_services_image_and_about_values.sql`) Supabase
-   SQL Editor'de çalıştır, sonra `npm run types:generate`; ardından
-   `getHeroSection()`/`getServices()`/`getAboutSection()`'ı
-   `createServiceRoleClient()`'e taşı (bkz. ilgili yorumlar).
-3. Vitest ve Playwright'ı kur (bkz. `TEST-STRATEJISI.md`) — hâlâ yarım
+1. Bugünkü Projeler bölümü işini commit'le.
+2. Vitest ve Playwright'ı kur (bkz. `TEST-STRATEJISI.md`) — hâlâ yarım
    kalmış bir kurulum, `npm install` adımları henüz çalıştırılmadı.
-4. Panel auth'u (Supabase Auth, platform sahibi girişi) kodla.
-5. Kalan bölümleri (Projeler, İletişim, Referanslar, SSS, Ekip Üyeleri)
-   aynı desene göre kodla; gerçek bir sayfa kompozisyonunda (Navbar +
-   bölümler, `app/(site)/page.tsx`) birleştir — şu an her bölüm/parça
-   ayrı geçici sayfalarda izole test ediliyor, henüz gerçek bir sayfa yok.
-6. İletişim formu için `app/api/contact/` route handler'ı yaz (service role
+3. Panel auth'u (Supabase Auth, platform sahibi girişi) kodla.
+4. Kalan bölümleri (İletişim, Referanslar, SSS, Ekip Üyeleri) aynı desene
+   göre kodla; gerçek bir sayfa kompozisyonunda (Navbar + bölümler,
+   `app/(site)/page.tsx`) birleştir — şu an her bölüm/parça ayrı geçici
+   sayfalarda izole test ediliyor, henüz gerçek bir sayfa yok.
+5. İletişim formu için `app/api/contact/` route handler'ı yaz (service role
    ile `contact_messages`'a insert + e-posta gönderimi).
-7. Site tasarımı ilerledikçe `KURUMSAL-SITE-STANDARTLARI.md`'deki kontrol listesini
+6. Site tasarımı ilerledikçe `KURUMSAL-SITE-STANDARTLARI.md`'deki kontrol listesini
    madde madde işaretle.
+7. Gerçek görsel(ler) Storage'a yüklenince Lighthouse'u tekrar çalıştırıp
+   sayfa ağırlığındaki gerçek görsel etkisini ölç (bkz. yukarıdaki not).
 8. Panelden preset/varyant seçimi arayüzü, panel auth'tan sonra ele alınacak.
 
 ## Açık sorular

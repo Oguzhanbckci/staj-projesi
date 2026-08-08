@@ -224,7 +224,9 @@ export type Database = {
       }
       projects: {
         Row: {
+          category: string | null
           created_at: string
+          description: string | null
           id: string
           image_path: string | null
           is_published: boolean
@@ -236,7 +238,9 @@ export type Database = {
           year: number | null
         }
         Insert: {
+          category?: string | null
           created_at?: string
+          description?: string | null
           id?: string
           image_path?: string | null
           is_published?: boolean
@@ -248,7 +252,9 @@ export type Database = {
           year?: number | null
         }
         Update: {
+          category?: string | null
           created_at?: string
+          description?: string | null
           id?: string
           image_path?: string | null
           is_published?: boolean

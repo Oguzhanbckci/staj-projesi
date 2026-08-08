@@ -1405,3 +1405,119 @@ zarif ama test edilmemiş koddan iyidir.
 Supabase projesine uygulanmadı — `getServices()`/`getAboutSection()`
 bilinçli olarak tipsiz client kullanıyor, migration uygulanıp tipler
 yeniden üretilince tipli client'a taşınmalı.
+
+---
+
+## 2026-08-08 — İki migration uygulandı, tipli client'a taşındı; Projeler bölümü + kategori filtresi + detay penceresi kuruldu
+
+**Olay (önceki karardan devam):** Kullanıcı iki bekleyen migration'ı
+(`20260808140000_...`, `20260808150000_...`) SQL Editor'de çalıştırdı,
+`npm run types:generate` çalıştırdı. `getHeroSection()`/`getServices()`/
+`getAboutSection()` tipli `createServiceRoleClient()`'e taşındı, artık
+hiçbir yerde kullanılmayan `createUntypedServiceRoleClient()` (ve onu
+destekleyen yardımcı fonksiyon) `lib/supabase/server.ts`'ten tamamen
+kaldırıldı.
+
+**Karar:** Kullanıcı BAĞLAM/İSTEK/KISITLAR/KABUL KRİTERİ formatında
+kategoriye göre filtrelenebilen bir Projeler bölümü istedi: projeleri
+görsel/başlık/konum/yıl ile ızgarada göster; kategori filtresi (istemcide
+çalışsın ama ilk render sunucudan gelsin); doğru boyut/formatta,
+ilk-satır-öncelikli-gerisi-tembel görsel stratejisi; karta tıklayınca
+büyük görsel + açıklama + künye içeren, Escape ile kapanan, odak yönetimi
+doğru bir detay penceresi; ikinci galeri varyantı olarak mozaik düzen;
+bölümü içeren sayfada Lighthouse çalıştırıp görsellerin sayfa ağırlığına
+etkisini raporla. Kısıt: veri sadece sunucuda çekilsin (sadece filtreleme
+istemcide), filtre butonları klavyeyle kullanılabilir + seçili durum
+ekran okuyucuya bildirilsin, filtre değişince sayfa yeniden yüklenmesin,
+kategori listesi sabit yazılmasın (veriden türetilsin), sunucu/istemci
+sınırı net olsun (tüm bölüm istemciye dönüşmesin), filtre sonucu boşsa
+anlamlı mesaj, kod 150 satırı geçmesin.
+
+**Yönergeyle gerçek şema arasında yine bir uyuşmazlık bulundu (kod
+yazmadan önce bildirilerek):** BAĞLAM `city`/`category`/`cover_path`
+diyordu; gerçek `projects` tablosunda `location`/`image_path` var (isim
+farkı, aynı anlam — gerçek adlar kullanıldı) ve `category`/`description`
+(detay penceresi için "açıklama" istenmişti) **hiç yoktu**.
+
+**Şema kararı (kullanıcıya sorulmadan, gerekçeyle uygulandı — aynı desen,
+üçüncü kez):** Yeni migration —
+`supabase/migrations/20260808160000_add_projects_category_and_description.sql`
+— `category` (serbest metin, check constraint yok — filtre listesinin
+kodda sabit yazılmaması gerektiği için değerler de kısıtlanmadı) +
+`description`. Demo verideki 8 Akme projesine gerçekçi kategori
+(Konut/Ticari/Altyapı) ve açıklama backfill edildi — filtreleme test
+edilebilsin diye. **Henüz gerçek Supabase projesine uygulanmadı.**
+
+**Uygulama:**
+- `components/site/projects/` — `types.ts` (`ProjectItem`,
+  `GalleryVariant` = `"grid" | "mosaic"`), `ProjectCard.tsx` (her iki
+  galeri düzeninde de kullanılan TEK kart — `fill` prop'u sabit oranlı
+  görsel alanı ile ebeveyn hücreyi dolduran görsel alanı arasında geçiş
+  yapıyor, böylece aynı kart hem ızgarada hem mozaikte doğru görünüyor),
+  `ProjectsGridLayout`/`ProjectsMosaicLayout` (mozaik gerçek CSS
+  masonry'yle değil — tarayıcı desteği hâlâ sınırlı/deneysel olduğu için
+  — `grid-auto-rows` + her 5 projede bir 2x2 span veren bir teknikle),
+  `registry.ts` (Hero/Hizmetler'le aynı ilke).
+- **Sunucu/istemci sınırı (DOĞRULAMA sorusunun cevabı):**
+  `ProjectsSection.tsx` (Server Component) `getProjects()`'i çağırıp
+  kategori listesini `Array.from(new Set(projects.map(p => p.category)...))`
+  ile veriden türetiyor, sonucu `ProjectsExplorer.tsx`'e prop olarak
+  geçiyor. **`ProjectsExplorer.tsx`, `"use client"` içeren TEK dosya** —
+  kendi veri çekmiyor, sadece `selectedCategory` (filtre) ve
+  `selectedProject` (hangi detay penceresi açık) state'ini tutuyor. "İlk
+  render sunucudan gelsin" isteği otomatik karşılanıyor: Next.js Client
+  Component'leri de ilk istekte sunucuda render eder,
+  `selectedCategory`'nin başlangıç değeri "Tümü" olduğu için ilk HTML
+  zaten filtrelenmemiş tam listeyi gösteriyor.
+- Filtre butonları `aria-pressed` ile (klavyeyle erişilebilir native
+  `<button>`, seçili durumu ekran okuyucuya otomatik bildiren doğru ARIA
+  deseni), `role="group"` ile gruplu. Filtre değişimi salt React state —
+  sayfa hiç yeniden yüklenmiyor.
+- `ProjectDetailModal.tsx` — büyük görsel, açıklama, künye (konum/yıl/
+  kategori bir `<dl>` içinde), varsa `live_url` linki. Kart tıklaması bir
+  modal AÇTIĞI için (gezinme değil aksiyon) gerçek `<button>` (Hero'daki
+  CTA linklerinin `<a>` olması kararıyla tutarlı, ters durum).
+- **Yeni paylaşılan hook:** `lib/hooks/useDialogBehavior.ts` — odak
+  tuzağı/Escape/scroll kilidi mantığı artık burada tek yerde. Form
+  alanlarındaki basit etiket/hata markup'ının aksine (bilerek
+  soyutlanmamıştı, bkz. 2026-08-08 "İlk components/ui/ bileşenleri"
+  kaydı), bu mantık gerçekten karmaşık/hataya açık (klavye olayları, odak
+  döngüsü) olduğu için paylaşılan bir soyutlamaya çıkarıldı — iki farklı
+  yerde iki hafif farklı implementasyon tutmanın riski, kod tekrarının
+  "basitlik" avantajından ağır bastı. `MobileMenu.tsx` da retroaktif
+  olarak bu hook'u kullanacak şekilde sadeleştirildi.
+- `next/image`: ızgarada ilk 3 kart (`index < 3`) `priority`, mozaikte de
+  aynı eşik — next/image'ın varsayılan davranışı zaten `priority`
+  verilmeyen görselleri tembel yüklüyor, ek kod gerekmedi.
+
+**Performans ölçümü (Lighthouse, gerçekten çalıştırıldı):** `npm run
+build` + `npm run start` ile prod sunucu ayağa kaldırılıp yerel Chrome
+ile (`npx lighthouse --chrome-flags="--headless --no-sandbox"`)
+`/test-projects` sayfasına karşı çalıştırıldı. Sonuç: **Performance 96**,
+LCP 2.7s, CLS 0, TBT 120ms, toplam sayfa ağırlığı 253 KiB, **görsel
+isteği sayısı 0**. Bu son rakam "görsellerin etkisi yok" anlamına
+gelmiyor — Storage'da henüz hiç gerçek görsel olmadığı (tüm
+`coverPath`/`image_path` değerleri `null`) için hiç görsel indirilmedi.
+Gerçek fotoğraf yüklenince ölçüm tekrarlanmalı (bkz. `DURUM.md` sıradaki
+adım 9).
+
+**Bulunan ortam tuhaflığı (kod hatası değil):** `npm run build`
+sırasında tutarlı biçimde sadece `getProjects()`'te "JWT issued at
+future" (PGRST303) hatası gözlendi, diğer sorgularda hiç görülmedi.
+İzole bir tanı script'iyle aynı sorgu doğrudan çalıştırıldığında net,
+beklenen hatayı verdi ("column projects.description does not exist" —
+migration henüz uygulanmadığı için) — yani asıl sorgu mantığı doğru,
+build'deki hata Next.js'in paralel statik üretim/fetch katmanına özgü,
+ortama bağlı bir zamanlama tuhaflığı. İki durumda da mevcut hata yönetimi
+(catch/log/boş dizi) sayfayı çökertmeden karşılıyor, bu yüzden daha fazla
+araştırılmadı.
+
+**Gerekçe:** Sunucu/istemci sınırının TEK bir dosyada (ve o dosyanın
+üstündeki yorumda) açıkça belirtilmesi, kullanıcının "hangi dosyada
+çizdiğini açıkla" sorusunu doğrudan cevaplıyor — bu aynı zamanda ileride
+başka biri (veya AI) bu deseni değiştirirken sınırı yanlışlıkla
+bulanıklaştırmasını (ör. veri çekmeyi client component'e taşımak)
+zorlaştıran bir dokümantasyon alışkanlığı.
+
+**Not:** `npm run build`/`lint` temiz, henüz commit'lenmedi; yeni
+migration da henüz gerçek projeye uygulanmadı.

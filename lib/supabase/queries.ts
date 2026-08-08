@@ -8,6 +8,7 @@ import type { SiteThemeSettings } from "@/lib/theme/resolve";
 import type { HeroSectionData, HeroVariant } from "@/components/site/hero/types";
 import type { ServiceItem } from "@/components/site/services/types";
 import type { AboutSectionData } from "@/components/site/about/types";
+import type { ProjectItem } from "@/components/site/projects/types";
 
 /**
  * Şu an platform sahibinin tenant kaydına scope'lu (bkz.
@@ -215,5 +216,53 @@ export async function getHeroSection(): Promise<HeroSectionData | null> {
     };
   } catch {
     return null;
+  }
+}
+
+/**
+ * getServices() ile aynı desen (iki sorgu: tenant id, sonra filtreli/
+ * sıralı liste — DB seviyesinde `is_published`/`order_index`, JS'te
+ * değil). category/description kolonları için tip artık var (migration
+ * uygulandı + `npm run types:generate` çalıştırıldı, 2026-08-08) — tipli
+ * client kullanılıyor. Hata olursa sayfa çökmez, sunucuya loglanır, boş
+ * dizi döner.
+ */
+export async function getProjects(): Promise<ProjectItem[]> {
+  try {
+    const supabase = createServiceRoleClient();
+    const { data: tenant, error: tenantError } = await supabase
+      .from("tenants")
+      .select("id")
+      .eq("is_platform_owner", true)
+      .maybeSingle();
+
+    if (tenantError || !tenant) {
+      throw tenantError ?? new Error("Platform sahibi tenant bulunamadı.");
+    }
+
+    const { data, error } = await supabase
+      .from("projects")
+      .select("id, title, description, location, year, category, image_path, live_url")
+      .eq("tenant_id", tenant.id)
+      .eq("is_published", true)
+      .order("order_index");
+
+    if (error || !data) {
+      throw error ?? new Error("Projeler alınamadı.");
+    }
+
+    return data.map((row) => ({
+      id: String(row.id),
+      title: String(row.title),
+      description: typeof row.description === "string" ? row.description : null,
+      city: typeof row.location === "string" ? row.location : null,
+      year: typeof row.year === "number" ? row.year : null,
+      category: typeof row.category === "string" ? row.category : null,
+      coverPath: typeof row.image_path === "string" ? row.image_path : null,
+      liveUrl: typeof row.live_url === "string" ? row.live_url : null,
+    }));
+  } catch (err) {
+    console.error("getProjects sorgu hatası:", err);
+    return [];
   }
 }

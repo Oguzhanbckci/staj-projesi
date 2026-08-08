@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useDialogBehavior } from "@/lib/hooks/useDialogBehavior";
 import { LinkButton } from "@/components/ui/LinkButton";
 import type { NavLink } from "./Navbar";
 
@@ -13,9 +13,10 @@ export interface MobileMenuProps {
   contactLabel: string;
 }
 
-// Açıkken: odak menü içine taşınır ve Tab/Shift+Tab menü içinde döner
-// (focus trap), Escape kapatır, body scroll kilitlenir. Kapanınca odak
-// Navbar'daki tetikleyici butona döner (bkz. Navbar.tsx, onClose).
+// Odak tuzağı/Escape/scroll kilidi artık ortak bir hook'ta (bkz.
+// lib/hooks/useDialogBehavior.ts — ProjectDetailModal'la paylaşılıyor).
+// Kapanınca odak Navbar'daki tetikleyici butona döner (bkz. Navbar.tsx,
+// onClose) — bu, hook'un sorumluluğu değil, çağıranın.
 export function MobileMenu({
   id,
   open,
@@ -24,39 +25,7 @@ export function MobileMenu({
   contactHref,
   contactLabel,
 }: MobileMenuProps) {
-  const panelRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!open) return;
-
-    document.body.style.overflow = "hidden";
-    const focusable = panelRef.current?.querySelectorAll<HTMLElement>("a, button");
-    focusable?.[0]?.focus();
-
-    function onKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape") {
-        onClose();
-        return;
-      }
-      if (event.key !== "Tab" || !focusable || focusable.length === 0) return;
-
-      const first = focusable[0];
-      const last = focusable[focusable.length - 1];
-      if (event.shiftKey && document.activeElement === first) {
-        event.preventDefault();
-        last.focus();
-      } else if (!event.shiftKey && document.activeElement === last) {
-        event.preventDefault();
-        first.focus();
-      }
-    }
-
-    document.addEventListener("keydown", onKeyDown);
-    return () => {
-      document.body.style.overflow = "";
-      document.removeEventListener("keydown", onKeyDown);
-    };
-  }, [open, onClose]);
+  const panelRef = useDialogBehavior(open, onClose);
 
   if (!open) return null;
 
