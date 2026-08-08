@@ -275,30 +275,72 @@ gerçek Storage URL'i), `next.config.ts`'e `images.remotePatterns`
 butonu). Yol boyunca 2 gerçek hata bulundu ve düzeltildi: `Container`'da
 boş interface (ESLint), demo sayfasında iki varyantı üst üste
 gösterirken oluşan `id="hero"` çakışması (geçersiz HTML — toggle'a
-çevrilerek çözüldü). `npm run build`/`lint` temiz, henüz commit'lenmedi.
+çevrilerek çözüldü). Bu iş commit'lendi (`b28dafe`).
 
 Yeni bir migration yazıldı: `supabase/migrations/
 20260808140000_add_hero_variant_and_secondary_cta.sql`
 (`hero_sections.variant` + `secondary_cta_text`/`secondary_cta_link`) —
 **henüz gerçek Supabase projesine uygulanmadı.**
 
+**Hizmetler + Hakkımızda bölümleri kuruldu (2026-08-08, aynı gün):**
+`components/site/services/` — Hero'daki 4 dosyalı desenle aynı
+(`types.ts`, `ServiceCardIcon`/`ServiceCardImage` varyantları — aynı
+veriyle, sadece düzen farklı —, `registry.ts`, `ServicesSection.tsx`).
+`ServicesSection` kendi verisini kendi çeker (Server Component), sadece
+`is_published=true` + `order_index` sırasıyla (DB sorgusunda, JS'te
+değil); **kayıt yoksa `null` döner, bölüm hiç render edilmez** — bilinçli
+tasarım kararı (boş alan bırakmak yerine). Veri çekme hatasında sayfa
+çökmez, `console.error` ile sunucuya loglanır, boş dizi döner — bu,
+gerçek migration henüz uygulanmadığı için build sırasında fiilen
+tetiklendi ve doğrulandı ("column services.image_path does not exist"
+hatası loglandı, sayfa yine de hatasız üretildi). Uzun başlık/açıklamada
+kart bozulmasın diye `line-clamp-2`/`line-clamp-3` uygulandı, kasıtlı
+aşırı-uzun bir örnek veriyle (`app/test-sections/page.tsx`, "Taşma
+testi" bölümü) doğrulandı. Işıldayan ikonlar için **`lucide-react`
+kuruldu** (kullanıcı onayıyla — demo verideki ikon isimleri zaten bu
+kütüphaneyle birebir örtüşüyordu); `components/site/services/icons.tsx`
+ikon adını bileşene eşliyor, bilinmeyen isim için `Wrench` yedek.
+
+`components/site/about/AboutSection.tsx` — firma hikayesi, kuruluş yılı,
+kısa değerler listesi, görsel; `about_sections`'tan geliyor, aynı
+"kayıt yoksa render etme" ilkesiyle.
+
+**Yol boyunca bulunan ve düzeltilen 3 gerçek sorun:** (1) `test-services`
+silinince Next.js'in `.next` tip önbelleği bozuk referans verdi —
+`.next` temizlenip çözüldü (aynı türden önceki `.next` cache bulgusuyla
+tutarlı). (2) `ServiceCardIcon`'da `const Icon = ...; <Icon/>` deseni
+`react-hooks/static-components` ESLint kuralını tetikledi (render
+sırasında bileşen oluşturma riski) — ikon seçimi/render'ı küçük harfli
+bir yardımcı fonksiyona (`renderServiceIcon`) taşınarak düzeltildi.
+(3) `ComponentType` yanlışlıkla `lucide-react`'ten import edilmişti,
+`react`'e düzeltildi.
+
+**Şema kararı (kullanıcıya sorulmadan, gerekçeyle uygulandı):**
+`services.image_path` ve `about_sections.core_values` (`text[]`) yoktu —
+yeni migration: `supabase/migrations/
+20260808150000_add_services_image_and_about_values.sql`. **Henüz gerçek
+Supabase projesine uygulanmadı.**
+
+Ayrıca yeni: `components/ui/Card.tsx` (genel amaçlı kart zemini —
+Container'la aynı minimalist ilke, kendi iç düzen dayatmıyor).
+`app/test-services/page.tsx` silindi (yerini gerçek `ServicesSection`
+aldı). `npm run build`/`lint` temiz, henüz commit'lenmedi.
+
 ## Sıradaki adım
 
-1. Bugünkü Hero/Navbar/varyant deseni işini commit'le.
-2. Yeni migration'ı (`20260808140000_add_hero_variant_and_secondary_cta.sql`)
-   Supabase SQL Editor'de çalıştır, sonra `npm run types:generate` ile
-   tipleri yenile; ardından `getHeroSection()`'ı `createServiceRoleClient()`'e
-   taşı (bkz. `lib/supabase/queries.ts` yorumu — `theme_preset`'te
-   yapılan aynı adım).
+1. Bugünkü Hizmetler/Hakkımızda işini commit'le.
+2. İki bekleyen migration'ı (`20260808140000_...`,
+   `20260808150000_add_services_image_and_about_values.sql`) Supabase
+   SQL Editor'de çalıştır, sonra `npm run types:generate`; ardından
+   `getHeroSection()`/`getServices()`/`getAboutSection()`'ı
+   `createServiceRoleClient()`'e taşı (bkz. ilgili yorumlar).
 3. Vitest ve Playwright'ı kur (bkz. `TEST-STRATEJISI.md`) — hâlâ yarım
    kalmış bir kurulum, `npm install` adımları henüz çalıştırılmadı.
 4. Panel auth'u (Supabase Auth, platform sahibi girişi) kodla.
-5. Kalan bölümleri (Hakkımızda, Hizmetler, Projeler, İletişim, Referanslar,
-   SSS, Ekip Üyeleri) Hero'daki desene göre `components/site/` altına
-   kodla; gerçek bir sayfa kompozisyonunda (Navbar + bölümler) birleştir
-   — şu an her bölüm/parça ayrı geçici sayfalarda izole test ediliyor,
-   henüz gerçek bir sayfa yok. Bu adımda `app/test-services/page.tsx`
-   geçici sayfası silinecek.
+5. Kalan bölümleri (Projeler, İletişim, Referanslar, SSS, Ekip Üyeleri)
+   aynı desene göre kodla; gerçek bir sayfa kompozisyonunda (Navbar +
+   bölümler, `app/(site)/page.tsx`) birleştir — şu an her bölüm/parça
+   ayrı geçici sayfalarda izole test ediliyor, henüz gerçek bir sayfa yok.
 6. İletişim formu için `app/api/contact/` route handler'ı yaz (service role
    ile `contact_messages`'a insert + e-posta gönderimi).
 7. Site tasarımı ilerledikçe `KURUMSAL-SITE-STANDARTLARI.md`'deki kontrol listesini

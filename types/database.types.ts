@@ -16,6 +16,7 @@ export type Database = {
     Tables: {
       about_sections: {
         Row: {
+          core_values: string[] | null
           created_at: string
           description: string | null
           founded_year: number | null
@@ -26,6 +27,7 @@ export type Database = {
           title: string
         }
         Insert: {
+          core_values?: string[] | null
           created_at?: string
           description?: string | null
           founded_year?: number | null
@@ -36,6 +38,7 @@ export type Database = {
           title: string
         }
         Update: {
+          core_values?: string[] | null
           created_at?: string
           description?: string | null
           founded_year?: number | null
@@ -174,9 +177,12 @@ export type Database = {
           cta_text: string | null
           id: string
           is_published: boolean
+          secondary_cta_link: string | null
+          secondary_cta_text: string | null
           subtitle: string | null
           tenant_id: string
           title: string
+          variant: string
         }
         Insert: {
           background_image_path?: string | null
@@ -185,9 +191,12 @@ export type Database = {
           cta_text?: string | null
           id?: string
           is_published?: boolean
+          secondary_cta_link?: string | null
+          secondary_cta_text?: string | null
           subtitle?: string | null
           tenant_id: string
           title: string
+          variant?: string
         }
         Update: {
           background_image_path?: string | null
@@ -196,9 +205,12 @@ export type Database = {
           cta_text?: string | null
           id?: string
           is_published?: boolean
+          secondary_cta_link?: string | null
+          secondary_cta_text?: string | null
           subtitle?: string | null
           tenant_id?: string
           title?: string
+          variant?: string
         }
         Relationships: [
           {
@@ -263,6 +275,7 @@ export type Database = {
           description: string | null
           icon: string | null
           id: string
+          image_path: string | null
           is_published: boolean
           order_index: number
           tenant_id: string
@@ -273,6 +286,7 @@ export type Database = {
           description?: string | null
           icon?: string | null
           id?: string
+          image_path?: string | null
           is_published?: boolean
           order_index?: number
           tenant_id: string
@@ -283,6 +297,7 @@ export type Database = {
           description?: string | null
           icon?: string | null
           id?: string
+          image_path?: string | null
           is_published?: boolean
           order_index?: number
           tenant_id?: string

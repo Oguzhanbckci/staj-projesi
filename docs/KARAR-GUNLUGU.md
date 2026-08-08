@@ -1297,3 +1297,111 @@ sistemini bu tutarlılığı garanti etmek için kullanıyor.
 
 **Not:** `npm run build`/`lint` temiz, ama henüz commit'lenmedi; yeni
 migration da henüz gerçek projeye uygulanmadı.
+
+---
+
+## 2026-08-08 — Hizmetler + Hakkımızda bölümleri, `lucide-react` kuruldu
+
+**Karar:** Kullanıcı BAĞLAM/İSTEK/KISITLAR/KABUL KRİTERİ formatında,
+Hizmetler bölümünü istedi: sadece yayınlanmış hizmetleri `order_index`
+sırasıyla çek ve ızgarada göster; iki kart varyantı (ikonlu sade, görselli
+büyük — aynı veriyle); boş durum kararı (kayıt yoksa gizle, boş alan
+bırakma) dökümana yazılsın; Hakkımızda bölümü (hikaye, kuruluş yılı,
+değerler listesi, görsel — içerik tablosundan); taşma testi (çok uzun
+başlık/açıklama kartı bozmasın); duyarlılık kontrolü (360/768/1440px,
+yatay kaydırma olmamalı). Kısıt: veri sunucu bileşeninde çekilsin, sadece
+`is_published=true` + `order_index`, duyarlı ızgara (mobil 1/tablet 2/
+masaüstü 3 sütun), kayıt yoksa bölüm hiç render edilmesin, üretilen
+Supabase tipleri kullanılsın (`any` yok), mevcut `Card` bileşeni
+kullanılsın (yeni kart stili uydurulmasın).
+
+**Yönergeyle gerçek durum arasında 3 uyuşmazlık bulundu (kod yazmadan
+önce, kullanıcıya bildirilerek):**
+1. **`Card` bileşeni yoktu** — BAĞLAM "hazır" diyordu, `components/ui/`'da
+   yoktu. Genel amaçlı, minimal bir `Card.tsx` (Container'la aynı ilke —
+   kendi iç düzen dayatmıyor) yazılarak çözüldü.
+2. **`services.image_path` kolonu yoktu** — BAĞLAM "var" diyordu, şemada
+   yoktu. "Görselli büyük kart" varyantı için gerekliydi.
+3. **`about_sections`'ta "değerler listesi" için kolon yoktu.**
+
+**Şema kararı (kullanıcıya sorulmadan, gerekçeyle uygulandı, `theme_preset`/
+`hero_sections.variant`'la aynı desen):** Yeni migration —
+`supabase/migrations/20260808150000_add_services_image_and_about_values.sql`
+— `services.image_path` (text) + `about_sections.core_values` (`text[]`,
+"values" SQL'de ayrılmış kelime olduğu için `testimonials`/`references`
+örneğindeki gibi farklı isimlendirildi). **Henüz gerçek Supabase
+projesine uygulanmadı.**
+
+**İkon kararı — kullanıcıya soruldu (AskUserQuestion):** `services.icon`
+kolonundaki demo değerleri ('home', 'building-2', 'hammer' vb.) Lucide
+ikon kütüphanesinin isimleriyle birebir örtüşüyordu ama proje hiçbir ikon
+paketi kullanmıyordu. Seçenekler: `lucide-react` kur (temiz/profesyonel,
+demo veriyle zaten uyumlu) vs. yeni bağımlılık eklemeden birkaç ikonu
+elle SVG olarak çiz. **Kullanıcı `lucide-react` kurulumunu seçti** —
+`npm install lucide-react` komutu verildi, kullanıcı çalıştırdı.
+
+**Uygulama:**
+- `components/site/services/` — Hero'daki 4 dosyalı desenin birebir
+  aynısı: `types.ts` (`ServiceItem`, `ServiceCardVariant` union),
+  `ServiceCardIcon`/`ServiceCardImage` (aynı `ServiceItem` props, sadece
+  düzen farklı — ikonlu kartta `Image`'da `priority` yok, çünkü ızgara
+  ekranın altında, LCP değil — Hero'dan kasıtlı fark), `registry.ts`
+  (`Record<ServiceCardVariant, Component>`), `ServicesSection.tsx`
+  (async Server Component — kendi verisini kendi çeker, `cardVariant`
+  prop'u var ama şu an DB'den değil çağırandan geliyor; ileride
+  `site_settings`'e benzer bir kolonla bağlanması aynı registry
+  sayesinde kolay).
+- `lib/supabase/queries.ts` → `getServices()` yeniden yazıldı: platform
+  tenant'ın id'sini bulup (`tenants.is_platform_owner=true`), SONRA
+  `services`'i `tenant_id` + `is_published=true` + `order_index` ile DB
+  seviyesinde filtreli/sıralı çekiyor (JS'te filtrelemek yerine — iki
+  ayrı sorgu, ama PostgREST'in iç içe (nested embed) filtreleme
+  sözdiziminin kırılgan/test edilmemiş olma riskinden kaçınmak için
+  bilinçli tercih). Hata durumunda `console.error` + boş dizi dönüyor
+  (throw etmiyor) — kabul kriterinin gereği. `getAboutSection()` eklendi,
+  `getHeroSection()`'la aynı iç içe embed deseni (tekil kayıt).
+- `components/site/about/AboutSection.tsx` — tek varyant (istenmedi),
+  `getAboutSection()`'dan veri çekiyor, kayıt yoksa `null`.
+- **Boş durum kararı (dökümante edildi, kısıtın kendisi netleştirdi):**
+  Kayıt yoksa bölüm hiç render edilmez — ne boş bir "henüz hizmet yok"
+  mesajı, ne boş bir alan. Hem `ServicesSection` hem `AboutSection` kendi
+  veri kontrolünü kendi yapıp `null` döner (Hero'nun aksine — Hero'da bu
+  kontrol çağırana bırakılmıştı; burada bölümün kendi içine alınması daha
+  sağlam bulundu, unutulma riski yok).
+- **Taşma testi:** `line-clamp-2` (başlık) / `line-clamp-3` (açıklama)
+  uygulandı; `app/test-sections/page.tsx`'e kasıtlı çok uzun başlık/
+  açıklamalı bir "Taşma testi" bölümü eklendi, derlenmiş CSS'te
+  `line-clamp-3`'ün gerçek `-webkit-line-clamp` kuralı ürettiği
+  doğrulandı.
+- `next.config.ts`'teki `images.remotePatterns` zaten tüm Storage
+  bucket'larını kapsadığı için (`/storage/v1/object/public/**`) hizmet/
+  hakkımızda görselleri için ek bir değişiklik gerekmedi.
+
+**Yol boyunca bulunan ve düzeltilen 3 gerçek sorun:**
+1. `app/test-services/page.tsx` silinince Next.js'in `.next` tip
+   önbelleği (`validator.ts`) silinen sayfaya bozuk bir referans verdi,
+   `npm run build` bu yüzden başarısız oldu — `.next` temizlenip
+   yeniden derlenerek çözüldü (2026-08-08'deki önceki `.next` cache
+   bulgusuyla aynı kökten, ayrı bir tetikleyici).
+2. `ServiceCardIcon`'da `const Icon = getServiceIcon(icon); <Icon/>`
+   deseni ESLint'in `react-hooks/static-components` kuralını tetikledi
+   ("render sırasında bileşen oluşturuluyor", state sıfırlanma riski).
+   İkon seçimi + render'ı, adı küçük harfle başlayan (bileşen olarak
+   algılanmayan) bir yardımcı fonksiyona (`renderServiceIcon`, JSX
+   elementi döndürüyor) taşınarak düzeltildi — `icons.ts` da bu yüzden
+   `icons.tsx`'e çevrildi.
+3. `ComponentType` tipi yanlışlıkla `lucide-react`'ten import edilmişti
+   (`lucide-react`'te böyle bir export yok) — `react`'e düzeltildi.
+
+**Gerekçe:** Boş durum kararının (kayıt yoksa gizle) bilinçli ve
+dökümante edilmiş olması önemli — aksi halde ileride biri "neden hizmet
+bölümü bazen hiç görünmüyor" diye şaşırabilir. İki ayrı sorgu (tenant id
++ services) tercihi, PostgREST'in iç içe filtreleme sözdizimini
+denemeden production koduna sokmamak için — basit/doğrulanabilir kod,
+zarif ama test edilmemiş koddan iyidir.
+
+**Not:** İki migration da (`20260808140000_...`,
+`20260808150000_add_services_image_and_about_values.sql`) henüz gerçek
+Supabase projesine uygulanmadı — `getServices()`/`getAboutSection()`
+bilinçli olarak tipsiz client kullanıyor, migration uygulanıp tipler
+yeniden üretilince tipli client'a taşınmalı.
