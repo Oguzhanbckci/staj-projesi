@@ -75,3 +75,19 @@ insert into public.contact_sections (tenant_id, address, phone, email, is_publis
 insert into public.contact_messages (tenant_id, sender_name, sender_phone, message) values
   ('11111111-1111-1111-1111-111111111111', 'Mehmet Yılmaz', '+90 532 000 00 00', 'Konut projeniz hakkında bilgi almak istiyorum.'),
   ('11111111-1111-1111-1111-111111111111', 'Ayşe Demir', '+90 533 000 00 00', 'Teklif almak için görüşmek isteriz.');
+
+-- Platform sahibinin kendi tenant satırı (2026-08-08) — is_platform_owner
+-- kısmi unique index'e göre en fazla 1 satırda true olabilir, bu o satır.
+-- Bilinçli olarak sadece tenants + site_settings ekleniyor; hero/services/
+-- projects/contact gibi gerçek tanıtım sitesi içeriği ayrı bir iş (bkz.
+-- docs/DURUM.md "Sıradaki adım") — burada amaç sadece lib/theme/
+-- (getSiteThemeSettings) sorgusunun gerçek veriyle çalıştığını doğrulamak.
+-- domain, gerçek alan adı alınana kadar bir yer tutucu.
+-- theme_mode=dark + theme_preset=modern-koyu bilinçli seçildi: varsayılan
+-- (kurumsal-mavi/light) değerlerle aynı olsaydı, render sonucu gerçekten
+-- DB'den mi geldiği yoksa fallback'e mi düştüğü ayırt edilemezdi.
+insert into public.tenants (id, name, domain, is_published, is_platform_owner, theme_mode) values
+  ('33333333-3333-3333-3333-333333333333', 'Platform', 'platform-sitesi.local', true, true, 'dark');
+
+insert into public.site_settings (tenant_id, seo_title, theme_preset) values
+  ('33333333-3333-3333-3333-333333333333', 'Kurumsal Web Sitesi Hizmeti', 'modern-koyu');

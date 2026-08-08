@@ -1017,3 +1017,150 @@ token'lara doğal bir genişlemesi.
 **Not:** Token'lar henüz hiçbir gerçek bileşende kullanılmıyor
 (`components/site/` hâlâ boş) — bu iş, ilk bölüm bileşenlerinin (Hero,
 İletişim) önkoşulu olarak yapıldı, onların yerine geçmiyor.
+
+---
+
+## 2026-08-08 — Tema mimarisi kuruldu: DB'den `<html>`'e enjeksiyon, iki preset, `docs/TEMA-MIMARISI.md`
+
+**Karar:** Kullanıcı, tema değerlerinin (marka rengi, köşe yarıçapı, font)
+Supabase'deki ayarlar tablosunda tutulup panelden değiştirilebilmesi
+gereken bir yapı istedi — BAĞLAM/İSTEK/KISITLAR/KABUL KRİTERİ formatında,
+sırasıyla: (1) `globals.css`'te `:root`/koyu tema blokları [önceki
+oturumda zaten yapılmıştı, bu oturumda sadece doğrulandı], (2) Tailwind'i
+CSS değişkenlerine bağlama [aynı şekilde önceden yapılmıştı], (3) site
+ayarlarından gelen tema değerlerini sayfaya enjekte eden, DB kaynaklı bir
+yapı, (4) "Kurumsal Mavi" ve "Modern Koyu" adında iki hazır preset, (5)
+FOUC'un kesinlikle engellenmesi, (6) `docs/TEMA-MIMARISI.md`.
+
+**Şema kararı (kullanıcıya sorulmadan, gerekçeyle uygulandı):**
+`site_settings` tablosunda `primary_color`/`secondary_color` var ama
+yarıçap/font için kolon yoktu. Bunları ham `radius`/`font` kolonları
+olarak eklemek yerine, kullanıcının zaten istediği "preset" fikrini
+kullanarak **tek bir `site_settings.theme_preset` kolonu** eklendi
+(`kurumsal-mavi` | `modern-koyu`, check constraint, varsayılan
+`kurumsal-mavi`) — yeni migration:
+`supabase/migrations/20260808120000_add_theme_preset_to_site_settings.sql`.
+Radius ve font tamamen bu preset'e bağlı (kodda, `lib/theme/presets.ts`);
+`primary_color` ise preset'in varsayılan marka rengini ezen, tenant'a özel
+serbest bir override olarak kaldı. Gerekçe: raw radius/font kolonları için
+panelde anlamlı bir seçim arayüzü kurmak zor (bir renk seçici mantıklı,
+bir "12px mi 13px mi" seçici değil) — kürasyonlu 2 preset arasından seçim
+hem "ileride panelden seçilecek" isteğiyle hem de ürünün "hazır bölüm
+kütüphanesi, serbest page builder değil" felsefesiyle (bkz. `PRD.md`,
+2026-08-06 "Platform paneli: demo kataloğu...") tutarlı.
+
+**Uygulama:**
+- `lib/theme/presets.ts` — `THEME_PRESETS` (2 preset: Kurumsal Mavi
+  varsayılan/`#2561c1`+`#6998e2`, ölçülü radius, Geist Sans; Modern Koyu/
+  `#166966`+`#24a8a4` — yeni bir teal hue, 178°, aynı WCAG yöntemiyle
+  hesaplanıp doğrulandı —, daha yuvarlak radius, Manrope).
+- `lib/theme/resolve.ts` — `resolveThemeTokens()`: preset + tenant'ın özel
+  `primary_color`'ını gerçek CSS değişkenlerine çevirir; serbest renk
+  girildiğinde `pickReadableOnColor()` (basit relative-luminance sezgisi)
+  ile buton metninin beyaz mı yakın-siyah mı olacağına karar verir.
+- `lib/supabase/queries.ts` → `getSiteThemeSettings()` — DB'den üç değeri
+  okur. **Tenant çözümlemesi henüz yok** (Host-bazlı middleware
+  yazılmadı) — şimdilik `is_platform_owner = true` satırı "aktif site"
+  olarak kullanılıyor, bilinçli ve dokümante edilmiş bir geçici karar.
+  Supabase erişilemezse veya `theme_preset` kolonu yoksa (migration
+  uygulanmadıysa) **sessizce güvenli varsayılana düşer** — kök layout hiç
+  çökmez; bu davranış `npm run build`'ın statik sayfa üretimi sırasında
+  fiilen tetiklenip doğrulandı (migration henüz gerçek projeye
+  uygulanmadığı için build anında fallback yolu çalıştı).
+- `lib/supabase/server.ts` — `createUntypedServiceRoleClient()` eklendi
+  (env okuma mantığı `readServiceRoleCredentials()`'a çıkarılarak tekrar
+  önlendi). `theme_preset` kolonu `types/database.types.ts`'te henüz
+  olmadığı (migration uygulanıp `npm run types:generate` çalıştırılmadığı)
+  için `getSiteThemeSettings()` bilinçli olarak bu tipsiz client'ı
+  kullanıyor, dönen veriyi elle doğruluyor — kalıcı bir çözüm değil, tipler
+  yenilenince `createServiceRoleClient()`'e taşınmalı (bkz.
+  `TEMA-MIMARISI.md` madde 6).
+- `app/layout.tsx` — async Server Component'e çevrildi, `getSiteThemeSettings()`
+  + `resolveThemeTokens()`'ı çağırıp sonucu `<html data-theme={...}
+  style={styleVars}>` olarak doğrudan sunucu tarafında üretilen HTML'e
+  yazıyor. Hiçbir `"use client"` yok. Manrope font'u (Modern Koyu preset'i
+  için) Geist'in yanına eklendi — `next/font/google` çalışma zamanı
+  verisine göre şartlı font yüklemeye izin vermediği için iki font da
+  build zamanında her zaman yükleniyor; bu bilinen bir maliyet, dokümante
+  edildi.
+- **FOUC doğrulaması:** `npm run build` sonrası üretilen
+  `.next/server/app/index.html` incelendi — `<html>` etiketi ilk baytından
+  itibaren `data-theme="light"` ve çözümlenmiş `--color-brand`/`--radius-*`/
+  `--font-sans` değerlerini taşıyor; hiçbir client JS'in "düzeltmesi"
+  gerekmiyor.
+- `docs/TEMA-MIMARISI.md` oluşturuldu (tema akışı, token listesi, preset
+  tablosu, yeni tema/token ekleme adımları — statik token 1 dosya,
+  preset-driven token 3 dosya, yeni preset 3 dosya —, FOUC önlemi
+  paragrafı). `CLAUDE.md`'nin okuma sırasına 9. madde olarak eklendi;
+  `docs/DURUM.md` güncellendi.
+
+**Gerekçe:** Kullanıcının kendi ifadesiyle tema sistemi bu token'lar
+üzerine kurulacaktı — bu oturum, `TASARIM-SISTEMI.md`'deki statik
+token'ları gerçek, veritabanı-yönetimli bir çalışma zamanı sistemine
+bağlayan köprü. Sunucu tarafı enjeksiyon (client JS yok) hem "gereksiz
+istemci bileşeni yaratma" kısıtını hem de FOUC gereksinimini aynı anda,
+ekstra bir mekanizma gerektirmeden karşılıyor.
+
+**Not:** Yeni migration henüz gerçek Supabase projesine uygulanmadı —
+kullanıcı SQL Editor'den çalıştıracak, ardından `npm run types:generate`
+gerekiyor (bkz. `DURUM.md` "Sıradaki adım"). Panelden preset seçimi
+arayüzü henüz yok, panel auth'tan sonra ele alınacak.
+
+---
+
+## 2026-08-08 — Migration uygulandı, tipler yenilendi, gerçek veriyle uçtan uca doğrulandı; `.next` cache bulgusu
+
+**Olay:** Kullanıcı bir önceki karardaki migration'ı (`20260808120000_
+add_theme_preset_to_site_settings.sql`) SQL Editor'de çalıştırdı
+("Success"). Süreçte iki küçük engel çıktı: (1) token'ı ayarlayıp
+`npm run types:generate`'i yanlış klasörde (`C:\WINDOWS\System32`, PowerShell'in
+o pencerede öyle açılmış olmasından) çalıştırdı — `cd` ile proje klasörüne
+geçilerek çözüldü; (2) Personal Access Token'ı sohbete yapıştırdı — kalıcı
+bir sır sızıntısı riski küçük olsa da (bu token sadece hesap düzeyinde tip
+üretimi yapabiliyor, veri erişimi yok) kullanıcıya token'ı iptal edip
+yenisini oluşturması söylendi.
+
+**Uygulama:**
+- `npm run types:generate` başarıyla çalıştı, `types/database.types.ts`'e
+  `theme_preset: string` (Row) / `theme_preset?: string` (Insert/Update)
+  eklendiği doğrulandı (kullanıcının yapıştırdığı `git diff` çıktısıyla).
+- `lib/supabase/queries.ts` → `getSiteThemeSettings()` tipsiz client'tan
+  `createServiceRoleClient()`'e taşındı; `lib/supabase/server.ts`'teki
+  artık kullanılmayan `createUntypedServiceRoleClient()` (ve onu
+  destekleyen `readServiceRoleCredentials()` yardımcı fonksiyonu) tamamen
+  kaldırıldı — ölü kod bırakılmadı.
+- **Platform sahibinin tenant satırı hâlâ yoktu** (madde 2 kaydında bu iş
+  ertelenmişti) — kullanıcıya soruldu, "şimdi ekle" seçildi.
+  `supabase/seed.sql`'e yeni bir `insert` bloğu eklendi: `tenants`
+  (`is_platform_owner=true`, `theme_mode='dark'`) + `site_settings`
+  (`theme_preset='modern-koyu'`). Bilinçli olarak varsayılan
+  (kurumsal-mavi/light) değerlerin **dışında** bir kombinasyon seçildi —
+  aksi halde render sonucunun gerçekten DB'den mi geldiği yoksa fallback'e
+  mi düştüğü ayırt edilemezdi. Kullanıcı bu `insert`'i SQL Editor'de
+  çalıştırdı ("Success").
+- **Bulgu:** İlk `npm run build`'da hâlâ eski (fallback) sonuç geldi.
+  Geçici bir tanı script'iyle (`scripts/_debug-theme.mjs`, sonradan
+  silindi) doğrudan Supabase'e sorgu atılıp uygulamanın kullandığı **aynı**
+  sorgunun doğru veriyi (`theme_mode: "dark"`, `theme_preset: "modern-koyu"`)
+  döndürdüğü kanıtlandı — yani sorun kodda değildi. `.next` klasörü
+  silinip yeniden derlenince `<html data-theme="dark"
+  style="--color-brand:#24a8a4;...">` doğru geldi. Sonuç: **Next.js'in
+  build/route cache'i, kod değişmediği için Supabase'deki dış veri
+  değişikliğini algılamadı**, önceki (satır yokken alınan) sonucu
+  önbellekte tuttu. Bu, prod'da zaten `MIMARI.md` madde 6'daki on-demand
+  ISR (`revalidatePath`/`revalidateTag`, panelden tetiklenen) kararının
+  tam olarak neden gerekli olduğunu somut biçimde doğruladı — panel henüz
+  yok, o yüzden bu tetikleyici de yok, ama mimari zaten bunu öngörmüştü.
+  Bulgu `docs/TEMA-MIMARISI.md` madde 6'ya eklendi.
+- `docs/VERİ-MODELİ.md`'deki "2 tenant" ifadesi 3'e güncellendi.
+
+**Gerekçe:** Kod yazılıp derlenmiş olması yeterli değil — gerçek veriyle
+uçtan uca doğrulanmadan "bitti" sayılmaz (`TEST-STRATEJISI.md`, Definition
+of Done). Bu doğrulama sürecinin kendisi, ayrı bir mimari riski (stale
+cache) gün yüzüne çıkardı; bu bulgunun dokümante edilmemesi, ileride aynı
+şaşkınlığın (yeni bir tema/tenant verisi eklenip build alınca neden hâlâ
+eski görünüyor) tekrar yaşanmasına yol açardı.
+
+**Not:** Platform sahibinin gerçek tanıtım sitesi içeriği (hero/services/
+projects/contact) hâlâ yok — bu ekleme sadece `theme_preset`
+doğrulaması içindi, kapsamı genişletmiyor (bkz. `DURUM.md`).

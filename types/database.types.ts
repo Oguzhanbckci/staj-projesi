@@ -310,6 +310,7 @@ export type Database = {
           seo_description: string | null
           seo_title: string | null
           tenant_id: string
+          theme_preset: string
         }
         Insert: {
           contact_email?: string | null
@@ -322,6 +323,7 @@ export type Database = {
           seo_description?: string | null
           seo_title?: string | null
           tenant_id: string
+          theme_preset?: string
         }
         Update: {
           contact_email?: string | null
@@ -334,6 +336,7 @@ export type Database = {
           seo_description?: string | null
           seo_title?: string | null
           tenant_id?: string
+          theme_preset?: string
         }
         Relationships: [
           {

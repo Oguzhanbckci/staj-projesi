@@ -16,3 +16,5 @@ bir oturuma başlarken şu sırayla oku:
    test sonuçları, yayın öncesi güvenlik kontrol listesi.
 8. `docs/TASARIM-SISTEMI.md` — renk/tipografi/boşluk/köşe/gölge token'ları,
    kontrast doğrulama sonuçları, tema (açık/koyu) ilkeleri.
+9. `docs/TEMA-MIMARISI.md` — tema değerlerinin veritabanından `<html>`'e
+   akış mimarisi, tema ön ayarları (preset), FOUC önlemi.

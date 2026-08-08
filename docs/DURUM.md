@@ -209,26 +209,67 @@ seçilen açık bir ayar (VERİ-MODELİ.md), tarayıcı tercihi değil.
 
 Token'lar henüz hiçbir gerçek bileşende kullanılmıyor — `components/site/`
 hâlâ boş, `app/(site)/page.tsx` hâlâ `create-next-app` scaffold'ı. Bu iş,
-sıradaki adım 3'ün (ilk bölüm bileşenleri) önkoşulu; `npm run build`
-hatasız geçti, henüz commit'lenmedi.
+sıradaki adım 3'ün (ilk bölüm bileşenleri) önkoşulu. Bu oturumda
+commit'lendi.
+
+**Tema mimarisi kuruldu (2026-08-08):** `docs/TEMA-MIMARISI.md` oluşturuldu
+ve DB'den `<html>`'e tema enjeksiyonu koda döküldü. Yeni: `lib/theme/
+presets.ts` (iki hazır ön ayar — "Kurumsal Mavi" varsayılan, "Modern Koyu"
+— her ikisi de marka rengi/köşe yarıçapı/font taşıyor, ikisi de WCAG AA
+doğrulandı), `lib/theme/resolve.ts` (preset + tenant'ın `site_settings.
+primary_color` override'ını gerçek CSS değişkenlerine çevirir, serbest
+renk için otomatik okunabilir metin rengi seçer), `lib/supabase/queries.ts`
+→ `getSiteThemeSettings()` (şu an platform sahibinin tenant kaydını okuyor
+— gerçek Host-bazlı tenant çözümlemesi yok, bilinçli geçici; Supabase
+erişilemezse/`theme_preset` kolonu yoksa güvenli varsayılana sessizce
+düşer). `app/layout.tsx` async Server Component'e çevrildi, `<html
+data-theme style={...}>` olarak inline enjeksiyon yapıyor — FOUC yok,
+`npm run build` sonrası üretilen HTML'de doğrulandı.
+
+**Migration uygulandı, tipler yenilendi, uçtan uca doğrulandı (2026-08-08,
+aynı gün):** Kullanıcı `20260808120000_add_theme_preset_to_site_settings.sql`'i
+SQL Editor'de çalıştırdı ("Success"), sonra `npm run types:generate` ile
+`types/database.types.ts`'e `theme_preset` alanı eklendi.
+`getSiteThemeSettings()` bu yüzden tipsiz client'tan `createServiceRoleClient()`'e
+taşındı, artık kullanılmayan `createUntypedServiceRoleClient()`
+(`lib/supabase/server.ts`) kaldırıldı. Ayrıca `supabase/seed.sql`'e
+platform sahibinin kendi tenant satırı eklendi (`is_platform_owner=true`,
+bilinçli olarak `theme_mode='dark'` + `theme_preset='modern-koyu'` — varsayılan
+değerlerle aynı olsaydı gerçek veri mi fallback mi geldiği ayırt
+edilemezdi); toplam tenant sayısı 3 oldu (bkz. `VERİ-MODELİ.md`).
+
+İlk `npm run build`'da hâlâ eski (fallback) sonuç geldi — sorun kodda değil,
+**Next.js'in `.next` build cache'inin** DB'deki dış değişikliği
+algılamamasıydı; `.next` silinip yeniden derlenince `<html
+data-theme="dark" style="--color-brand:#24a8a4;...">` doğru şekilde geldi,
+gerçek veriden geldiği doğrulandı (bir tanı script'iyle DB'nin doğru veriyi
+döndürdüğü de ayrıca teyit edildi, sonra script silindi). Bu bulgu ve
+prod'daki karşılığı (mimaride zaten var olan on-demand ISR,
+`revalidatePath`/`revalidateTag`) `TEMA-MIMARISI.md` madde 6'ya eklendi.
+`npm run build` hatasız geçti, henüz commit'lenmedi.
 
 ## Sıradaki adım
 
-1. Bugünkü tasarım sistemi işini (`TASARIM-SISTEMI.md` + `globals.css` +
-   bu dosya + `CLAUDE.md`) commit'le.
+1. Bugünkü tema mimarisi işini (`TEMA-MIMARISI.md`, `lib/theme/`,
+   `lib/supabase/queries.ts` + `server.ts`, `app/layout.tsx`, yeni
+   migration, güncellenmiş `seed.sql`/`types/database.types.ts`/
+   `VERİ-MODELİ.md`, `CLAUDE.md`) commit'le.
 2. Vitest ve Playwright'ı kur (bkz. `TEST-STRATEJISI.md`).
 3. Panel auth'u (Supabase Auth, platform sahibi girişi) kodla — test için
    oluşturulan kullanıcı bunun için gerçek giriş olarak kullanılabilir veya
    silinip yeniden oluşturulabilir.
 4. Hazır bölüm kütüphanesindeki ilk bileşenleri (Hero, İletişim gibi en sık
    görülenlerden başlayarak) `components/site/` altına, artık kurulu olan
-   `TASARIM-SISTEMI.md` token'larını kullanarak kodla + birim testlerini
-   yaz; en az bir örnek "demo" (bölüm kombinasyonu + örnek içerik) hazırla.
-   Bu adımda `app/test-services/page.tsx` geçici sayfası silinecek.
+   `TASARIM-SISTEMI.md`/`TEMA-MIMARISI.md` token'larını kullanarak kodla +
+   birim testlerini yaz; en az bir örnek "demo" (bölüm kombinasyonu +
+   örnek içerik) hazırla. Bu adımda `app/test-services/page.tsx` geçici
+   sayfası silinecek.
 5. İletişim formu için `app/api/contact/` route handler'ı yaz (service role
    ile `contact_messages`'a insert + e-posta gönderimi).
 6. Site tasarımı ilerledikçe `KURUMSAL-SITE-STANDARTLARI.md`'deki kontrol listesini
    madde madde işaretle.
+7. Panelden preset seçimi (dropdown → `site_settings.theme_preset`
+   güncelleme) arayüzü, panel auth'tan sonra ele alınacak.
 
 ## Açık sorular
 

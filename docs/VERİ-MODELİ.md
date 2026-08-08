@@ -263,9 +263,14 @@ güncellenmeli.
 
 ## Örnek Veri (Doğrulama)
 
-`supabase/seed.sql` — 2 tenant (Akme İnşaat, Yıldız Yapı) üzerinden kurulu.
-`tenant_id` UNIQUE olan tablolarda (site_settings, hero_sections,
-about_sections, contact_sections) 2 satır = 2 farklı tenant. Liste
+`supabase/seed.sql` — 2 müşteri tenant'ı (Akme İnşaat, Yıldız Yapı) +
+platform sahibinin kendi tenant satırı (`is_platform_owner = true`,
+2026-08-08'de eklendi — bkz. `KARAR-GUNLUGU.md`) üzerinden kurulu, toplam
+**3 tenant**. `tenant_id` UNIQUE olan tablolarda (site_settings,
+hero_sections, about_sections, contact_sections) Akme/Yıldız için 2 satır;
+platform tenant'ı için şu an sadece `site_settings` var (`theme_preset`
+doğrulaması amacıyla eklendi, gerçek tanıtım sitesi içeriği — hero/
+services/projects/contact — henüz yok, bkz. `DURUM.md`). Liste
 tablolarında `contact_messages` 2 satır aynı tenant altında; `services` (6),
 `projects` (8), `testimonials` (4), `faqs` (5), `team_members` (4) ise
 Akme İnşaat için hazırlanmış gerçekçi demo içeriği (bkz.
