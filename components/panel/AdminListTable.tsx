@@ -1,5 +1,6 @@
-import { StatusBadge } from "./StatusBadge";
 import { DeleteButton, type DeleteActionState } from "./DeleteButton";
+import { PublishToggleButton, type ToggleActionState } from "./PublishToggleButton";
+import { ReorderButtons, type MoveActionState } from "./ReorderButtons";
 import { LinkButton } from "@/components/ui/LinkButton";
 
 export interface AdminListRow {
@@ -16,22 +17,35 @@ export interface AdminListTableProps {
   emptyMessage: string;
   /** Düzenleme linki `${editBasePath}/${row.id}` olarak üretilir. */
   editBasePath: string;
+  /** Yalın hâl — silme onay metninde kullanılır: "hizmet", "proje", "referans", "soru", "ekip üyesi". */
+  entityLabel: string;
   deleteAction: (prevState: DeleteActionState, formData: FormData) => Promise<DeleteActionState>;
-  deleteConfirmMessage: string;
+  togglePublishedAction: (
+    id: string,
+    prevState: ToggleActionState,
+    formData: FormData
+  ) => Promise<ToggleActionState>;
+  moveOrderAction: (
+    id: string,
+    direction: "up" | "down",
+    prevState: MoveActionState,
+    formData: FormData
+  ) => Promise<MoveActionState>;
 }
 
-// Hizmetler ve Projeler yönetim tablolarının PAYLAŞTIĞI tek bileşen (bkz.
-// docs/KARAR-GUNLUGU.md — "deseni projelere çoğalt, tekrarlanan kodu
-// ortak bileşene çıkar"). Başlık/durum/sıra/işlem sütunları — yönergenin
-// istediği dört sütun. "Düzenle" gerçek bir sayfaya (`[id]/page.tsx`)
-// giden bağlantı, "Sil" geri alınamaz olduğu için onay isteyen
-// DeleteButton (bkz. o dosya).
+// Hizmetler/Projeler/Referanslar/SSS/Ekip yönetim tablolarının PAYLAŞTIĞI
+// tek bileşen (bkz. docs/KARAR-GUNLUGU.md — "deseni projelere çoğalt,
+// tekrarlanan kodu ortak bileşene çıkar"). Kendisi Server Component
+// olarak kalıyor — her etkileşim (yayın toggle, sıra taşıma, silme) kendi
+// client "adacığında" (bkz. o bileşenler), DeleteButton'la aynı desen.
 export function AdminListTable({
   rows,
   emptyMessage,
   editBasePath,
+  entityLabel,
   deleteAction,
-  deleteConfirmMessage,
+  togglePublishedAction,
+  moveOrderAction,
 }: AdminListTableProps) {
   if (rows.length === 0) {
     return <p className="text-base text-text-muted">{emptyMessage}</p>;
@@ -51,16 +65,32 @@ export function AdminListTable({
           </tr>
         </thead>
         <tbody>
-          {rows.map((row) => (
+          {rows.map((row, index) => (
             <tr key={row.id} className="border-b border-neutral-100 last:border-0">
               <td className="py-3 pr-4">
                 <p className="font-semibold text-text">{row.title}</p>
                 {row.subtitle && <p className="text-caption text-text-muted">{row.subtitle}</p>}
               </td>
               <td className="py-3 pr-4">
-                <StatusBadge isPublished={row.isPublished} />
+                <PublishToggleButton
+                  id={row.id}
+                  title={row.title}
+                  isPublished={row.isPublished}
+                  action={togglePublishedAction}
+                />
               </td>
-              <td className="py-3 pr-4 text-text-muted">{row.orderIndex}</td>
+              <td className="py-3 pr-4 text-text-muted">
+                <div className="flex items-center gap-1">
+                  <span className="tabular-nums">{row.orderIndex}</span>
+                  <ReorderButtons
+                    id={row.id}
+                    title={row.title}
+                    isFirst={index === 0}
+                    isLast={index === rows.length - 1}
+                    action={moveOrderAction}
+                  />
+                </div>
+              </td>
               <td className="py-3 pr-4">
                 <div className="flex items-center gap-2">
                   <LinkButton href={`${editBasePath}/${row.id}`} size="sm" variant="ghost">
@@ -68,8 +98,9 @@ export function AdminListTable({
                   </LinkButton>
                   <DeleteButton
                     id={row.id}
+                    itemName={row.title}
+                    entityLabel={entityLabel}
                     action={deleteAction}
-                    confirmMessage={deleteConfirmMessage}
                   />
                 </div>
               </td>

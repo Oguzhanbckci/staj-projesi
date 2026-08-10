@@ -4,11 +4,14 @@ import { Card } from "@/components/ui/Card";
 const CONTENT_TYPES = [
   { label: "Hizmetler", href: "/panel/icerikler/hizmetler", description: "Hizmet kartlarını yönet." },
   { label: "Projeler", href: "/panel/icerikler/projeler", description: "Proje/portfolyo kayıtlarını yönet." },
+  { label: "Referanslar", href: "/panel/icerikler/referanslar", description: "Müşteri referanslarını yönet." },
+  { label: "SSS", href: "/panel/icerikler/sss", description: "Sıkça sorulan soruları yönet." },
+  { label: "Ekip", href: "/panel/icerikler/ekip", description: "Ekip üyelerini yönet." },
 ];
 
-// İçerik türlerine göre bir dizin — Referanslar/SSS/Ekip gibi diğer
-// liste içerikleri için de aynı desen (bkz. Hizmetler/Projeler) ileride
-// buraya eklenecek (bkz. docs/DURUM.md "Sıradaki adım").
+// İçerik türlerine göre bir dizin — her kart, ilgili içerik türünün
+// liste + ekle/düzenle/sil/sırala sayfasına götürür (bkz. Hizmetler/
+// Projeler ile aynı desen, docs/MIMARI.md madde 9).
 export default function IceriklerPage() {
   return (
     <div>
@@ -23,9 +26,6 @@ export default function IceriklerPage() {
           </Link>
         ))}
       </div>
-      <p className="mt-8 text-base text-text-muted">
-        Referanslar, SSS, Ekip gibi diğer içerik türleri Faz 5&apos;te eklenecek.
-      </p>
     </div>
   );
 }

@@ -13,7 +13,8 @@ kontrast doğrulaması, bileşen envanteri/API kuralları) ve `TEMA-MIMARISI.md`
 önlemi), gerekirse `KARAR-GUNLUGU.md`'yi (tarihli, hiç silinmeyen karar
 geçmişi) oku.
 
-**Son güncelleme:** 2026-08-14
+**Son güncelleme:** 2026-08-14 (4. güncelleme aynı gün —
+`docs/MUSTERİ-KILAVUZU.md` eklendi)
 
 ## Proje bağlamı
 
@@ -622,6 +623,58 @@ gerçek bir sayfa (`[id]/page.tsx`), aynı `<X>Form.tsx` bileşeni hem
 ekleme hem düzenleme modunda çalışıyor. Script + `curl` ile doğrulandı;
 yeni `[id]` rotalarının da mevcut proxy korumasından otomatik geçtiği
 ayrıca teyit edildi. Detay: `KARAR-GUNLUGU.md`.
+
+**Silme onayı güçlendirildi, yayınla/sırala eklendi, Referanslar/SSS/Ekip
+için panel CRUD tamamlandı (2026-08-14, aynı gün, üçüncü oturum):**
+Dışarıdan gelen bir yönerge üzerine, Hizmetler/Projeler'deki içerik
+yönetimi deseni hem güçlendirildi hem 3 yeni içerik türüne genişletildi:
+
+- **Silme onayı** artık native `window.confirm()` değil, yeni
+  `components/panel/ConfirmDeleteDialog.tsx` — kaydın gerçek adını
+  gösteren, `useDialogBehavior` (MobileMenu/ProjectDetailModal ile
+  paylaşılan) ile odak tuzağı/Escape'i olan, kazara silmeyi azaltan 2
+  önlemli (adı gösteren metin + varsayılan odağın "Vazgeç"te olması) özel
+  bir dialog. `Button`'a yeni bir `danger` varyantı eklendi (kenarlık+metin,
+  dolgu değil — "ayrışsın ama korkutmasın").
+- **Yayınla/Taslağa Al**, listeden tek tıkla (`components/panel/
+  PublishToggleButton.tsx`, her varlık için `toggleXPublishedAction`).
+- **Sıralama**, yukarı/aşağı butonlarıyla (`components/panel/
+  ReorderButtons.tsx`, paylaşılan `swapOrderIndex()` — `lib/supabase/
+  panelQueries.ts`), sürükle-bırak yok.
+- **"Değişiklik yoksa yazma yapma"** — her `update*Action` artık mevcut
+  kaydı çekip karşılaştırıyor, fark yoksa DB'ye hiç yazmıyor.
+- **Referanslar/SSS/Ekip** için panel CRUD (liste + ekle + düzenle + sil +
+  yayınla + sırala) Hizmetler/Projeler'le birebir aynı 5 parçalı desende
+  tamamlandı (`app/panel/(protected)/icerikler/{referanslar,sss,ekip}/`)
+  — **hiçbir yeni migration gerekmedi**, RLS/şema zaten 2026-08-07'den
+  beri hazırdı. **Ekip'in revalidate hedefi `/ekip`** (diğerleri `"/"`) —
+  2026-08-13'te ayrı sayfaya taşındığı için, kolay gözden kaçan bir
+  ayrıntı, bilerek doğru yapıldı. `icerikler/page.tsx` artık 5 kart
+  gösteriyor.
+
+**Doğrulama (gerçek, servis-rolü script + `npm run dev` + `curl` ile):**
+Ekip'te iki üyenin sırası değiştirilip `/ekip`'te gösterim sırasının
+gerçekten değiştiği, bir referans taslağa alınıp ana sayfadan kaybolup
+tekrar yayınlanınca geri geldiği, geçici bir SSS kaydının eklenip
+görünüp silinince kaybolduğu doğrulandı — hepsi sonra orijinal veriye
+geri alındı. Yeni panel rotalarının proxy korumasından geçtiği de
+teyit edildi. `npm run build`/`lint` tamamen temiz (0 hata, 0 uyarı).
+Detay: `KARAR-GUNLUGU.md`.
+
+**Yapılamayan:** Tarayıcı aracı bu ortamdan `localhost`'a erişemediği
+için dialog'un gerçek görsel/klavye davranışı tarayıcıda elle
+doğrulanmadı — kullanıcıdan panelde kısa bir deneme rica ediliyor.
+Ziyaretçi sitesi (`components/site/`) hiç değişmediği için
+`TEST-STRATEJISI.md` madde 8'deki duyarlı tasarım kontrol listesi
+yeniden koşulmadı (regresyon riski yoktu, gerekçe `KARAR-GUNLUGU.md`'de).
+
+**`docs/MUSTERİ-KILAVUZU.md` oluşturuldu (2026-08-14, aynı gün, dördüncü
+oturum):** Panelin gerçek kullanıcısına (teknik olmayan) yönelik, geliştirici
+terimi içermeyen bir kullanım kılavuzu — İçerik Ekleme, İçerik Düzenleme,
+Yayınlama ve Taslak, Sıralama Değiştirme ve Silme başlıklarıyla + bölüm
+bazlı alan farkları tablosu. İçerik, bir önceki oturumda yazılan gerçek
+UI metinleriyle (buton etiketleri, onay mesajları) birebir eşleşecek
+şekilde yazıldı — uydurulmadı. Detay ve gerekçe: `KARAR-GUNLUGU.md`.
 
 ## Sıradaki adım
 

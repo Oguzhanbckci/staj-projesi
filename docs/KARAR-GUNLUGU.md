@@ -2052,3 +2052,164 @@ da mevcut proxy korumasından otomatik geçtiği — çerezsiz bir isteğin
 `next` parametresiyle (derin linki koruyarak) `/panel/giris`'e
 yönlendiği — ayrıca doğrulandı, ek bir koruma kodu yazmaya gerek
 kalmadı. `npm run build`/`lint` temiz.
+
+---
+
+## 2026-08-14 (aynı gün, üçüncü oturum) — Silme onayı güçlendirildi, yayınla/sırala eklendi, Referanslar/SSS/Ekip için panel CRUD tamamlandı
+
+**Karar 1 — Silme onayı native `window.confirm()`'den özel bir dialog'a
+taşındı.** Yönerge, yıkıcı butonun "görsel olarak ayrışması"nı istiyordu
+— bu, native `confirm()`'ün OK/Cancel butonlarının hiç
+stillenemediği gerçeğiyle doğrudan çelişiyordu, bu yüzden yeni
+`components/panel/ConfirmDeleteDialog.tsx` yazıldı. Yeni bir odak/klavye
+mantığı icat edilmedi — mevcut `lib/hooks/useDialogBehavior.ts`
+(MobileMenu/ProjectDetailModal ile paylaşılan, zaten doğrulanmış hook)
+yeniden kullanıldı. KABUL KRİTERİ'nin istediği "en az 2" kazara-silme
+önlemi: (1) onay metni kaydın GERÇEK adını gösterir ("başlıklı X
+silinecek" kalıbı — Türkçe çekim eki sorunundan bilinçli olarak kaçınıyor,
+varlık adı hep yalın halde: "hizmet", "proje", "referans", "soru", "ekip
+üyesi"), (2) "Vazgeç" DOM'da "Evet, Sil"den ÖNCE geldiği için dialog
+açılır açılmaz varsayılan klavye odağı ORAYA gidiyor (`useDialogBehavior`
+ilk odaklanabilir öğeyi otomatik seçiyor) — reflekssel bir Enter/Space
+silme değil iptal tetikliyor.
+
+**Karar 2 — `Button`'a yeni bir `"danger"` varyantı eklendi
+(`components/ui/Button.tsx`).** Yıkıcı buton hem satırda ("Sil"
+tetikleyicisi) hem dialog'da ("Evet, Sil") kullanılıyor; `className`
+string birleştirmesiyle mevcut bir varyantın rengini geçersiz kılmak
+denenmedi — Tailwind'in aynı katmandaki iki çakışan renk class'ı arasında
+hangisinin kazanacağı JSX'teki sıraya değil derlenmiş CSS'in kendi
+sırasına bağlı, güvenilir değil. Bunun yerine solid kırmızı dolgu DEĞİL,
+kenarlık+metin (`border-error text-error`, dolgu yok) — 2026-08-08'deki
+kontrast düzeltmesiyle aynı "ayrışsın ama korkutmasın" ilkesi. Bu arada
+fark edildi: Düzenle/Sil butonları önceden GÖRSEL OLARAK AYNIYDI (ikisi
+de ghost/brand rengi) — bu da düzeltildi.
+
+**Karar 3 — "Değişiklik yoksa yazma yapma" (dirty-check).** Her
+`update*Action`, DB'ye yazmadan ÖNCE mevcut kaydı (zaten var olan
+`get*ById` sorgusuyla) çekip doğrulanmış yeni değerlerle alan alan
+karşılaştırıyor; fark yoksa `.update()` VE `revalidatePath()` hiç
+çağrılmıyor (kullanıcı yine "Değişiklikler kaydedildi" görüyor,
+davranış farkı sadece gereksiz işin atlanması). Paylaşılan bir
+yardımcıya ÇIKARILMADI — her varlığın alanları farklı, birkaç satırlık
+karşılaştırma her `actions.ts`'de tekrarlanıyor (bkz.
+`docs/TASARIM-SISTEMI.md` madde 9.8, "3 benzer satır erken
+soyutlamadan iyidir").
+
+**Karar 4 — Yayınla/Taslağa Al: listeden tek tıkla.** Her varlık türü
+için `toggleXPublishedAction` eklendi. `AdminListTable`'da buton,
+DURUMUN KENDİSİNİ değil TIKLANINCA NE OLACAĞINI söylüyor ("Yayınla" /
+"Taslağa Al") — teknik olmayan bir kullanıcı için "şu an ne durumda mı,
+tıklarsam ne olur mu" belirsizliğini azaltan bilinçli bir kalıp.
+`StatusBadge` salt gösterim olarak kaldı (tıklanabilir hale
+getirilmedi, başka yerlerde de kullanılabilsin diye).
+
+**Karar 5 — Sıralama: yukarı/aşağı butonları, sürükle-bırak YOK
+(KISITLAR'ın açık isteği).** `lib/supabase/panelQueries.ts`'e TEK
+paylaşılan yardımcı `swapOrderIndex(table, id, direction, tenantId)`
+eklendi — sıralı listeyi çekip komşu kaydı bulup iki `order_index`'i
+karşılıklı günceller; sınırda (ilk kayıtta yukarı/son kayıtta aşağı)
+sessizce no-op döner, `AdminListTable` zaten bu durumlarda butonu
+`disabled` yapıyor (bir güvenlik ağı). İki `.update()` çağrısı bir
+transaction İÇİNDE değil — tek-admin/düşük-eşzamanlılık bağlamında
+kabul edilebilir bir basitleştirme (`TEST-STRATEJISI.md`'deki pragmatik
+yaklaşımla tutarlı).
+
+**Karar 6 — Referanslar/SSS/Ekip için panel CRUD, Hizmetler/Projeler'le
+BİREBİR aynı 5 parçalı desende tamamlandı** (`docs/MIMARI.md` madde
+9'da zaten tarif edilen desenin üçüncü/dördüncü/beşinci uygulanışı).
+**Hiçbir yeni migration gerekmedi** — RLS politikaları (authenticated
+tam CRUD) ve DB şeması 2026-08-07'den beri zaten hazırdı, eksik olan
+sadece UI/sorgu/eylem katmanıydı. Yeni: `lib/validation/{testimonial,
+faq,teamMember}.ts`, `lib/supabase/panelQueries.ts`'e
+`getAllTestimonials/getTestimonialById/getAllFaqs/getFaqById/
+getAllTeamMembers/getTeamMemberById`, `app/panel/(protected)/icerikler/
+{referanslar,sss,ekip}/` (page/actions/Form/`[id]`). `icerikler/page.tsx`
+artık 5 kart gösteriyor, "Faz 5'te eklenecek" placeholder'ı kaldırıldı.
+
+**Alt-karar — `testimonials.rating` panel formuna eklendi, siteye
+YANSITILMADI.** DB'de var (`rating integer`, 1-5) ama ziyaretçi
+sitesindeki `getTestimonials()`/`TestimonialItem` hiç kullanmıyor.
+Formda düzenlenebilir olması gerçek bir DB alanı olduğu için mantıklı,
+ama siteye göstermek bu görevin kapsamı dışıydı — dokunulmadı, sadece
+not düşüldü.
+
+**Alt-karar — DİKKAT gerektiren tek istisna: Ekip'in revalidate hedefi
+`/ekip`, `"/"` DEĞİL.** 2026-08-13'te Ekip `page_sections`'tan çıkarılıp
+ayrı bir sayfaya (`app/(site)/ekip/page.tsx`) taşınmıştı — bu yüzden
+`app/panel/(protected)/icerikler/ekip/actions.ts`'teki her yazma
+`revalidatePath("/ekip")` çağırıyor. Diğer 4 tür (Hizmetler, Projeler,
+Referanslar, SSS) hâlâ `page_sections` üzerinden ana sayfada render
+edildiği için `"/"`. Kullanıcı yönergesinde "istatistikler" istenmedi,
+bilinçli olarak kapsam dışı bırakıldı.
+
+**Yan düzeltme — ESLint `no-unused-vars` `argsIgnorePattern` eklendi**
+(`eslint.config.mjs`). Projede zaten var olan `_prevState` adlandırma
+kuralı, önceden sadece varsayılan `after-used` davranışının bir
+YAN ETKİSİYLE (son parametre kullanıldığı için önceki
+parametreler otomatik affediliyordu) çalışıyordu; yeni
+`toggle*/move*Action`'lar HİÇBİR parametresini kullanmadığı için (id/
+direction dışında) bu yan etki kırıldı, 20 gerçek warning çıktı.
+`argsIgnorePattern`/`varsIgnorePattern: "^_"` eklenerek kural, hep
+niyet edildiği gibi (alt çizgi = bilerek kullanılmıyor) her pozisyonda
+çalışır hale getirildi.
+
+**Doğrulama (gerçek, servis-rolü script + `npm run dev` + curl ile —
+kod incelemesi değil):** Ekip için iki üyenin `order_index`'i takas
+edilip `/ekip`'te gösterim sırasının GERÇEKTEN değiştiği, sonra
+orijinaline geri alındığı doğrulandı. Bir referans taslağa alınıp ana
+sayfadan kaybolduğu, tekrar yayınlanınca geri geldiği doğrulandı. Geçici
+bir SSS kaydı eklenip sitede göründüğü, silinince kaybolduğu doğrulandı.
+Yeni `/panel/icerikler/{referanslar,sss,ekip}` (+ `[id]`) rotalarının
+çerezsiz istekte `next` parametresiyle `/panel/giris`'e yönlendiği
+teyit edildi. Test sonrası veri baseline'la birebir karşılaştırılıp
+tam eşleştiği doğrulandı, tüm geçici script'ler silindi. `npm run
+build`/`lint` temiz (0 hata, 0 uyarı).
+
+**Yapılmayan (kullanıcıya bildirilecek):** Bu ortamda tarayıcı aracı
+`localhost`'a erişemediği için ("kaydın adını gösteren dialog"ın gerçek
+görsel/klavye davranışı, buton renklerinin göze nasıl göründüğü gibi)
+gerçek bir tıklama ile son bir görsel kontrol yapılamadı — kullanıcıdan
+panelde kısa bir deneme rica edilecek. Ziyaretçi sitesi tarafında hiçbir
+dosya değişmediği için (`components/site/` dokunulmadı)
+`TEST-STRATEJISI.md` madde 8'deki duyarlı tasarım/form kontrol listesi
+yeniden koşulmadı — regresyon riski sadece yayın/sıra değişikliklerinin
+siteye doğru yansıması ile sınırlıydı, o da yukarıdaki testlerle
+kapsandı.
+
+---
+
+## 2026-08-14 (aynı gün, dördüncü oturum) — `docs/MUSTERİ-KILAVUZU.md` oluşturuldu
+
+**Karar:** Kullanıcı, panel içerik yönetimi (ekleme/düzenleme/yayınlama/
+sıralama/silme — bir önceki oturumda tamamlanan işlev) için **teknik
+olmayan bir kullanıcıya yönelik** bir kullanım kılavuzu istedi:
+`docs/MUSTERİ-KILAVUZU.md`, dört başlık (İçerik Ekleme, İçerik
+Düzenleme, Yayınlama ve Taslak, Sıralama Değiştirme ve Silme) + bölüm
+bazlı alan farkları tablosu.
+
+**Diğer `docs/` dosyalarından farkı:** Bu dosya geliştirici/AI için
+değil, panelin GERÇEK kullanıcısı (platform sahibi, ileride muhtemelen
+devredilecek müşteri — bkz. `GUVENLIK.md` madde 7, "Müşteriye devir")
+içindir — bu yüzden hiçbir geliştirici terimi (Server Action, RLS,
+`revalidatePath` vb.) kullanılmadı, sadece ekranda görülen buton/mesaj
+metinleriyle birebir eşleşen, adım adım bir anlatım yazıldı. `CLAUDE.md`
+madde 1-9'daki AI-oturum-başlangıcı okuma listesine EKLENMEDİ —
+`VERİ-MODELİ.md`/`KURUMSAL-SITE-STANDARTLARI.md`/`RAKIP-ANALIZI.md` gibi
+o listenin dışında kalan, ama var olan ve referans verilen bir dosya
+olarak duruyor.
+
+**İçerik gerçek UI'dan türetildi (uydurulmadı):** Silme onayının
+"Vazgeç"/"Evet, Sil" metinleri, yayın toggle'ının "Yayınla"/"Taslağa Al"
+etiketleri, sıra oklarının sınırda `disabled` olması, düzenlemede
+"değişiklik yoksa" davranışı — hepsi bir önceki oturumda gerçekten
+yazılan bileşenlerin (`ConfirmDeleteDialog`, `PublishToggleButton`,
+`ReorderButtons`, `<X>Form.tsx`) davranışıyla birebir eşleşecek şekilde
+yazıldı. Ekip'in ana sayfada değil `/ekip`'te göründüğü ayrıca not
+düşüldü — teknik olmayan bir kullanıcının "yayınladım ama göremiyorum"
+diye şaşırmaması için.
+
+**Gerekçe:** `AI-KURALLARI.md` madde 9.7 gereği, açıkça istenmeyen yeni
+bir `docs/` dosyası açmadan önce sorulur — burada kullanıcı dosyayı
+açıkça adıyla ve başlıklarıyla istedi, sormaya gerek kalmadı. Karar,
+uygulamadan (dosya yazımından) ÖNCE bu günlüğe işlendi (madde 9.3).

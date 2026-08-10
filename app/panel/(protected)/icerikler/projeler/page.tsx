@@ -1,7 +1,11 @@
 import { getAllProjects } from "@/lib/supabase/panelQueries";
 import { AdminListTable } from "@/components/panel/AdminListTable";
 import { ProjectForm } from "./ProjectForm";
-import { deleteProjectAction } from "./actions";
+import {
+  deleteProjectAction,
+  moveProjectOrderAction,
+  toggleProjectPublishedAction,
+} from "./actions";
 
 export default async function ProjelerPage() {
   const projects = await getAllProjects();
@@ -21,8 +25,10 @@ export default async function ProjelerPage() {
             }))}
             emptyMessage="Henüz hiç proje eklenmemiş."
             editBasePath="/panel/icerikler/projeler"
+            entityLabel="proje"
             deleteAction={deleteProjectAction}
-            deleteConfirmMessage="Bu projeyi silmek istediğinizden emin misiniz? Bu işlem geri alınamaz."
+            togglePublishedAction={toggleProjectPublishedAction}
+            moveOrderAction={moveProjectOrderAction}
           />
         </div>
       </div>

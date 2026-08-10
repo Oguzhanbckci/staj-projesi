@@ -6,7 +6,8 @@ yapılacağını" (özellik kapsamı), bu dosya "nasıl yapılacağını" (tekni
 seçimler) tanımlar. Kod içermez. Karar değişirse önce `KARAR-GUNLUGU.md`'ye
 kayıt düşülür, sonra bu dosya güncellenir.
 
-**Son güncelleme:** 2026-08-14 (2. güncelleme — düzenleme/silme eklendi)
+**Son güncelleme:** 2026-08-14 (3. güncelleme — silme onayı/yayınla/sırala
++ Referanslar/SSS/Ekip panel CRUD eklendi)
 
 ## 0. Bağlam
 
@@ -223,7 +224,11 @@ scaffold'ı (`create-next-app`, 2026-08-06) kurulduktan sonra oluşturuldu.
     bileşenler: `PanelShell.tsx` (kenar menü + üst başlık + mobil açılır
     menü kabuğu), `navItems.ts` (menü öğeleri). *(2026-08-14)*
     `AdminListTable.tsx` + `StatusBadge.tsx` — içerik yönetim
-    tablolarının paylaşılan bileşenleri (bkz. madde 9). `components/ui/`'daki
+    tablolarının paylaşılan bileşenleri (bkz. madde 9). *(2026-08-14,
+    aynı gün genişletildi)* `ConfirmDeleteDialog.tsx` (özel silme onayı),
+    `PublishToggleButton.tsx` (listeden tek tık yayınla/taslağa al),
+    `ReorderButtons.tsx` (yukarı/aşağı sıralama) — üçü de `DeleteButton.tsx`
+    ile aynı "client adacığı" deseninde. `components/ui/`'daki
     genel bileşenleri (Button, Card) kullanır ama kendi başına
     `components/site/`'tan tamamen bağımsız — ikisi asla birbirini
     import etmez (bkz. `AI-KURALLARI.md` madde 3).
@@ -279,10 +284,11 @@ scaffold'ı (`create-next-app`, 2026-08-06) kurulduktan sonra oluşturuldu.
   varsayılan SVG'leri var (`next.svg`, `vercel.svg` vb.); gerçek
   marka/portfolyo görselleri eklenince temizlenecek.
 
-## 9. İçerik Yönetimi Deseni *(2026-08-14 eklendi)*
+## 9. İçerik Yönetimi Deseni *(2026-08-14 eklendi, aynı gün genişletildi)*
 
-Panelden içerik ekleme (Hizmetler, Projeler — Faz 5'te diğer liste
-içerikleri de aynı desene uyacak) hep aynı 5 parçadan oluşur:
+Panelden içerik ekleme (Hizmetler, Projeler, Referanslar, SSS, Ekip — 5
+içerik türünün hepsi birebir aynı deseni kullanıyor) hep aynı 5 parçadan
+oluşur:
 
 1. **Doğrulama şeması** (`lib/validation/<varlık>.ts`) — saf bir zod
    şeması, React'e/Next.js'e bağımlı değil. Hem formda (istemci, canlı
@@ -300,11 +306,22 @@ içerikleri de aynı desene uyacak) hep aynı 5 parçadan oluşur:
    (React `defaultValue`'yu var olan bir DOM node'da yeniden zorlamaz) —
    ayrıca "values" taşımaya gerek yok.
 5. **Liste tablosu** (`components/panel/AdminListTable.tsx`, paylaşılan) —
-   başlık/durum (`StatusBadge` — Yayında/Taslak, renk + her zaman metin)/
-   sıra/işlem sütunları. *(2026-08-14)* "Düzenle" gerçek bir sayfaya
-   (`[id]/page.tsx` — kayıt bulunamazsa `notFound()`) giden link, "Sil"
-   `components/panel/DeleteButton.tsx` (paylaşılan — `window.confirm()`
-   ile onay, geri alınamaz bir işlem olduğu için).
+   başlık/durum/sıra/işlem sütunları. "Düzenle" gerçek bir sayfaya
+   (`[id]/page.tsx` — kayıt bulunamazsa `notFound()`) giden link. Durum
+   sütunu *(2026-08-14, aynı gün genişletildi)* artık salt-okunur değil:
+   `components/panel/PublishToggleButton.tsx` — `StatusBadge` (salt
+   gösterim, değişmedi) yanında, TIKLANINCA NE OLACAĞINI söyleyen bir
+   buton ("Yayınla"/"Taslağa Al" — durumun kendisini değil eylemi
+   anlatıyor, teknik olmayan kullanıcı için belirsizliği azaltır). Sıra
+   sütununda `components/panel/ReorderButtons.tsx` — yukarı/aşağı
+   butonlarıyla komşu kayıtla `order_index` takası (bkz.
+   `swapOrderIndex()`, `lib/supabase/panelQueries.ts`; sınırda buton
+   `disabled`). "Sil" `components/panel/DeleteButton.tsx` — artık
+   `window.confirm()` DEĞİL, `components/panel/ConfirmDeleteDialog.tsx`
+   (kaydın adını gösteren, `useDialogBehavior` tabanlı özel dialog —
+   native confirm'ün butonları stillenemediği için değiştirildi, bkz.
+   `KARAR-GUNLUGU.md`). Yıkıcı butonlar `Button`'ın yeni `"danger"`
+   varyantıyla (kenarlık+metin, dolgu değil) görsel olarak ayrışıyor.
 
 **Düzenleme formu, ekleme formuyla AYNI bileşen** (`<X>Form.tsx`) — bir
 `service`/`project` prop'u verilirse düzenleme moduna geçer: alanlar
@@ -316,10 +333,21 @@ tenantId)` ile ekstra bir tenant kontrolü yapar — RLS zaten
 authenticated'e tam yetki veriyor, bu ONA GÜVENMEK YERİNE bilinçli bir
 ek savunma katmanı.
 
-**Yeni bir içerik türü eklemek** (ör. Referanslar, Faz 5'te) bu 5 parçayı
-aynı isimlendirme/dosya yerleşimiyle tekrarlamak demektir — `AdminListTable`
-ve `SubmitButton`/`FormErrorSummary` zaten paylaşılan, sadece şema/sorgu/
-eylem/form o varlığa özel yazılır.
+**Yeni bir içerik türü eklemek** bu 5 parçayı aynı isimlendirme/dosya
+yerleşimiyle tekrarlamak demektir — `AdminListTable`,
+`SubmitButton`/`FormErrorSummary`, `ConfirmDeleteDialog`,
+`PublishToggleButton`, `ReorderButtons` zaten paylaşılan, sadece
+şema/sorgu/eylem/form o varlığa özel yazılır. Referanslar/SSS/Ekip
+(2026-08-14) bu deseni harfiyen izleyerek eklendi, hiçbir yeni migration
+gerekmedi (RLS/şema zaten hazırdı).
+
+**"Değişiklik yoksa yazma yapma"** *(2026-08-14, aynı gün eklendi)* —
+her `update*Action`, DB'ye yazmadan ÖNCE mevcut kaydı (zaten var olan
+`get*ById`) çekip doğrulanmış yeni değerlerle alan alan karşılaştırır;
+fark yoksa `.update()` VE `revalidatePath()` hiç çağrılmaz. Bu
+karşılaştırma paylaşılan bir yardımcıya ÇIKARILMADI — her varlığın
+alanları farklı, birkaç satırlık kod her `actions.ts`'de tekrarlanıyor
+(bilinçli, bkz. `TASARIM-SISTEMI.md` madde 9.8).
 
 **Sıra numarası** (`order_index`) admin'den ham bir sayı olarak
 istenmiyor — `getNextOrderIndex()` (panelQueries.ts) mevcut en büyük
@@ -354,12 +382,17 @@ ETMEK ZORUNDADIR:
    hata detayı da değil (bilgi sızıntısı riski).
 5. **Başarıda `revalidatePath()` ile DOĞRU yol tazelenir** — hangi yolun
    tazeleneceği, o içeriğin ziyaretçi sitesinde NEREDE render edildiğine
-   bakılarak belirlenir (Hizmetler/Projeler → sadece `"/"`, çünkü
-   `page_sections`'a göre ana sayfada render ediliyorlar, bkz.
-   `components/site/services/ServicesSection.tsx`). `/panel`'in kendisi
-   zaten `force-dynamic` (bkz. madde 8, `(protected)/layout.tsx`) —
-   panel sayfaları için ayrıca revalidate GEREKMEZ, her istekte zaten
-   taze veri okur.
+   bakılarak belirlenir. Hizmetler/Projeler/Referanslar/SSS → `"/"`,
+   çünkü `page_sections`'a göre ana sayfada render ediliyorlar (bkz.
+   `components/site/services/ServicesSection.tsx`). **İstisna — Ekip →
+   `"/ekip"`** *(2026-08-14, aynı gün eklendi)*: 2026-08-13'te
+   `page_sections`'tan çıkarılıp ayrı bir sayfaya taşındığı için (bkz.
+   `KARAR-GUNLUGU.md`, 2026-08-13), `"/"`'i tazelemek hiçbir işe
+   yaramaz — bu, yeni bir içerik türü eklerken kolay gözden kaçabilecek
+   bir ayrıntı, her seferinde ilgili sayfanın gerçekten nerede render
+   edildiği kontrol edilmeli. `/panel`'in kendisi zaten `force-dynamic`
+   (bkz. madde 8, `(protected)/layout.tsx`) — panel sayfaları için
+   ayrıca revalidate GEREKMEZ, her istekte zaten taze veri okur.
 
 **Doğrulama (2026-08-14, gerçek — kod incelemesi değil):** Bir hizmet
 gerçek Supabase Auth oturumuyla eklenip, `revalidatePath("/")`

@@ -1,38 +1,38 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { projectFormSchema, type ProjectFormValues } from "@/lib/validation/project";
+import { testimonialFormSchema, type TestimonialFormValues } from "@/lib/validation/testimonial";
 import { requireAdminUser, type ActionResult } from "@/lib/panel/actionResult";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { getActiveTenantId } from "@/lib/supabase/queries";
-import { getNextOrderIndex, getProjectById, swapOrderIndex } from "@/lib/supabase/panelQueries";
+import { getNextOrderIndex, getTestimonialById, swapOrderIndex } from "@/lib/supabase/panelQueries";
 
-// Hizmetler'deki createServiceAction ile birebir aynı desen (bkz. o
-// dosyadaki yorum) — sadece hedef tablo ve alanlar farklı.
-export async function createProjectAction(
-  _prevState: ActionResult<keyof ProjectFormValues>,
+// app/panel/(protected)/icerikler/hizmetler/actions.ts'teki
+// createServiceAction ile birebir aynı desen — sadece hedef tablo/alanlar
+// farklı. Referanslar bölümü de ziyaretçi sitesinde sadece ana sayfada
+// ("/") render ediliyor (page_sections'a göre).
+export async function createTestimonialAction(
+  _prevState: ActionResult<keyof TestimonialFormValues>,
   formData: FormData
-): Promise<ActionResult<keyof ProjectFormValues>> {
+): Promise<ActionResult<keyof TestimonialFormValues>> {
   const authCheck = await requireAdminUser();
   if (!authCheck.ok) {
     return { success: false, fieldErrors: {}, formError: authCheck.formError };
   }
 
   const raw = {
-    title: String(formData.get("title") ?? ""),
-    description: String(formData.get("description") ?? ""),
-    category: String(formData.get("category") ?? ""),
-    location: String(formData.get("location") ?? ""),
-    year: String(formData.get("year") ?? ""),
-    liveUrl: String(formData.get("liveUrl") ?? ""),
+    authorName: String(formData.get("authorName") ?? ""),
+    authorTitle: String(formData.get("authorTitle") ?? ""),
+    quote: String(formData.get("quote") ?? ""),
+    rating: String(formData.get("rating") ?? ""),
     isPublished: formData.get("isPublished") === "on",
   };
 
-  const result = projectFormSchema.safeParse(raw);
+  const result = testimonialFormSchema.safeParse(raw);
   if (!result.success) {
-    const fieldErrors: Partial<Record<keyof ProjectFormValues, string>> = {};
+    const fieldErrors: Partial<Record<keyof TestimonialFormValues, string>> = {};
     for (const issue of result.error.issues) {
-      const field = issue.path[0] as keyof ProjectFormValues;
+      const field = issue.path[0] as keyof TestimonialFormValues;
       if (!fieldErrors[field]) fieldErrors[field] = issue.message;
     }
     return { success: false, fieldErrors };
@@ -47,63 +47,57 @@ export async function createProjectAction(
     };
   }
 
-  const orderIndex = await getNextOrderIndex("projects", tenantId);
+  const orderIndex = await getNextOrderIndex("testimonials", tenantId);
   const supabase = await createServerSupabaseClient();
 
-  const { error } = await supabase.from("projects").insert({
+  const { error } = await supabase.from("testimonials").insert({
     tenant_id: tenantId,
-    title: result.data.title,
-    description: result.data.description || null,
-    category: result.data.category || null,
-    location: result.data.location || null,
-    year: result.data.year ? Number(result.data.year) : null,
-    live_url: result.data.liveUrl || null,
+    author_name: result.data.authorName,
+    author_title: result.data.authorTitle || null,
+    quote: result.data.quote,
+    rating: result.data.rating ? Number(result.data.rating) : null,
     is_published: result.data.isPublished,
     order_index: orderIndex,
   });
 
   if (error) {
-    console.error("createProjectAction insert hatası:", error);
+    console.error("createTestimonialAction insert hatası:", error);
     return {
       success: false,
       fieldErrors: {},
-      formError: "Proje kaydedilirken bir sorun oluştu. Lütfen tekrar deneyin.",
+      formError: "Referans kaydedilirken bir sorun oluştu. Lütfen tekrar deneyin.",
     };
   }
 
-  // Projeler bölümü de sadece ana sayfada ("/") render ediliyor (bkz.
-  // createServiceAction'daki aynı gerekçe).
   revalidatePath("/");
 
   return { success: true };
 }
 
-// updateServiceAction ile birebir aynı desen (bkz. hizmetler/actions.ts).
-export async function updateProjectAction(
+// updateServiceAction ile aynı desen (dirty-check dahil).
+export async function updateTestimonialAction(
   id: string,
-  _prevState: ActionResult<keyof ProjectFormValues>,
+  _prevState: ActionResult<keyof TestimonialFormValues>,
   formData: FormData
-): Promise<ActionResult<keyof ProjectFormValues>> {
+): Promise<ActionResult<keyof TestimonialFormValues>> {
   const authCheck = await requireAdminUser();
   if (!authCheck.ok) {
     return { success: false, fieldErrors: {}, formError: authCheck.formError };
   }
 
   const raw = {
-    title: String(formData.get("title") ?? ""),
-    description: String(formData.get("description") ?? ""),
-    category: String(formData.get("category") ?? ""),
-    location: String(formData.get("location") ?? ""),
-    year: String(formData.get("year") ?? ""),
-    liveUrl: String(formData.get("liveUrl") ?? ""),
+    authorName: String(formData.get("authorName") ?? ""),
+    authorTitle: String(formData.get("authorTitle") ?? ""),
+    quote: String(formData.get("quote") ?? ""),
+    rating: String(formData.get("rating") ?? ""),
     isPublished: formData.get("isPublished") === "on",
   };
 
-  const result = projectFormSchema.safeParse(raw);
+  const result = testimonialFormSchema.safeParse(raw);
   if (!result.success) {
-    const fieldErrors: Partial<Record<keyof ProjectFormValues, string>> = {};
+    const fieldErrors: Partial<Record<keyof TestimonialFormValues, string>> = {};
     for (const issue of result.error.issues) {
-      const field = issue.path[0] as keyof ProjectFormValues;
+      const field = issue.path[0] as keyof TestimonialFormValues;
       if (!fieldErrors[field]) fieldErrors[field] = issue.message;
     }
     return { success: false, fieldErrors };
@@ -118,25 +112,18 @@ export async function updateProjectAction(
     };
   }
 
-  // Değişiklik yoksa yazma yapma — hizmetler/actions.ts'teki
-  // updateServiceAction ile aynı kalıp.
-  const current = await getProjectById(id);
+  const current = await getTestimonialById(id);
   if (!current) {
     return { success: false, fieldErrors: {}, formError: "Kayıt bulunamadı." };
   }
 
-  const nextDescription = result.data.description || null;
-  const nextCategory = result.data.category || null;
-  const nextLocation = result.data.location || null;
-  const nextYear = result.data.year ? Number(result.data.year) : null;
-  const nextLiveUrl = result.data.liveUrl || null;
+  const nextAuthorTitle = result.data.authorTitle || null;
+  const nextRating = result.data.rating ? Number(result.data.rating) : null;
   const hasChanges =
-    current.title !== result.data.title ||
-    current.description !== nextDescription ||
-    current.category !== nextCategory ||
-    current.location !== nextLocation ||
-    current.year !== nextYear ||
-    current.liveUrl !== nextLiveUrl ||
+    current.authorName !== result.data.authorName ||
+    current.authorTitle !== nextAuthorTitle ||
+    current.quote !== result.data.quote ||
+    current.rating !== nextRating ||
     current.isPublished !== result.data.isPublished;
 
   if (!hasChanges) {
@@ -145,25 +132,23 @@ export async function updateProjectAction(
 
   const supabase = await createServerSupabaseClient();
   const { error } = await supabase
-    .from("projects")
+    .from("testimonials")
     .update({
-      title: result.data.title,
-      description: nextDescription,
-      category: nextCategory,
-      location: nextLocation,
-      year: nextYear,
-      live_url: nextLiveUrl,
+      author_name: result.data.authorName,
+      author_title: nextAuthorTitle,
+      quote: result.data.quote,
+      rating: nextRating,
       is_published: result.data.isPublished,
     })
     .eq("id", id)
     .eq("tenant_id", tenantId);
 
   if (error) {
-    console.error("updateProjectAction güncelleme hatası:", error);
+    console.error("updateTestimonialAction güncelleme hatası:", error);
     return {
       success: false,
       fieldErrors: {},
-      formError: "Proje güncellenirken bir sorun oluştu. Lütfen tekrar deneyin.",
+      formError: "Referans güncellenirken bir sorun oluştu. Lütfen tekrar deneyin.",
     };
   }
 
@@ -177,8 +162,7 @@ export interface ToggleState {
   formError?: string;
 }
 
-// Hizmetler'deki toggleServicePublishedAction ile birebir aynı desen.
-export async function toggleProjectPublishedAction(
+export async function toggleTestimonialPublishedAction(
   id: string,
   _prevState: ToggleState,
   _formData: FormData
@@ -195,7 +179,7 @@ export async function toggleProjectPublishedAction(
 
   const supabase = await createServerSupabaseClient();
   const { data: current, error: fetchError } = await supabase
-    .from("projects")
+    .from("testimonials")
     .select("is_published")
     .eq("id", id)
     .eq("tenant_id", tenantId)
@@ -206,13 +190,13 @@ export async function toggleProjectPublishedAction(
   }
 
   const { error } = await supabase
-    .from("projects")
+    .from("testimonials")
     .update({ is_published: !current.is_published })
     .eq("id", id)
     .eq("tenant_id", tenantId);
 
   if (error) {
-    console.error("toggleProjectPublishedAction hata:", error);
+    console.error("toggleTestimonialPublishedAction hata:", error);
     return { success: false, formError: "Yayın durumu değiştirilemedi. Lütfen tekrar deneyin." };
   }
 
@@ -226,8 +210,7 @@ export interface MoveState {
   formError?: string;
 }
 
-// Hizmetler'deki moveServiceOrderAction ile birebir aynı desen.
-export async function moveProjectOrderAction(
+export async function moveTestimonialOrderAction(
   id: string,
   direction: "up" | "down",
   _prevState: MoveState,
@@ -243,7 +226,7 @@ export async function moveProjectOrderAction(
     return { success: false, formError: "Aktif site bulunamadı, lütfen daha sonra tekrar deneyin." };
   }
 
-  const result = await swapOrderIndex("projects", id, direction, tenantId);
+  const result = await swapOrderIndex("testimonials", id, direction, tenantId);
   if (!result.ok) {
     return { success: false, formError: result.error };
   }
@@ -258,8 +241,7 @@ export interface DeleteState {
   formError?: string;
 }
 
-// deleteServiceAction ile birebir aynı desen (bkz. hizmetler/actions.ts).
-export async function deleteProjectAction(
+export async function deleteTestimonialAction(
   _prevState: DeleteState,
   formData: FormData
 ): Promise<DeleteState> {
@@ -280,14 +262,14 @@ export async function deleteProjectAction(
 
   const supabase = await createServerSupabaseClient();
   const { error } = await supabase
-    .from("projects")
+    .from("testimonials")
     .delete()
     .eq("id", id)
     .eq("tenant_id", tenantId);
 
   if (error) {
-    console.error("deleteProjectAction silme hatası:", error);
-    return { success: false, formError: "Proje silinirken bir sorun oluştu. Lütfen tekrar deneyin." };
+    console.error("deleteTestimonialAction silme hatası:", error);
+    return { success: false, formError: "Referans silinirken bir sorun oluştu. Lütfen tekrar deneyin." };
   }
 
   revalidatePath("/");

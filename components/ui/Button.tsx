@@ -1,6 +1,6 @@
 import type { ButtonHTMLAttributes } from "react";
 
-type ButtonVariant = "primary" | "secondary" | "ghost";
+type ButtonVariant = "primary" | "secondary" | "ghost" | "danger";
 type ButtonSize = "sm" | "md" | "lg";
 
 export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
@@ -14,6 +14,10 @@ const VARIANT_CLASSES: Record<ButtonVariant, string> = {
   secondary:
     "bg-surface-raised text-text border border-neutral-300 hover:bg-neutral-100",
   ghost: "bg-transparent text-brand hover:bg-neutral-100",
+  // Yıkıcı eylemler (silme onayı) için — dolgu değil, kenarlık + metin
+  // (2026-08-08'deki kontrast düzeltmesiyle aynı ilke: "ayrışsın ama
+  // korkutmasın", solid kırmızı blok yerine).
+  danger: "bg-transparent text-error border border-error hover:bg-error/10",
 };
 
 const SIZE_CLASSES: Record<ButtonSize, string> = {

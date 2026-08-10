@@ -241,7 +241,7 @@ export async function getProjectById(id: string): Promise<ProjectDetail | null> 
 // Admin'den ham bir sıra numarası istemek yerine burada hesaplanıyor —
 // çakışma/yanlış girdi riskini ortadan kaldırır.
 export async function getNextOrderIndex(
-  table: "services" | "projects",
+  table: "services" | "projects" | "testimonials" | "faqs" | "team_members",
   tenantId: string
 ): Promise<number> {
   const supabase = await createServerSupabaseClient();
@@ -255,6 +255,295 @@ export async function getNextOrderIndex(
 
   if (error || !data) return 10;
   return Number(data.order_index) + 10;
+}
+
+// Sıralama (yukarı/aşağı taşı) — komşu kaydın order_index'iyle YER
+// DEĞİŞTİRİR. Sınırda (ilk kayıtta yukarı / son kayıtta aşağı) sessizce
+// no-op (ok:true) döner — AdminListTable zaten bu durumlarda butonu
+// disabled yapıyor, bu bir güvenlik ağı. Tek paylaşılan yardımcı (5
+// varlık türü için 5 kez aynı takas mantığını yazmamak için) — auth/
+// revalidate iskeleti PAYLAŞILMIYOR, her actions.ts kendi
+// requireAdminUser() + revalidatePath'ini çağırır (bkz. docs/MIMARI.md
+// madde 9-10). İki ayrı `.update()` çağrısı bir transaction İÇİNDE değil
+// — tek-admin/düşük-eşzamanlılık bağlamında kabul edilebilir bir
+// basitleştirme (bkz. docs/TEST-STRATEJISI.md, "pragmatik yaklaşım").
+export async function swapOrderIndex(
+  table: "services" | "projects" | "testimonials" | "faqs" | "team_members",
+  id: string,
+  direction: "up" | "down",
+  tenantId: string
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  const supabase = await createServerSupabaseClient();
+
+  const { data: rows, error: listError } = await supabase
+    .from(table)
+    .select("id, order_index")
+    .eq("tenant_id", tenantId)
+    .order("order_index", { ascending: true });
+
+  if (listError || !rows) {
+    console.error("swapOrderIndex liste okuma hatası:", listError);
+    return { ok: false, error: "Sıralama okunamadı." };
+  }
+
+  const index = rows.findIndex((row) => row.id === id);
+  if (index === -1) {
+    return { ok: false, error: "Kayıt bulunamadı." };
+  }
+
+  const neighborIndex = direction === "up" ? index - 1 : index + 1;
+  if (neighborIndex < 0 || neighborIndex >= rows.length) {
+    return { ok: true };
+  }
+
+  const current = rows[index];
+  const neighbor = rows[neighborIndex];
+
+  const { error: firstError } = await supabase
+    .from(table)
+    .update({ order_index: neighbor.order_index })
+    .eq("id", current.id)
+    .eq("tenant_id", tenantId);
+
+  if (firstError) {
+    console.error("swapOrderIndex güncelleme hatası:", firstError);
+    return { ok: false, error: "Sıralama güncellenirken bir sorun oluştu." };
+  }
+
+  const { error: secondError } = await supabase
+    .from(table)
+    .update({ order_index: current.order_index })
+    .eq("id", neighbor.id)
+    .eq("tenant_id", tenantId);
+
+  if (secondError) {
+    console.error("swapOrderIndex güncelleme hatası:", secondError);
+    return { ok: false, error: "Sıralama güncellenirken bir sorun oluştu." };
+  }
+
+  return { ok: true };
+}
+
+export interface AdminTestimonialRow {
+  id: string;
+  authorName: string;
+  authorTitle: string | null;
+  isPublished: boolean;
+  orderIndex: number;
+}
+
+// getAllServices ile birebir aynı desen.
+export async function getAllTestimonials(): Promise<AdminTestimonialRow[]> {
+  try {
+    const supabase = await createServerSupabaseClient();
+    const tenantId = await getActiveTenantId();
+    if (!tenantId) return [];
+
+    const { data, error } = await supabase
+      .from("testimonials")
+      .select("id, author_name, author_title, is_published, order_index")
+      .eq("tenant_id", tenantId)
+      .order("order_index");
+
+    if (error || !data) {
+      throw error ?? new Error("Referanslar alınamadı.");
+    }
+
+    return data.map((row) => ({
+      id: String(row.id),
+      authorName: String(row.author_name),
+      authorTitle: typeof row.author_title === "string" ? row.author_title : null,
+      isPublished: Boolean(row.is_published),
+      orderIndex: Number(row.order_index),
+    }));
+  } catch (err) {
+    console.error("getAllTestimonials sorgu hatası:", err);
+    return [];
+  }
+}
+
+export interface TestimonialDetail {
+  id: string;
+  authorName: string;
+  authorTitle: string | null;
+  quote: string;
+  rating: number | null;
+  isPublished: boolean;
+}
+
+// getServiceById ile aynı desen. `rating` DB'de var ama ziyaretçi
+// sitesinde hiç gösterilmiyor (bkz. components/site/testimonials/types.ts)
+// — panel formunda düzenlenebilir olması bu görevin kapsamında (gerçek
+// bir alan), siteye yansıtmak kapsam dışı.
+export async function getTestimonialById(id: string): Promise<TestimonialDetail | null> {
+  try {
+    const supabase = await createServerSupabaseClient();
+    const tenantId = await getActiveTenantId();
+    if (!tenantId) return null;
+
+    const { data, error } = await supabase
+      .from("testimonials")
+      .select("id, author_name, author_title, quote, rating, is_published")
+      .eq("id", id)
+      .eq("tenant_id", tenantId)
+      .maybeSingle();
+
+    if (error || !data) return null;
+
+    return {
+      id: String(data.id),
+      authorName: String(data.author_name),
+      authorTitle: typeof data.author_title === "string" ? data.author_title : null,
+      quote: String(data.quote),
+      rating: typeof data.rating === "number" ? data.rating : null,
+      isPublished: Boolean(data.is_published),
+    };
+  } catch (err) {
+    console.error("getTestimonialById sorgu hatası:", err);
+    return null;
+  }
+}
+
+export interface AdminFaqRow {
+  id: string;
+  question: string;
+  isPublished: boolean;
+  orderIndex: number;
+}
+
+export async function getAllFaqs(): Promise<AdminFaqRow[]> {
+  try {
+    const supabase = await createServerSupabaseClient();
+    const tenantId = await getActiveTenantId();
+    if (!tenantId) return [];
+
+    const { data, error } = await supabase
+      .from("faqs")
+      .select("id, question, is_published, order_index")
+      .eq("tenant_id", tenantId)
+      .order("order_index");
+
+    if (error || !data) {
+      throw error ?? new Error("SSS alınamadı.");
+    }
+
+    return data.map((row) => ({
+      id: String(row.id),
+      question: String(row.question),
+      isPublished: Boolean(row.is_published),
+      orderIndex: Number(row.order_index),
+    }));
+  } catch (err) {
+    console.error("getAllFaqs sorgu hatası:", err);
+    return [];
+  }
+}
+
+export interface FaqDetail {
+  id: string;
+  question: string;
+  answer: string;
+  isPublished: boolean;
+}
+
+export async function getFaqById(id: string): Promise<FaqDetail | null> {
+  try {
+    const supabase = await createServerSupabaseClient();
+    const tenantId = await getActiveTenantId();
+    if (!tenantId) return null;
+
+    const { data, error } = await supabase
+      .from("faqs")
+      .select("id, question, answer, is_published")
+      .eq("id", id)
+      .eq("tenant_id", tenantId)
+      .maybeSingle();
+
+    if (error || !data) return null;
+
+    return {
+      id: String(data.id),
+      question: String(data.question),
+      answer: String(data.answer),
+      isPublished: Boolean(data.is_published),
+    };
+  } catch (err) {
+    console.error("getFaqById sorgu hatası:", err);
+    return null;
+  }
+}
+
+export interface AdminTeamMemberRow {
+  id: string;
+  fullName: string;
+  role: string;
+  isPublished: boolean;
+  orderIndex: number;
+}
+
+export async function getAllTeamMembers(): Promise<AdminTeamMemberRow[]> {
+  try {
+    const supabase = await createServerSupabaseClient();
+    const tenantId = await getActiveTenantId();
+    if (!tenantId) return [];
+
+    const { data, error } = await supabase
+      .from("team_members")
+      .select("id, full_name, role, is_published, order_index")
+      .eq("tenant_id", tenantId)
+      .order("order_index");
+
+    if (error || !data) {
+      throw error ?? new Error("Ekip üyeleri alınamadı.");
+    }
+
+    return data.map((row) => ({
+      id: String(row.id),
+      fullName: String(row.full_name),
+      role: String(row.role),
+      isPublished: Boolean(row.is_published),
+      orderIndex: Number(row.order_index),
+    }));
+  } catch (err) {
+    console.error("getAllTeamMembers sorgu hatası:", err);
+    return [];
+  }
+}
+
+export interface TeamMemberDetail {
+  id: string;
+  fullName: string;
+  role: string;
+  bio: string | null;
+  isPublished: boolean;
+}
+
+export async function getTeamMemberById(id: string): Promise<TeamMemberDetail | null> {
+  try {
+    const supabase = await createServerSupabaseClient();
+    const tenantId = await getActiveTenantId();
+    if (!tenantId) return null;
+
+    const { data, error } = await supabase
+      .from("team_members")
+      .select("id, full_name, role, bio, is_published")
+      .eq("id", id)
+      .eq("tenant_id", tenantId)
+      .maybeSingle();
+
+    if (error || !data) return null;
+
+    return {
+      id: String(data.id),
+      fullName: String(data.full_name),
+      role: String(data.role),
+      bio: typeof data.bio === "string" ? data.bio : null,
+      isPublished: Boolean(data.is_published),
+    };
+  } catch (err) {
+    console.error("getTeamMemberById sorgu hatası:", err);
+    return null;
+  }
 }
 
 export interface ContactMessageRow {

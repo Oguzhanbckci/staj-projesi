@@ -219,7 +219,7 @@ class'ları üretiyorlar). Görsel doğrulama için geçici vitrin sayfası:
 
 | Bileşen | Dosya | Props (özet) | Kullanım amacı |
 |---|---|---|---|
-| `Button` | `components/ui/Button.tsx` | `variant` (primary/secondary/ghost), `size` (sm/md/lg), `isLoading`, + tüm native `<button>` props | Her türlü tıklanabilir aksiyon — CTA, form submit, panel aksiyonları |
+| `Button` | `components/ui/Button.tsx` | `variant` (primary/secondary/ghost/danger — `danger` 2026-08-14'te panel silme aksiyonları için eklendi, kenarlık+metin, dolgu yok), `size` (sm/md/lg), `isLoading`, + tüm native `<button>` props | Her türlü tıklanabilir aksiyon — CTA, form submit, panel aksiyonları |
 | `Container` | `components/ui/Container.tsx` | `className` ile override edilebilir max-width, + native `<div>` props | Sayfa bölümlerini ve içerik kartlarını tutarlı iç boşluk/max-genişlikle sarmak |
 | `SectionHeader` | `components/ui/SectionHeader.tsx` | `eyebrow`, `title`, `description`, `headingLevel` (h2/h3) | Bölüm başlığı — sayfa başlık hiyerarşisini bozmadan (h1 sayfada bir kez, alt bölümler h2/h3) |
 | `TextField` | `components/ui/TextField.tsx` | `label`, `error`, `helpText`, + native `<input>` props | Tek satırlık metin girişi (ad, e-posta, telefon vb.) |

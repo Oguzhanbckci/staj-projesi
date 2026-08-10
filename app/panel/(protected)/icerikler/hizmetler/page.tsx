@@ -1,7 +1,11 @@
 import { getAllServices } from "@/lib/supabase/panelQueries";
 import { AdminListTable } from "@/components/panel/AdminListTable";
 import { ServiceForm } from "./ServiceForm";
-import { deleteServiceAction } from "./actions";
+import {
+  deleteServiceAction,
+  moveServiceOrderAction,
+  toggleServicePublishedAction,
+} from "./actions";
 
 // Yönetim tablosu (başlık/durum/sıra/işlem) + yeni kayıt formu tek
 // sayfada — Server Component olan bu sayfa her istekte fresh veri çeker
@@ -25,8 +29,10 @@ export default async function HizmetlerPage() {
             }))}
             emptyMessage="Henüz hiç hizmet eklenmemiş."
             editBasePath="/panel/icerikler/hizmetler"
+            entityLabel="hizmet"
             deleteAction={deleteServiceAction}
-            deleteConfirmMessage="Bu hizmeti silmek istediğinizden emin misiniz? Bu işlem geri alınamaz."
+            togglePublishedAction={toggleServicePublishedAction}
+            moveOrderAction={moveServiceOrderAction}
           />
         </div>
       </div>

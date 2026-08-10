@@ -1,38 +1,35 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { projectFormSchema, type ProjectFormValues } from "@/lib/validation/project";
+import { faqFormSchema, type FaqFormValues } from "@/lib/validation/faq";
 import { requireAdminUser, type ActionResult } from "@/lib/panel/actionResult";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { getActiveTenantId } from "@/lib/supabase/queries";
-import { getNextOrderIndex, getProjectById, swapOrderIndex } from "@/lib/supabase/panelQueries";
+import { getFaqById, getNextOrderIndex, swapOrderIndex } from "@/lib/supabase/panelQueries";
 
-// Hizmetler'deki createServiceAction ile birebir aynı desen (bkz. o
-// dosyadaki yorum) — sadece hedef tablo ve alanlar farklı.
-export async function createProjectAction(
-  _prevState: ActionResult<keyof ProjectFormValues>,
+// app/panel/(protected)/icerikler/hizmetler/actions.ts'teki
+// createServiceAction ile birebir aynı desen. SSS bölümü de ziyaretçi
+// sitesinde sadece ana sayfada ("/") render ediliyor.
+export async function createFaqAction(
+  _prevState: ActionResult<keyof FaqFormValues>,
   formData: FormData
-): Promise<ActionResult<keyof ProjectFormValues>> {
+): Promise<ActionResult<keyof FaqFormValues>> {
   const authCheck = await requireAdminUser();
   if (!authCheck.ok) {
     return { success: false, fieldErrors: {}, formError: authCheck.formError };
   }
 
   const raw = {
-    title: String(formData.get("title") ?? ""),
-    description: String(formData.get("description") ?? ""),
-    category: String(formData.get("category") ?? ""),
-    location: String(formData.get("location") ?? ""),
-    year: String(formData.get("year") ?? ""),
-    liveUrl: String(formData.get("liveUrl") ?? ""),
+    question: String(formData.get("question") ?? ""),
+    answer: String(formData.get("answer") ?? ""),
     isPublished: formData.get("isPublished") === "on",
   };
 
-  const result = projectFormSchema.safeParse(raw);
+  const result = faqFormSchema.safeParse(raw);
   if (!result.success) {
-    const fieldErrors: Partial<Record<keyof ProjectFormValues, string>> = {};
+    const fieldErrors: Partial<Record<keyof FaqFormValues, string>> = {};
     for (const issue of result.error.issues) {
-      const field = issue.path[0] as keyof ProjectFormValues;
+      const field = issue.path[0] as keyof FaqFormValues;
       if (!fieldErrors[field]) fieldErrors[field] = issue.message;
     }
     return { success: false, fieldErrors };
@@ -47,63 +44,52 @@ export async function createProjectAction(
     };
   }
 
-  const orderIndex = await getNextOrderIndex("projects", tenantId);
+  const orderIndex = await getNextOrderIndex("faqs", tenantId);
   const supabase = await createServerSupabaseClient();
 
-  const { error } = await supabase.from("projects").insert({
+  const { error } = await supabase.from("faqs").insert({
     tenant_id: tenantId,
-    title: result.data.title,
-    description: result.data.description || null,
-    category: result.data.category || null,
-    location: result.data.location || null,
-    year: result.data.year ? Number(result.data.year) : null,
-    live_url: result.data.liveUrl || null,
+    question: result.data.question,
+    answer: result.data.answer,
     is_published: result.data.isPublished,
     order_index: orderIndex,
   });
 
   if (error) {
-    console.error("createProjectAction insert hatası:", error);
+    console.error("createFaqAction insert hatası:", error);
     return {
       success: false,
       fieldErrors: {},
-      formError: "Proje kaydedilirken bir sorun oluştu. Lütfen tekrar deneyin.",
+      formError: "Soru kaydedilirken bir sorun oluştu. Lütfen tekrar deneyin.",
     };
   }
 
-  // Projeler bölümü de sadece ana sayfada ("/") render ediliyor (bkz.
-  // createServiceAction'daki aynı gerekçe).
   revalidatePath("/");
 
   return { success: true };
 }
 
-// updateServiceAction ile birebir aynı desen (bkz. hizmetler/actions.ts).
-export async function updateProjectAction(
+export async function updateFaqAction(
   id: string,
-  _prevState: ActionResult<keyof ProjectFormValues>,
+  _prevState: ActionResult<keyof FaqFormValues>,
   formData: FormData
-): Promise<ActionResult<keyof ProjectFormValues>> {
+): Promise<ActionResult<keyof FaqFormValues>> {
   const authCheck = await requireAdminUser();
   if (!authCheck.ok) {
     return { success: false, fieldErrors: {}, formError: authCheck.formError };
   }
 
   const raw = {
-    title: String(formData.get("title") ?? ""),
-    description: String(formData.get("description") ?? ""),
-    category: String(formData.get("category") ?? ""),
-    location: String(formData.get("location") ?? ""),
-    year: String(formData.get("year") ?? ""),
-    liveUrl: String(formData.get("liveUrl") ?? ""),
+    question: String(formData.get("question") ?? ""),
+    answer: String(formData.get("answer") ?? ""),
     isPublished: formData.get("isPublished") === "on",
   };
 
-  const result = projectFormSchema.safeParse(raw);
+  const result = faqFormSchema.safeParse(raw);
   if (!result.success) {
-    const fieldErrors: Partial<Record<keyof ProjectFormValues, string>> = {};
+    const fieldErrors: Partial<Record<keyof FaqFormValues, string>> = {};
     for (const issue of result.error.issues) {
-      const field = issue.path[0] as keyof ProjectFormValues;
+      const field = issue.path[0] as keyof FaqFormValues;
       if (!fieldErrors[field]) fieldErrors[field] = issue.message;
     }
     return { success: false, fieldErrors };
@@ -118,25 +104,14 @@ export async function updateProjectAction(
     };
   }
 
-  // Değişiklik yoksa yazma yapma — hizmetler/actions.ts'teki
-  // updateServiceAction ile aynı kalıp.
-  const current = await getProjectById(id);
+  const current = await getFaqById(id);
   if (!current) {
     return { success: false, fieldErrors: {}, formError: "Kayıt bulunamadı." };
   }
 
-  const nextDescription = result.data.description || null;
-  const nextCategory = result.data.category || null;
-  const nextLocation = result.data.location || null;
-  const nextYear = result.data.year ? Number(result.data.year) : null;
-  const nextLiveUrl = result.data.liveUrl || null;
   const hasChanges =
-    current.title !== result.data.title ||
-    current.description !== nextDescription ||
-    current.category !== nextCategory ||
-    current.location !== nextLocation ||
-    current.year !== nextYear ||
-    current.liveUrl !== nextLiveUrl ||
+    current.question !== result.data.question ||
+    current.answer !== result.data.answer ||
     current.isPublished !== result.data.isPublished;
 
   if (!hasChanges) {
@@ -145,25 +120,21 @@ export async function updateProjectAction(
 
   const supabase = await createServerSupabaseClient();
   const { error } = await supabase
-    .from("projects")
+    .from("faqs")
     .update({
-      title: result.data.title,
-      description: nextDescription,
-      category: nextCategory,
-      location: nextLocation,
-      year: nextYear,
-      live_url: nextLiveUrl,
+      question: result.data.question,
+      answer: result.data.answer,
       is_published: result.data.isPublished,
     })
     .eq("id", id)
     .eq("tenant_id", tenantId);
 
   if (error) {
-    console.error("updateProjectAction güncelleme hatası:", error);
+    console.error("updateFaqAction güncelleme hatası:", error);
     return {
       success: false,
       fieldErrors: {},
-      formError: "Proje güncellenirken bir sorun oluştu. Lütfen tekrar deneyin.",
+      formError: "Soru güncellenirken bir sorun oluştu. Lütfen tekrar deneyin.",
     };
   }
 
@@ -177,8 +148,7 @@ export interface ToggleState {
   formError?: string;
 }
 
-// Hizmetler'deki toggleServicePublishedAction ile birebir aynı desen.
-export async function toggleProjectPublishedAction(
+export async function toggleFaqPublishedAction(
   id: string,
   _prevState: ToggleState,
   _formData: FormData
@@ -195,7 +165,7 @@ export async function toggleProjectPublishedAction(
 
   const supabase = await createServerSupabaseClient();
   const { data: current, error: fetchError } = await supabase
-    .from("projects")
+    .from("faqs")
     .select("is_published")
     .eq("id", id)
     .eq("tenant_id", tenantId)
@@ -206,13 +176,13 @@ export async function toggleProjectPublishedAction(
   }
 
   const { error } = await supabase
-    .from("projects")
+    .from("faqs")
     .update({ is_published: !current.is_published })
     .eq("id", id)
     .eq("tenant_id", tenantId);
 
   if (error) {
-    console.error("toggleProjectPublishedAction hata:", error);
+    console.error("toggleFaqPublishedAction hata:", error);
     return { success: false, formError: "Yayın durumu değiştirilemedi. Lütfen tekrar deneyin." };
   }
 
@@ -226,8 +196,7 @@ export interface MoveState {
   formError?: string;
 }
 
-// Hizmetler'deki moveServiceOrderAction ile birebir aynı desen.
-export async function moveProjectOrderAction(
+export async function moveFaqOrderAction(
   id: string,
   direction: "up" | "down",
   _prevState: MoveState,
@@ -243,7 +212,7 @@ export async function moveProjectOrderAction(
     return { success: false, formError: "Aktif site bulunamadı, lütfen daha sonra tekrar deneyin." };
   }
 
-  const result = await swapOrderIndex("projects", id, direction, tenantId);
+  const result = await swapOrderIndex("faqs", id, direction, tenantId);
   if (!result.ok) {
     return { success: false, formError: result.error };
   }
@@ -258,8 +227,7 @@ export interface DeleteState {
   formError?: string;
 }
 
-// deleteServiceAction ile birebir aynı desen (bkz. hizmetler/actions.ts).
-export async function deleteProjectAction(
+export async function deleteFaqAction(
   _prevState: DeleteState,
   formData: FormData
 ): Promise<DeleteState> {
@@ -279,15 +247,11 @@ export async function deleteProjectAction(
   }
 
   const supabase = await createServerSupabaseClient();
-  const { error } = await supabase
-    .from("projects")
-    .delete()
-    .eq("id", id)
-    .eq("tenant_id", tenantId);
+  const { error } = await supabase.from("faqs").delete().eq("id", id).eq("tenant_id", tenantId);
 
   if (error) {
-    console.error("deleteProjectAction silme hatası:", error);
-    return { success: false, formError: "Proje silinirken bir sorun oluştu. Lütfen tekrar deneyin." };
+    console.error("deleteFaqAction silme hatası:", error);
+    return { success: false, formError: "Soru silinirken bir sorun oluştu. Lütfen tekrar deneyin." };
   }
 
   revalidatePath("/");

@@ -5,7 +5,7 @@ import { serviceFormSchema, type ServiceFormValues } from "@/lib/validation/serv
 import { requireAdminUser, type ActionResult } from "@/lib/panel/actionResult";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { getActiveTenantId } from "@/lib/supabase/queries";
-import { getNextOrderIndex } from "@/lib/supabase/panelQueries";
+import { getNextOrderIndex, getServiceById, swapOrderIndex } from "@/lib/supabase/panelQueries";
 
 // Yeni bir hizmet ekler. KISITLAR/KABUL KRİTERİ'nin hepsi burada:
 // 1) oturum kontrolü eylemin içinde, 2) istemciden gelen veriye
@@ -126,6 +126,27 @@ export async function updateServiceAction(
     };
   }
 
+  // Değişiklik yoksa yazma yapma: mevcut kaydı çekip doğrulanmış yeni
+  // değerlerle alan alan karşılaştır. Fark yoksa DB'ye hiç yazılmaz,
+  // revalidatePath de çağrılmaz — kullanıcı yine "Değişiklikler
+  // kaydedildi" görür (davranış farkı sadece gereksiz işin atlanması).
+  const current = await getServiceById(id);
+  if (!current) {
+    return { success: false, fieldErrors: {}, formError: "Kayıt bulunamadı." };
+  }
+
+  const nextDescription = result.data.description || null;
+  const nextIcon = result.data.icon || null;
+  const hasChanges =
+    current.title !== result.data.title ||
+    current.description !== nextDescription ||
+    current.icon !== nextIcon ||
+    current.isPublished !== result.data.isPublished;
+
+  if (!hasChanges) {
+    return { success: true };
+  }
+
   const supabase = await createServerSupabaseClient();
   // `tenant_id` eşleşmesi de aranıyor — bir tenant'ın kaydı başka bir
   // tenant'ın id'siyle (URL'den elle değiştirilerek) güncellenemesin diye
@@ -135,8 +156,8 @@ export async function updateServiceAction(
     .from("services")
     .update({
       title: result.data.title,
-      description: result.data.description || null,
-      icon: result.data.icon || null,
+      description: nextDescription,
+      icon: nextIcon,
       is_published: result.data.isPublished,
     })
     .eq("id", id)
@@ -149,6 +170,91 @@ export async function updateServiceAction(
       fieldErrors: {},
       formError: "Hizmet güncellenirken bir sorun oluştu. Lütfen tekrar deneyin.",
     };
+  }
+
+  revalidatePath("/");
+
+  return { success: true };
+}
+
+export interface ToggleState {
+  success: boolean;
+  formError?: string;
+}
+
+// Listeden tek tıkla yayın durumunu tersine çevirir (bkz.
+// components/panel/PublishToggleButton.tsx). `id` `.bind(null, id)` ile
+// önceden bağlanır — updateServiceAction'daki aynı kalıp.
+export async function toggleServicePublishedAction(
+  id: string,
+  _prevState: ToggleState,
+  _formData: FormData
+): Promise<ToggleState> {
+  const authCheck = await requireAdminUser();
+  if (!authCheck.ok) {
+    return { success: false, formError: authCheck.formError };
+  }
+
+  const tenantId = await getActiveTenantId();
+  if (!tenantId) {
+    return { success: false, formError: "Aktif site bulunamadı, lütfen daha sonra tekrar deneyin." };
+  }
+
+  const supabase = await createServerSupabaseClient();
+  const { data: current, error: fetchError } = await supabase
+    .from("services")
+    .select("is_published")
+    .eq("id", id)
+    .eq("tenant_id", tenantId)
+    .maybeSingle();
+
+  if (fetchError || !current) {
+    return { success: false, formError: "Kayıt bulunamadı." };
+  }
+
+  const { error } = await supabase
+    .from("services")
+    .update({ is_published: !current.is_published })
+    .eq("id", id)
+    .eq("tenant_id", tenantId);
+
+  if (error) {
+    console.error("toggleServicePublishedAction hata:", error);
+    return { success: false, formError: "Yayın durumu değiştirilemedi. Lütfen tekrar deneyin." };
+  }
+
+  revalidatePath("/");
+
+  return { success: true };
+}
+
+export interface MoveState {
+  success: boolean;
+  formError?: string;
+}
+
+// Yukarı/aşağı taşıma — komşu kayıtla order_index takası (bkz.
+// lib/supabase/panelQueries.ts swapOrderIndex, components/panel/
+// ReorderButtons.tsx).
+export async function moveServiceOrderAction(
+  id: string,
+  direction: "up" | "down",
+  _prevState: MoveState,
+  _formData: FormData
+): Promise<MoveState> {
+  const authCheck = await requireAdminUser();
+  if (!authCheck.ok) {
+    return { success: false, formError: authCheck.formError };
+  }
+
+  const tenantId = await getActiveTenantId();
+  if (!tenantId) {
+    return { success: false, formError: "Aktif site bulunamadı, lütfen daha sonra tekrar deneyin." };
+  }
+
+  const result = await swapOrderIndex("services", id, direction, tenantId);
+  if (!result.ok) {
+    return { success: false, formError: result.error };
   }
 
   revalidatePath("/");
