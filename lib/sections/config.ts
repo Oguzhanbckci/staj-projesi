@@ -40,17 +40,17 @@ export const SECTION_ANCHOR_IDS: Record<SectionKey, string> = {
   contact: "iletisim",
 };
 
-// Navbar/Footer'da bağımsız bir gezinme hedefi olarak gösterilen bölümler.
-// hero (zaten sayfanın en üstü), istatistikler ve Eylem Çağrısı (akış
-// içinde karşılaşılır, ayrı bir gezinme hedefi değil) bilinçli olarak dışarıda.
+// Navbar/Footer'da bağımsız bir gezinme hedefi olarak gösterilen, ANA
+// SAYFADA kalan bölümler. hero (zaten sayfanın en üstü), istatistikler ve
+// Eylem Çağrısı (akış içinde karşılaşılır, ayrı bir gezinme hedefi değil)
+// bilinçli olarak dışarıda. `team`/`contact` burada YOK — 2026-08-13'te
+// ayrı sayfalara taşındı (bkz. `STATIC_NAV_LINKS`, docs/KARAR-GUNLUGU.md).
 export const SECTION_NAV_LABELS: Partial<Record<SectionKey, string>> = {
   about: "Hakkımızda",
   services: "Hizmetler",
   projects: "Projeler",
   testimonials: "Referanslar",
   faq: "SSS",
-  team: "Ekip",
-  contact: "İletişim",
 };
 
 export interface PageSectionRow {
@@ -64,12 +64,27 @@ export interface SectionNavLink {
   href: string;
 }
 
+// Ekip ve İletişim artık page_sections'a bağlı ana sayfa bölümleri değil,
+// kendi rotalarına sahip bağımsız sayfalar (bkz. app/(site)/ekip/,
+// app/(site)/iletisim/) — bu yüzden veriye değil, sabit bir listeye
+// bağlılar; sıradaki her zaman ana sayfa bölümlerinden SONRA gösterilir.
+const STATIC_NAV_LINKS: SectionNavLink[] = [
+  { label: "Ekip", href: "/ekip" },
+  { label: "İletişim", href: "/iletisim" },
+];
+
 // Navbar ve Footer aynı listeyi aynı sırayla kullanıyor — tek yerde üretilsin.
 export function buildSectionNavLinks(sections: PageSectionRow[]): SectionNavLink[] {
-  return sections
+  // "/#..." (sadece "#..." değil) — Ekip/İletişim artık ayrı sayfalar
+  // olduğu için, kullanıcı oradayken bu linklere tıklarsa önce ana
+  // sayfaya dönüp sonra ilgili çapaya kaymalı; salt "#hakkimizda" o
+  // sayfalarda hiçbir şey yapmazdı (aynı isimde eleman yok).
+  const homepageLinks = sections
     .filter((section) => SECTION_NAV_LABELS[section.sectionKey])
     .map((section) => ({
       label: SECTION_NAV_LABELS[section.sectionKey]!,
-      href: `#${SECTION_ANCHOR_IDS[section.sectionKey]}`,
+      href: `/#${SECTION_ANCHOR_IDS[section.sectionKey]}`,
     }));
+
+  return [...homepageLinks, ...STATIC_NAV_LINKS];
 }

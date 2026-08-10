@@ -13,7 +13,7 @@ kontrast doğrulaması, bileşen envanteri/API kuralları) ve `TEMA-MIMARISI.md`
 önlemi), gerekirse `KARAR-GUNLUGU.md`'yi (tarihli, hiç silinmeyen karar
 geçmişi) oku.
 
-**Son güncelleme:** 2026-08-11
+**Son güncelleme:** 2026-08-13
 
 ## Proje bağlamı
 
@@ -558,32 +558,67 @@ riski vardı; proje detay penceresindeki 3 sütunlu ızgara dar telefonlarda
 tek sütuna düşecek şekilde düzeltildi). Detay: `TEST-STRATEJISI.md` madde
 8 (yeni "Ziyaretçi Sitesi Manuel Test Kontrol Listesi").
 
-**Doğrulama:** `npm install zod` kullanıcıdan istendi. Migration
-(`20260811120000_add_contact_working_hours.sql`) henüz gerçek Supabase
-projesine uygulanmadı. Duyarlı tasarım bulguları gerçek bir tarayıcıda
-kullanıcı tarafından henüz teyit edilmedi.
+**Doğrulama:** `zod` kuruldu, migration (`20260811120000_...`) uygulandı,
+duyarlı tasarım bulguları kullanıcı tarafından gerçek tarayıcıda teyit
+edildi ("çalışıyor, sorun yok").
+
+**Rota koruma katmanları + panel kabuğu + özet ekranı (2026-08-12):**
+`proxy.ts`'e "next" parametresi (girişten sonra asıl istenen sayfaya
+dönüş) + `lib/utils.ts`'teki `getSafeRedirectPath()` ile açık yönlendirme
+koruması eklendi. `components/panel/PanelShell.tsx` — kenar menüsü
+(masaüstü sabit, mobilde açılır) + üst başlık; ziyaretçi sitesinden
+Navbar/Footer olmadan, sadece yapısal olarak ayrı ama aynı tasarım
+token'larıyla (bkz. `KARAR-GUNLUGU.md`). `app/panel/(protected)/page.tsx`
+artık gerçek bir özet ekranı (hizmet/proje/okunmamış mesaj sayıları),
+`mesajlar/page.tsx` gerçek mesaj listesi; `icerikler/medya/tema/ayarlar`
+Faz 5'e bırakılan placeholder'lar. Yeni `lib/supabase/panelQueries.ts` —
+panel sorguları için ayrı dosya, `createServiceRoleClient` değil
+`createServerSupabaseClient` kullanıyor (en az yetki ilkesi). Migration:
+`20260812120000_add_contact_messages_is_read.sql`.
+
+**Gerçek yetkisiz erişim testi (curl ile, kod incelemesi değil):** Çalışan
+sunucuya çerezsiz istekler atıldı — 4/4 test geçti (girişsiz `/panel` ve
+`/panel/mesajlar` sıfır veri sızdırmadan `/panel/giris`'e yönlendiriyor,
+giriş sayfası kendi kendine döngü yapmıyor, `next` parametresi doğru
+taşınıyor). Detay: `GUVENLIK.md` madde 8-9.
+
+`npm run build`/`lint` temiz, `is_read` migration'ı kullanıcı tarafından
+uygulandı.
+
+**Ekip ve İletişim ayrı sayfalara taşındı (2026-08-13):** Kullanıcı tek
+sayfalı ana sayfanın karmaşık hissettirdiğini belirtti. Akme'nin
+`page_sections`'ından `team`/`contact` satırları silindi (migration:
+`20260813120000_split_team_contact_into_pages.sql`), yeni
+`app/(site)/ekip/page.tsx` ve `app/(site)/iletisim/page.tsx` eklendi
+(bileşenlerin kendisi değişmedi, sadece konumları). Eylem Çağrısı
+butonu artık `/iletisim`'e gidiyor. Navbar/Footer'ın ortak
+`buildSectionNavLinks()`'i artık karışık bir liste üretiyor: ana sayfada
+kalan bölümler için `/#çapa` (başka sayfadan tıklanınca da çalışsın diye
+sadece `#çapa` değil), Ekip/İletişim için gerçek `/ekip`/`/iletisim`
+linkleri. `Navbar`/`MobileMenu`'deki iç linkler `next/link`'in `Link`'ine
+çevrildi (Next.js'in `no-html-link-for-pages` kuralı gerçek bir sayfaya
+giden düz `<a>`'yı yakaladı — artık kısmen çok sayfalı bir site).
+Gerçek sunucuda `curl` ile doğrulandı (bkz. `KARAR-GUNLUGU.md`).
 
 ## Sıradaki adım
 
-1. **Kullanıcı** `npm install zod` çalıştırmalı, `20260811120000_...`
-   migration'ını SQL Editor'de çalıştırıp `npm run types:generate`
-   yapmalı, sonra site genelinde 3 ekran boyutunda (özellikle Navbar'ı)
-   gerçek tarayıcıda hızlıca kontrol etmeli.
-2. Vitest ve Playwright'ı kur (bkz. `TEST-STRATEJISI.md`) — hâlâ yarım
+1. Vitest ve Playwright'ı kur (bkz. `TEST-STRATEJISI.md`) — hâlâ yarım
    kalmış bir kurulum, `npm install` adımları henüz çalıştırılmadı.
-3. İletişim formunun **gerçek kaydı**: `contact_messages`'a
+2. İletişim formunun **gerçek kaydı**: `contact_messages`'a
    `sender_email`/`subject` kolonları eklenmeli (şu an sadece
-   `sender_name`/`sender_phone`/`message` var), sonra `actions.ts`'teki
-   Server Action'a gerçek bir `createServiceRoleClient()` insert'i + bir
-   e-posta bildirimi eklenmeli (bkz. `KARAR-GUNLUGU.md`, 2026-08-11 "Karar
-   2").
+   `sender_name`/`sender_phone`/`message`/`is_read` var), sonra
+   `actions.ts`'teki Server Action'a gerçek bir insert + bir e-posta
+   bildirimi eklenmeli (bkz. `KARAR-GUNLUGU.md`, 2026-08-11 "Karar 2").
+3. Mesajlar sayfasına "okundu işaretle" aksiyonu eklenmeli — şu an sadece
+   listeleme var, `is_read`'i değiştiren bir buton/Server Action yok.
 4. Site tasarımı ilerledikçe `KURUMSAL-SITE-STANDARTLARI.md`'deki kontrol listesini
    madde madde işaretle.
 5. Gerçek görsel(ler) Storage'a yüklenince Lighthouse'u tekrar çalıştırıp
    sayfa ağırlığındaki gerçek görsel etkisini ölç (bkz. yukarıdaki not).
 6. Panelden bölüm sırası/görünürlük/varyant + preset seçimi arayüzü (Faz 5) —
-   `page_sections` veri modeli hazır, panel auth da hazır; sıradaki mantıklı
-   adım bu arayüzü panel içine kodlamak.
+   `page_sections` veri modeli hazır, panel kabuğu da hazır (`/panel/tema`
+   placeholder'ı bu arayüzün gerçek yeri); sıradaki mantıklı adım bunu
+   kodlamak.
 7. Host header'a göre gerçek tenant çözümleyen `proxy.ts` mantığı yazılınca
    (a) `getActiveTenantId()`'i sabit domain yerine parametreye çevir, (b)
    aynı `proxy.ts`'e tenant/domain bazlı panel erişim engelini de ekle —

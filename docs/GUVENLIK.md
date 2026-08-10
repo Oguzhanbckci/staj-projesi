@@ -7,7 +7,7 @@ edilmeyen tek konudur — bu yüzden yazılı ve güncel tutulur. Kararların
 kronolojik gerekçesi için `KARAR-GUNLUGU.md`, teknik mimari için `MIMARI.md`,
 tablo/kolon tasarımı için `VERİ-MODELİ.md` referans alınır.
 
-**Son güncelleme:** 2026-08-10
+**Son güncelleme:** 2026-08-12
 
 ## 1. Tehdit Modeli
 
@@ -243,7 +243,71 @@ fonksiyon budur (Supabase'in kendi resmi uyarısı).
   üzerinden, platform sahibinin kendi güvenli saklama yöntemiyle (şifre
   yöneticisi vb.) tutulur.
 
-## 8. Yayın Öncesi Güvenlik Kontrol Listesi
+## 8. Rota Koruma Katmanları *(2026-08-12 eklendi)*
+
+`/panel` altındaki her şey (giriş sayfası hariç) **iki bağımsız katmanla**
+korunuyor — biri diğerinin yerine geçmiyor, ikisi de ayrı ayrı çalışıyor
+(katmanlı savunma):
+
+| Katman | Dosya | Ne yapar | Ne zaman çalışır |
+|---|---|---|---|
+| 1 — Proxy (ön kontrol) | `proxy.ts` (kök) + `lib/supabase/proxy.ts` | `/panel/*` (giriş sayfası hariç) için oturumu kontrol eder, yoksa `/panel/giris`'e yönlendirir | Sayfa hiç render edilmeden önce, her istekte |
+| 2 — Layout (kesin kontrol) | `app/panel/(protected)/layout.tsx` | `getUser()` ile BAĞIMSIZ bir kez daha kontrol eder | Proxy'den geçmiş her istekte, gerçek sayfa bileşeni render edilmeden hemen önce |
+
+**Neden iki katman:** Next.js'in kendi belgesi proxy'nin "tam bir oturum
+yönetimi/yetkilendirme çözümü" olarak kullanılmamasını, asıl kontrolün her
+zaman sunucu tarafı kodun kendisinde (Server Component/Action/Route
+Handler) tekrarlanmasını öneriyor (bkz. madde 5). Pratikte: `proxy.ts`
+bir sebeple atlanırsa (yanlış `matcher` yapılandırması, ileride bir
+yeniden düzenleme) bile, `layout.tsx`'teki bağımsız kontrol panel
+verisinin render edilmesini yine de engeller.
+
+### Geri dönüş (`next`) parametresi
+
+Oturumu olmayan bir kullanıcı `/panel/mesajlar` gibi belirli bir sayfaya
+gitmeye çalışırsa, `proxy.ts` onu `/panel/giris?next=/panel/mesajlar`'a
+yönlendirir; giriş formunda gizli bir alan olarak taşınan bu değer, başarılı
+girişten sonra kullanıcıyı asıl gitmek istediği sayfaya geri götürür (bkz.
+`app/panel/giris/page.tsx`).
+
+**Açık yönlendirme (open redirect) koruması:** `next` değeri asla
+doğrudan `redirect()`'e verilmiyor — `lib/utils.ts`'teki
+`getSafeRedirectPath()` fonksiyonu şunları reddedip güvenli varsayılana
+(`/panel`) düşürür:
+- `/` ile başlamayan her şey (`https://evil.com`, `javascript:...`),
+- `//` ile başlayan protokol-göreli URL'ler (`//evil.com` — tarayıcı bunu
+  dış siteye gider şekilde yorumlar),
+- `/panel` önekiyle başlamayan her yol,
+- `/panel/giris`'in kendisi (aksi halde "giriş yaptım, yine giriş
+  sayfasındayım" gibi anlamsız bir yönlendirme olurdu).
+
+**Sonsuz döngü riski yok:** `proxy.ts`, `/panel/giris`'in KENDİSİNİ hiç
+kontrol etmiyor (`isLoginPage` koşuluyla hariç tutuluyor) — giriş sayfası
+kendi kendini asla tekrar giriş sayfasına göndermiyor. `layout.tsx`
+sadece `(protected)` route group'unun içini sarıyor, `/panel/giris`
+(ayrı bir kardeş route) bu layout'un hiç parçası değil — o da ikinci bir
+döngü kaynağı olamaz. Gerçek testlerle doğrulandı (bkz. madde 9).
+
+## 9. Yetkisiz Erişim Test Sonuçları *(2026-08-12 eklendi)*
+
+Kullanıcının isteği üzerine, çıkış yapmış/hiç giriş yapmamış bir durumda
+(çerezsiz `curl` istekleri — tarayıcıda "gizli sekme"den daha kesin bir
+simülasyon, JS/hydration'ın gizleyebileceği hiçbir şeye izin vermez)
+panel adreslerine doğrudan erişim denendi. **4/4 test geçti:**
+
+| # | Test | Beklenen | Sonuç |
+|---|---|---|---|
+| 1 | Çerezsiz `GET /panel` | 307 yönlendirme, `/panel/giris?next=%2Fpanel`'e | ✅ |
+| 2 | Çerezsiz `GET /panel/mesajlar` (gerçek mesaj verisi içeren rota) | 307 yönlendirme, gövdede SIFIR panel verisi | ✅ — yönlendirme gövdesi sadece hedef URL metni (26-42 bayt), `Mehmet Yılmaz`, `Özet`, `okunmamış` gibi hiçbir iz yok |
+| 3 | Çerezsiz `GET /panel/giris` (giriş sayfasının kendisi) | 200 OK, YÖNLENDİRME YOK (döngü kontrolü) | ✅ |
+| 4 | `GET /panel/giris?next=/panel/mesajlar` | Formun gizli `next` alanı `/panel/mesajlar` değerini taşımalı | ✅ |
+
+**Sonuç:** KABUL KRİTERİ'ndeki "adres çubuğuna doğrudan yazan girişsiz
+kullanıcı içeriği bir an bile görmesin" koşulu gerçek bir sunucuya karşı
+doğrulandı — bu bir kod incelemesi değil, çalışan `next dev` sunucusuna
+atılan gerçek HTTP istekleriydi (2026-08-12).
+
+## 10. Yayın Öncesi Güvenlik Kontrol Listesi
 
 Bu proje şu an gerçek bir müşteriye canlıya alınmıyor (bkz. `DURUM.md`,
 "Proje bağlamı") — ama ileride bu değişirse, veya staj değerlendirmesi için

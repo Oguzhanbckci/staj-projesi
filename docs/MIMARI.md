@@ -6,7 +6,7 @@ yapılacağını" (özellik kapsamı), bu dosya "nasıl yapılacağını" (tekni
 seçimler) tanımlar. Kod içermez. Karar değişirse önce `KARAR-GUNLUGU.md`'ye
 kayıt düşülür, sonra bu dosya güncellenir.
 
-**Son güncelleme:** 2026-08-10
+**Son güncelleme:** 2026-08-13
 
 ## 0. Bağlam
 
@@ -193,24 +193,35 @@ scaffold'ı (`create-next-app`, 2026-08-06) kurulduktan sonra oluşturuldu.
 - **`app/`** — Next.js App Router. Kök `layout.tsx` ve `globals.css` burada
   (her iki alt rotaya da uygulanır). İçinde iki route group var:
   - **`app/(site)/`** — herkese açık kurumsal site sayfaları. Route group
-    olduğu için URL'e segment eklemez (`/` kökten render edilir). Proxy
-    (madde 7, henüz tenant çözümleme kısmı yok) buraya sadece istek bir
-    tenant domaininden veya platform sahibinin kendi domaininden geldiğinde
-    yönlendirir.
+    olduğu için `page.tsx` (`/`) URL'e segment eklemez. Proxy (madde 7,
+    henüz tenant çözümleme kısmı yok) buraya sadece istek bir tenant
+    domaininden veya platform sahibinin kendi domaininden geldiğinde
+    yönlendirir. *(2026-08-13)* `ekip/` ve `iletisim/` — Ekip/İletişim
+    artık ana sayfanın `page_sections`'a bağlı bölümleri değil, bu iki
+    gerçek alt rota (bkz. `KARAR-GUNLUGU.md`); `layout.tsx`'i (Navbar/
+    Footer) diğer `(site)` sayfalarıyla aynen paylaşırlar.
   - **`app/panel/`** — tek yönetim paneli (madde 4, 7). *(2026-08-10)*
-    Auth kuruldu: `giris/page.tsx` (herkese açık giriş sayfası) +
-    `(protected)/` route group'u (`layout.tsx` — oturum kontrolü +
-    e-posta/çıkış göstergesi, `page.tsx` — gerçek panel içeriği, hâlâ
-    placeholder). Detay: `docs/GUVENLIK.md` madde 5-7.
+    Auth kuruldu: `giris/page.tsx` (herkese açık giriş sayfası, "next"
+    parametresiyle geri dönüş) + `(protected)/` route group'u
+    (`layout.tsx` — oturum kontrolü + `PanelShell` kabuğu). *(2026-08-12)*
+    `page.tsx` artık gerçek bir özet ekranı (hizmet/proje/okunmamış mesaj
+    sayıları), `mesajlar/page.tsx` gerçek mesaj listesi, `icerikler/`
+    `medya/` `tema/` `ayarlar/` basit "yakında" placeholder'ları. Detay:
+    `docs/GUVENLIK.md` madde 5-9.
   - **`app/api/`** — henüz oluşturulmadı; ilk route handler (ör. iletişim
     formu → e-posta gönderimi, bkz. `PRD.md`) eklendiğinde açılacak.
   - **`app/test-services/`** — geçici doğrulama sayfası (2026-08-07), Supabase
     bağlantısının gerçek veriyle çalıştığını göstermek için yazıldı. Gerçek
     Hizmetler bölüm bileşeni (`components/site/`) yazılınca silinecek.
-- **`components/`** — React bileşenleri, ikiye ayrılır:
+- **`components/`** — React bileşenleri, üçe ayrılır:
   - **`components/ui/`** — sayfa/tema bağımsız genel UI parçaları (buton,
-    input, kart vb.) — henüz boş, `panel` ve `(site)` inşa edilirken
-    doldurulacak.
+    input, kart vb.) — hem `(site)` hem `panel` bunları kullanır.
+  - **`components/panel/`** *(2026-08-12 eklendi)* — sadece panele özel
+    bileşenler: `PanelShell.tsx` (kenar menü + üst başlık + mobil açılır
+    menü kabuğu) ve `navItems.ts` (5 menü öğesi). `components/ui/`'daki
+    genel bileşenleri (Button, Card) kullanır ama kendi başına
+    `components/site/`'tan tamamen bağımsız — ikisi asla birbirini
+    import etmez (bkz. `AI-KURALLARI.md` madde 3).
   - **`components/site/`** — hazır bölüm kütüphanesi (Hero, Hakkımızda,
     Hizmetler, Projeler, Referanslar, İstatistikler, SSS, Ekip, Eylem
     Çağrısı, İletişim, Footer — bkz. `PRD.md` madde 3.3, `RAKIP-ANALIZI.md`).
@@ -227,12 +238,17 @@ scaffold'ı (`create-next-app`, 2026-08-06) kurulduktan sonra oluşturuldu.
     veriyle doğrulandı. `client.ts` *(2026-08-10)* — tarayıcı tarafı
     (`"use client"`) istemcisi, panel giriş/çıkış için. `proxy.ts`
     *(2026-08-10)* — kök `proxy.ts`'in çağırdığı oturum tazeleme +
-    `/panel` koruma mantığı (bkz. `GUVENLIK.md` madde 5).
+    `/panel` koruma mantığı (bkz. `GUVENLIK.md` madde 5, 8). `panelQueries.ts`
+    *(2026-08-12)* — sadece `app/panel/(protected)/` içinden çağrılan,
+    `createServerSupabaseClient` kullanan (service role DEĞİL) panel
+    özeti/mesaj sorguları — herkese açık içerik sorgularından bilinçli
+    olarak ayrı bir dosyada.
   - **`lib/sections/`** *(2026-08-10)* — `config.ts` (tip güvenli
     `SectionKey` union'ı + anchor/nav etiket eşlemeleri) ve `registry.tsx`
     (`SectionKey` → doğru bölüm bileşeni dizici, `renderSection()`).
-  - **`lib/utils.ts`** — genel yardımcı fonksiyonlar (tarih/metin formatlama
-    vb.). Henüz placeholder.
+  - **`lib/utils.ts`** — genel yardımcı fonksiyonlar. *(2026-08-12)*
+    `getSafeRedirectPath()` eklendi — panel girişindeki açık yönlendirme
+    (open redirect) koruması (bkz. `GUVENLIK.md` madde 8).
 - **`types/`** — paylaşılan TypeScript tipleri. `database.types.ts`,
   Supabase CLI ile gerçek şemadan otomatik üretilir (bkz. madde 4.2),
   elle düzenlenmez. `index.ts` henüz placeholder.

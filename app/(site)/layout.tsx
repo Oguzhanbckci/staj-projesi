@@ -3,7 +3,7 @@ import type { ReactNode } from "react";
 import { Navbar } from "@/components/site/Navbar";
 import { Footer } from "@/components/site/Footer";
 import { getPageSections, getSiteSettings } from "@/lib/supabase/queries";
-import { buildSectionNavLinks, SECTION_ANCHOR_IDS } from "@/lib/sections/config";
+import { buildSectionNavLinks } from "@/lib/sections/config";
 
 // site_settings.seo_title/seo_description'tan — kök layout.tsx'teki
 // create-next-app varsayılanının (yer tutucu metin) yerini alıyor.
@@ -28,11 +28,7 @@ export default async function SiteLayout({ children }: { children: ReactNode }) 
 
   return (
     <>
-      <Navbar
-        logoText={tenantName}
-        links={navLinks}
-        contactHref={`#${SECTION_ANCHOR_IDS.contact}`}
-      />
+      <Navbar logoText={tenantName} links={navLinks} contactHref="/iletisim" />
       <main>{children}</main>
       <Footer />
     </>

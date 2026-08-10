@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import { LinkButton } from "@/components/ui/LinkButton";
 import { MobileMenu } from "./MobileMenu";
 
@@ -18,8 +19,10 @@ export interface NavbarProps {
 
 // Sayfa kaydırıldığında görünüm değişir (şeffaftan dolgulu zemine) —
 // bu yüzden Client Component (bkz. docs/TASARIM-SISTEMI.md madde 9.9:
-// "use client" sadece gerçek etkileşim gerektiğinde). Bağlantılar sayfa
-// içi (#hero, #hizmetler vb.) — Hero.tsx/gelecek bölümlerin kendi id'si.
+// "use client" sadece gerçek etkileşim gerektiğinde). Bağlantılar
+// çoğunlukla sayfa içi çapa ("/#hizmetler" vb. — bkz. lib/sections/
+// config.ts, "/" öneki Ekip/İletişim gibi ayrı sayfalardan tıklanınca da
+// çalışsın diye), Ekip/İletişim ise artık gerçek sayfa linkleri.
 export function Navbar({
   logoText,
   links,
@@ -49,15 +52,15 @@ export function Navbar({
       }`}
     >
       <nav className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
-        <a href="#hero" className="text-h6 font-bold text-text">
+        <Link href="/" className="text-h6 font-bold text-text">
           {logoText}
-        </a>
+        </Link>
         <ul className="hidden gap-6 lg:flex">
           {links.map((link) => (
             <li key={link.href}>
-              <a href={link.href} className="text-base text-text hover:text-brand">
+              <Link href={link.href} className="text-base text-text hover:text-brand">
                 {link.label}
-              </a>
+              </Link>
             </li>
           ))}
         </ul>

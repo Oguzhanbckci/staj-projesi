@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useDialogBehavior } from "@/lib/hooks/useDialogBehavior";
 import { LinkButton } from "@/components/ui/LinkButton";
 import type { NavLink } from "./Navbar";
@@ -51,13 +52,13 @@ export function MobileMenu({
       <ul className="mt-8 space-y-4">
         {links.map((link) => (
           <li key={link.href}>
-            <a
+            <Link
               href={link.href}
               onClick={onClose}
               className="text-h5 font-semibold text-text"
             >
               {link.label}
-            </a>
+            </Link>
           </li>
         ))}
       </ul>

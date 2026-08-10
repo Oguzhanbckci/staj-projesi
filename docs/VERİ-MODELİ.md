@@ -221,6 +221,7 @@ bilgisini tutar. Ziyaretçinin doldurduğu form `contact_messages`'ta.
 | `sender_name` | text, not null | |
 | `sender_phone` | text, nullable | |
 | `message` | text, not null | |
+| `is_read` | boolean, not null, default false | *(2026-08-12 eklendi)* panelde okundu işaretlendi mi — panel özet ekranındaki "okunmamış mesaj" sayısı bu alandan |
 
 E-posta gönderimi başarısız olsa bile mesaj kaybolmasın diye DB'ye de
 kaydediliyor (bkz. `KARAR-GUNLUGU.md`, 2026-08-06).
@@ -301,7 +302,7 @@ bölümden iki kaydı olamaz.
 
 ## SQL Migration
 
-On iki migration dosyası var, sırayla:
+On dört migration dosyası var, sırayla:
 
 1. `20260806120000_create_content_tables.sql` — ilk 8 tablo (`tenants`,
    `site_settings`, `hero_sections`, `about_sections`, `services`,
@@ -332,9 +333,16 @@ On iki migration dosyası var, sırayla:
     sisteminden önceki yer tutucu `primary_color`'ı `null`'a çekildi.
 12. `20260811120000_add_contact_working_hours.sql` —
     `contact_sections.working_hours` + Akme için demo veri.
-    **Henüz gerçek Supabase projesine uygulanmadı.**
+13. `20260812120000_add_contact_messages_is_read.sql` —
+    `contact_messages.is_read` (panel özet ekranı için) + demo veriye
+    backfill.
+14. `20260813120000_split_team_contact_into_pages.sql` — Akme'nin
+    `page_sections`'ından `team`/`contact` satırları silindi (artık ayrı
+    sayfa, bkz. `KARAR-GUNLUGU.md`) + `site_settings.cta_button_link`
+    `/iletisim`'e güncellendi. Şema değişikliği yok, sadece veri —
+    `types:generate` gerekmez.
 
-Migration 1-11 gerçek Supabase projesine uygulandı (2026-08-10 itibarıyla).
+Migration 1-14 gerçek Supabase projesine uygulandı (2026-08-13 itibarıyla).
 Her migration'da `create table`/`alter table`, `check`/`unique`
 kısıtlamaları, `default` değerleri, `comment on table`/`comment on
 column` ve (ilgili olanlarda) `enable row level security` + politikalar

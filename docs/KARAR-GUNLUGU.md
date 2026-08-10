@@ -1866,3 +1866,104 @@ genişliğinde taşma riski vardı — `lg:` (1024px) noktasına taşındı.
 **Doğrulama:** `npm run build`/`lint` — `zod` kurulumu kullanıcıdan
 istendi (bkz. sohbet). Duyarlı tasarım bulguları gerçek bir tarayıcıda
 henüz kullanıcı tarafından teyit edilmedi.
+
+---
+
+## 2026-08-12 — Rota koruma katmanları, panel kabuğu ve özet ekranı
+
+**Karar 1 — Yine `/admin` değil `/panel`.** Yönerge yine `/admin`
+kullanıyordu; 2026-08-10'da zaten karar verilmişti (`/panel`'de kalınacak,
+bkz. o tarihli kayıt) — aynı kararla, tekrar sormadan devam edildi.
+
+**Karar 2 — Panel için servis rolü değil, `createServerSupabaseClient`.**
+Yeni `lib/supabase/panelQueries.ts` (hizmet/proje sayısı, okunmamış mesaj
+sayısı, mesaj listesi) bilerek `createServiceRoleClient()` kullanmıyor —
+panel zaten "authenticated" bir oturumla çalışıyor ve RLS'in
+`..._authenticated_select_all` politikaları (bkz. `GUVENLIK.md` madde 2)
+taslak dahil her şeyi görmesine izin veriyor. Service role (RLS bypass)
+burada gereksiz bir yetki artışı olurdu — "en az yetki" ilkesi.
+
+**Karar 3 — Panel görsel ayrımı, yeni renk değil yeni YERLEŞİM ile
+sağlandı.** Yönerge "panel ziyaretçi sitesinden görsel olarak ayrılsın
+ama aynı tasarım token'larını kullanmaya devam et" dedi. Yeni bir renk
+paleti icat ETMEDİK — `PanelShell` bileşeni aynı `bg-surface`/
+`bg-surface-raised`/`bg-brand`/`text-text` token'larını kullanıyor, ayrım
+tamamen YAPISAL: kalıcı kenar menüsü + üst başlık olan bir "uygulama
+kabuğu" (ziyaretçi sitesinin Navbar/Footer'lı, tek sütun kaydırmalı
+sayfa yapısından tamamen farklı). Zaten `app/panel/` ve `app/(site)/`
+ayrı route grupları olduğu için Navbar/Footer panelde hiç görünmüyor.
+
+**Karar 4 — "Mesajlar" sayfası placeholder değil, gerçek liste.** Diğer
+4 kenar menü öğesi (İçerikler/Medya/Tema/Ayarlar) Faz 5'e bırakılan basit
+"yakında" sayfaları iken, Mesajlar'a gerçek `contact_messages` verisini
+gösteren bir liste yazıldı — zaten okunmamış sayısı için sorgu
+gerekiyordu, aynı veriyi listelemek ek bir maliyet değildi ve
+"yarım bırakılmış özellik" hissi yaratmadan gerçek bir değer kattı.
+
+**Uygulama özeti:**
+- `lib/supabase/proxy.ts` + `app/panel/giris/page.tsx`: `next` parametresi
+  (girişten sonra asıl istenen sayfaya dönüş) + `lib/utils.ts`'teki
+  `getSafeRedirectPath()` ile açık yönlendirme (open redirect) koruması.
+- `components/panel/PanelShell.tsx` + `navItems.ts`: kenar menüsü
+  (masaüstü sabit, mobilde `useDialogBehavior` ile açılır) + üst başlık.
+- `app/panel/(protected)/page.tsx`: özet ekranı (hizmet/proje/okunmamış
+  mesaj sayıları + hızlı erişim linkleri).
+- `app/panel/(protected)/mesajlar/page.tsx`: gerçek mesaj listesi.
+- `app/panel/(protected)/{icerikler,medya,tema,ayarlar}/page.tsx`: "yakında"
+  placeholder'ları.
+- Migration: `20260812120000_add_contact_messages_is_read.sql`.
+- `docs/GUVENLIK.md`'ye "Rota Koruma Katmanları" (madde 8) ve "Yetkisiz
+  Erişim Test Sonuçları" (madde 9) eklendi.
+
+**Doğrulama (gerçek, curl ile — kod incelemesi değil):** Çalışan
+`next dev` sunucusuna çerezsiz istekler atıldı. 4/4 test geçti: (1)
+çerezsiz `/panel` → 307, `/panel/giris?next=%2Fpanel`'e; (2) çerezsiz
+`/panel/mesajlar` (gerçek veri içeren rota) → 307, gövdede SIFIR panel
+verisi (sadece 26-42 baytlık yönlendirme hedefi metni); (3) çerezsiz
+`/panel/giris` → 200, yönlendirme YOK (sonsuz döngü kontrolü); (4)
+`next` parametresi giriş formunun gizli alanına doğru taşınıyor. Detay:
+`GUVENLIK.md` madde 9. `npm run build`/`lint` — `is_read` migration'ı
+kullanıcıdan istendi (henüz uygulanmadı, bu yüzden build bu adımda tam
+yeşil değil, bkz. sohbet).
+
+---
+
+## 2026-08-13 — Ekip ve İletişim ayrı sayfalara taşındı
+
+**Karar:** Kullanıcı, tek sayfalı ana sayfa akışının (Hero'dan İletişim'e
+10 bölüm tek sayfada) karmaşık hissettirdiğini belirtti; Ekip ve
+İletişim'in ayrı sayfa/sekme olmasını istedi. İki seçenek sunuldu:
+(A) sadece bu ikisi ayrı sayfa olsun, geri kalanı tek sayfada kalsın,
+(B) tüm site çok sayfalı bir yapıya dönüşsün. **Kullanıcı A'yı seçti** —
+daha küçük, daha düşük riskli bir değişiklik; (B) `page_sections`'ın
+"tek sayfa, sıralı bölümler" modelini temelden değiştirirdi.
+
+**Uygulama:**
+1. `page_sections`'tan Akme'nin `team`/`contact` satırları silindi
+   (migration: `20260813120000_split_team_contact_into_pages.sql`) — bu
+   ikisi artık ana sayfanın bölüm listesinin parçası değil.
+2. `site_settings.cta_button_link`, `#iletisim` (ana sayfadaki bir çapa)
+   yerine `/iletisim` (gerçek sayfa) olarak güncellendi.
+3. Yeni `app/(site)/ekip/page.tsx` ve `app/(site)/iletisim/page.tsx` —
+   `TeamSection`/`ContactSection` bileşenlerinin KENDİSİ değişmedi, sadece
+   nerede render edildikleri değişti (kendi verilerini kendi çekmeye
+   devam ediyorlar). Her ikisi kendi `generateMetadata()`'sıyla sayfa
+   başlığı üretiyor (ör. "Ekibimiz | Akme İnşaat").
+4. `lib/sections/config.ts`'teki `buildSectionNavLinks()` artık iki farklı
+   link türü üretiyor: ana sayfada kalan bölümler için **`/#çapa`**
+   (sadece `#çapa` DEĞİL — kullanıcı `/ekip` ya da `/iletisim`
+   sayfasındayken "Hakkımızda"ya tıklarsa önce ana sayfaya dönüp sonra
+   ilgili yere kaymalı; salt `#hakkimizda` o sayfalarda hiçbir şey
+   yapmazdı) + sabit `{ Ekip: "/ekip", İletişim: "/iletisim" }` linkleri.
+   Hem Navbar hem Footer aynı fonksiyonu kullandığı için ikisi de otomatik
+   tutarlı kaldı.
+5. `Navbar.tsx`'teki logo linki (`#hero` → artık `/`) ve nav linkleri
+   `next/link`'in `Link`'ine çevrildi — Next.js'in kendi ESLint kuralı
+   (`no-html-link-for-pages`) gerçek bir sayfaya giden düz `<a>` etiketini
+   yakaladı, doğru uyarıydı (bu proje artık kısmen çok sayfalı).
+
+**Doğrulama:** Gerçek sunucuda `curl` ile kontrol edildi — ana sayfada
+artık `id="ekip"`/`id="iletisim"` yok, Navbar linkleri doğru karışık
+(`/#hakkimizda` vb. + `/ekip`/`/iletisim`), her iki yeni sayfa gerçek
+Akme verisiyle render oluyor, Eylem Çağrısı butonu `/iletisim`'e gidiyor.
+`npm run build`/`lint` temiz.

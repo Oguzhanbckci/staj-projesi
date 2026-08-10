@@ -58,6 +58,11 @@ bir kurumsal web sitesi hizmeti — "tek müşteri = tek kurulum" iş modelinde.
 - Bölümlerin sayfadaki **sırası, görünürlüğü ve varyantı** veritabanından
   (`page_sections`, bkz. `VERİ-MODELİ.md`) yönetilir — panelden bu tabloyu
   düzenleme arayüzü Faz 5 kapsamında, henüz yok.
+- **Ekip Üyeleri ve İletişim, 2026-08-13'ten itibaren ana sayfanın bir
+  bölümü değil, kendi sayfaları** (`/ekip`, `/iletisim`) — kullanıcı tek
+  sayfalı akışın karmaşık hissettirdiğini belirtti (bkz. `KARAR-GUNLUGU.md`).
+  Diğer tüm bölümler (Hero, Hakkımızda, Hizmetler, Projeler, Referanslar,
+  İstatistikler, SSS, Eylem Çağrısı) hâlâ tek bir ana sayfada, sırayla.
 - **Footer** her tenant sitesinde sabit: iletişim bilgileri, görünür
   bölümlere bağlantılar, sosyal medya, telif satırı. Bölüm kütüphanesinin
   parçası değil (sıralanamaz/gizlenemez) — sayfa düzeninin sabit bir
