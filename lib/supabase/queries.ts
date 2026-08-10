@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { createServiceRoleClient } from "@/lib/supabase/server";
 import {
   DEFAULT_THEME_PRESET,
@@ -12,15 +13,44 @@ import type { ProjectItem } from "@/components/site/projects/types";
 import type { FaqItem } from "@/components/site/faqs/types";
 import type { TestimonialItem } from "@/components/site/testimonials/types";
 import type { StatItem } from "@/components/site/stats/types";
+import type { TeamMember } from "@/components/site/team/types";
+import { isSectionKey, type PageSectionRow } from "@/lib/sections/config";
+
+// Akme İnşaat — "aktif site" olarak hedeflenen tenant. Host header'a göre
+// tenant çözümleyen middleware henüz yok (bkz. docs/MIMARI.md madde 7,
+// docs/DURUM.md "Sıradaki adım"); o gelene kadar bütün sorgular sabit bu
+// domain'i hedefler. Daha önce burada platform sahibinin
+// (is_platform_owner = true) satırı kullanılıyordu, ama o satırda sadece
+// site_settings/stats var — PRD'ye göre Referanslar/SSS/İstatistikler/Ekip
+// zaten sadece TENANT sitelerinde bulunuyor (platformun kendi tanıtım
+// sitesinde değil, bkz. docs/PRD.md madde 3.1/3.3), bu yüzden "örnek/aktif
+// site" olarak platform yerine Akme'yi hedeflemek PRD'ye daha sadık (bkz.
+// docs/KARAR-GUNLUGU.md, 2026-08-10). `cache()` ile bir istekte (ör. Navbar +
+// Footer + PageSections aynı anda) birden fazla çağrılsa da tek sorguya iner.
+const ACTIVE_TENANT_DOMAIN = "akmeinsaat.com.tr";
+
+const getActiveTenantId = cache(async (): Promise<string | null> => {
+  try {
+    const supabase = createServiceRoleClient();
+    const { data, error } = await supabase
+      .from("tenants")
+      .select("id")
+      .eq("domain", ACTIVE_TENANT_DOMAIN)
+      .maybeSingle();
+
+    if (error || !data) return null;
+    return data.id;
+  } catch {
+    return null;
+  }
+});
 
 /**
- * Şu an platform sahibinin tenant kaydına scope'lu (bkz.
- * getSiteThemeSettings yorumu — aynı geçici Host-çözümleme kısıtı).
- * Sadece `is_published = true` kayıtlar, `order_index` sırasıyla —
- * ikisi de DB sorgusunda (`.eq`/`.order`), JS'te değil. Hata olursa
- * (Supabase erişilemez, migration henüz uygulanmamış vb.) sayfa
- * çökmez — sunucu konsoluna loglanır, boş dizi döner; çağıran taraf
- * (ServicesSection) bunu "kayıt yok" ile aynı şekilde ele alır.
+ * Sadece `is_published = true` kayıtlar, `order_index` sırasıyla — ikisi de
+ * DB sorgusunda (`.eq`/`.order`), JS'te değil. Hata olursa (Supabase
+ * erişilemez, migration henüz uygulanmamış vb.) sayfa çökmez — sunucu
+ * konsoluna loglanır, boş dizi döner; çağıran taraf (ServicesSection) bunu
+ * "kayıt yok" ile aynı şekilde ele alır.
  *
  * image_path kolonu için tip artık types/database.types.ts'te var
  * (migration uygulandı + `npm run types:generate` çalıştırıldı,
@@ -29,20 +59,16 @@ import type { StatItem } from "@/components/site/stats/types";
 export async function getServices(): Promise<ServiceItem[]> {
   try {
     const supabase = createServiceRoleClient();
-    const { data: tenant, error: tenantError } = await supabase
-      .from("tenants")
-      .select("id")
-      .eq("is_platform_owner", true)
-      .maybeSingle();
+    const tenantId = await getActiveTenantId();
 
-    if (tenantError || !tenant) {
-      throw tenantError ?? new Error("Platform sahibi tenant bulunamadı.");
+    if (!tenantId) {
+      throw new Error("Aktif tenant bulunamadı.");
     }
 
     const { data, error } = await supabase
       .from("services")
       .select("id, title, description, icon, image_path")
-      .eq("tenant_id", tenant.id)
+      .eq("tenant_id", tenantId)
       .eq("is_published", true)
       .order("order_index");
 
@@ -74,14 +100,20 @@ export async function getServices(): Promise<ServiceItem[]> {
 export async function getAboutSection(): Promise<AboutSectionData | null> {
   try {
     const supabase = createServiceRoleClient();
+    const tenantId = await getActiveTenantId();
+
+    if (!tenantId) {
+      throw new Error("Aktif tenant bulunamadı.");
+    }
+
     const { data, error } = await supabase
       .from("tenants")
       .select("about_sections(*)")
-      .eq("is_platform_owner", true)
+      .eq("id", tenantId)
       .maybeSingle();
 
     if (error || !data) {
-      throw error ?? new Error("Platform sahibi tenant bulunamadı.");
+      throw error ?? new Error("Hakkımızda verisi alınamadı.");
     }
 
     const about = Array.isArray(data.about_sections)
@@ -121,8 +153,7 @@ function isThemePresetKey(value: unknown): value is ThemePresetKey {
 }
 
 /**
- * Şu an "aktif site" olarak platform sahibinin kendi tenant kaydı
- * kullanılıyor (is_platform_owner = true) — Host başlığına göre gerçek
+ * Aktif tenant için (bkz. getActiveTenantId) — Host başlığına göre gerçek
  * tenant çözümlemesi yapan middleware henüz yok (bkz. docs/DURUM.md
  * "Sıradaki adım"). Middleware yazıldığında bu fonksiyon bir tenant id
  * parametresi alacak şekilde genişletilmeli.
@@ -138,14 +169,20 @@ function isThemePresetKey(value: unknown): value is ThemePresetKey {
 export async function getSiteThemeSettings(): Promise<SiteThemeSettings> {
   try {
     const supabase = createServiceRoleClient();
+    const tenantId = await getActiveTenantId();
+
+    if (!tenantId) {
+      throw new Error("Aktif tenant bulunamadı.");
+    }
+
     const { data, error } = await supabase
       .from("tenants")
       .select("theme_mode, site_settings(primary_color, theme_preset)")
-      .eq("is_platform_owner", true)
+      .eq("id", tenantId)
       .maybeSingle();
 
     if (error || !data) {
-      throw error ?? new Error("Platform sahibi tenant bulunamadı.");
+      throw error ?? new Error("Tema ayarları alınamadı.");
     }
 
     const settingsRow = Array.isArray(data.site_settings)
@@ -172,8 +209,7 @@ function isHeroVariant(value: unknown): value is HeroVariant {
 }
 
 /**
- * Şu an platform sahibinin tenant kaydını okuyor (bkz.
- * getSiteThemeSettings yorumu — aynı geçici Host-çözümleme kısıtı).
+ * Aktif tenant için (bkz. getActiveTenantId yorumu).
  *
  * hero_sections.variant/secondary_cta_* kolonları için tip artık var
  * (migration uygulandı + `npm run types:generate` çalıştırıldı,
@@ -184,14 +220,18 @@ function isHeroVariant(value: unknown): value is HeroVariant {
 export async function getHeroSection(): Promise<HeroSectionData | null> {
   try {
     const supabase = createServiceRoleClient();
+    const tenantId = await getActiveTenantId();
+
+    if (!tenantId) return null;
+
     const { data, error } = await supabase
       .from("tenants")
       .select("hero_sections(*)")
-      .eq("is_platform_owner", true)
+      .eq("id", tenantId)
       .maybeSingle();
 
     if (error || !data) {
-      throw error ?? new Error("Platform sahibi tenant bulunamadı.");
+      throw error ?? new Error("Hero verisi alınamadı.");
     }
 
     const hero = Array.isArray(data.hero_sections)
@@ -233,20 +273,16 @@ export async function getHeroSection(): Promise<HeroSectionData | null> {
 export async function getProjects(): Promise<ProjectItem[]> {
   try {
     const supabase = createServiceRoleClient();
-    const { data: tenant, error: tenantError } = await supabase
-      .from("tenants")
-      .select("id")
-      .eq("is_platform_owner", true)
-      .maybeSingle();
+    const tenantId = await getActiveTenantId();
 
-    if (tenantError || !tenant) {
-      throw tenantError ?? new Error("Platform sahibi tenant bulunamadı.");
+    if (!tenantId) {
+      throw new Error("Aktif tenant bulunamadı.");
     }
 
     const { data, error } = await supabase
       .from("projects")
       .select("id, title, description, location, year, category, image_path, live_url")
-      .eq("tenant_id", tenant.id)
+      .eq("tenant_id", tenantId)
       .eq("is_published", true)
       .order("order_index");
 
@@ -277,20 +313,16 @@ export async function getProjects(): Promise<ProjectItem[]> {
 export async function getFaqs(): Promise<FaqItem[]> {
   try {
     const supabase = createServiceRoleClient();
-    const { data: tenant, error: tenantError } = await supabase
-      .from("tenants")
-      .select("id")
-      .eq("is_platform_owner", true)
-      .maybeSingle();
+    const tenantId = await getActiveTenantId();
 
-    if (tenantError || !tenant) {
-      throw tenantError ?? new Error("Platform sahibi tenant bulunamadı.");
+    if (!tenantId) {
+      throw new Error("Aktif tenant bulunamadı.");
     }
 
     const { data, error } = await supabase
       .from("faqs")
       .select("id, question, answer")
-      .eq("tenant_id", tenant.id)
+      .eq("tenant_id", tenantId)
       .eq("is_published", true)
       .order("order_index");
 
@@ -316,20 +348,16 @@ export async function getFaqs(): Promise<FaqItem[]> {
 export async function getTestimonials(): Promise<TestimonialItem[]> {
   try {
     const supabase = createServiceRoleClient();
-    const { data: tenant, error: tenantError } = await supabase
-      .from("tenants")
-      .select("id")
-      .eq("is_platform_owner", true)
-      .maybeSingle();
+    const tenantId = await getActiveTenantId();
 
-    if (tenantError || !tenant) {
-      throw tenantError ?? new Error("Platform sahibi tenant bulunamadı.");
+    if (!tenantId) {
+      throw new Error("Aktif tenant bulunamadı.");
     }
 
     const { data, error } = await supabase
       .from("testimonials")
       .select("id, author_name, author_title, quote, logo_path")
-      .eq("tenant_id", tenant.id)
+      .eq("tenant_id", tenantId)
       .eq("is_published", true)
       .order("order_index");
 
@@ -357,20 +385,16 @@ export async function getTestimonials(): Promise<TestimonialItem[]> {
 export async function getStats(): Promise<StatItem[]> {
   try {
     const supabase = createServiceRoleClient();
-    const { data: tenant, error: tenantError } = await supabase
-      .from("tenants")
-      .select("id")
-      .eq("is_platform_owner", true)
-      .maybeSingle();
+    const tenantId = await getActiveTenantId();
 
-    if (tenantError || !tenant) {
-      throw tenantError ?? new Error("Platform sahibi tenant bulunamadı.");
+    if (!tenantId) {
+      throw new Error("Aktif tenant bulunamadı.");
     }
 
     const { data, error } = await supabase
       .from("stats")
       .select("id, label, value, suffix")
-      .eq("tenant_id", tenant.id)
+      .eq("tenant_id", tenantId)
       .eq("is_published", true)
       .order("order_index");
 
@@ -389,3 +413,189 @@ export async function getStats(): Promise<StatItem[]> {
     return [];
   }
 }
+
+/**
+ * team_members — getServices() ile aynı desen. Ekip bölümü sadece tenant
+ * sitelerinde kullanılır (bkz. docs/PRD.md, "marka anonim kalma" kuralı).
+ */
+export async function getTeamMembers(): Promise<TeamMember[]> {
+  try {
+    const supabase = createServiceRoleClient();
+    const tenantId = await getActiveTenantId();
+
+    if (!tenantId) {
+      throw new Error("Aktif tenant bulunamadı.");
+    }
+
+    const { data, error } = await supabase
+      .from("team_members")
+      .select("id, full_name, role, bio, photo_path")
+      .eq("tenant_id", tenantId)
+      .eq("is_published", true)
+      .order("order_index");
+
+    if (error || !data) {
+      throw error ?? new Error("Ekip üyeleri alınamadı.");
+    }
+
+    return data.map((row) => ({
+      id: String(row.id),
+      fullName: String(row.full_name),
+      role: String(row.role),
+      bio: typeof row.bio === "string" ? row.bio : null,
+      photoPath: typeof row.photo_path === "string" ? row.photo_path : null,
+    }));
+  } catch (err) {
+    console.error("getTeamMembers sorgu hatası:", err);
+    return [];
+  }
+}
+
+export interface ContactSectionData {
+  address: string | null;
+  phone: string | null;
+  email: string | null;
+}
+
+/**
+ * contact_sections — sadece statik gösterim bilgisi (bkz.
+ * docs/VERİ-MODELİ.md, "form verisi burada değil"). Kayıt yoksa/yayında
+ * değilse null döner, ContactSection/Footer bunu "gösterecek bir şey yok"
+ * olarak ele alır.
+ */
+export const getContactSection = cache(async (): Promise<ContactSectionData | null> => {
+  try {
+    const supabase = createServiceRoleClient();
+    const tenantId = await getActiveTenantId();
+
+    if (!tenantId) return null;
+
+    const { data, error } = await supabase
+      .from("contact_sections")
+      .select("address, phone, email")
+      .eq("tenant_id", tenantId)
+      .eq("is_published", true)
+      .maybeSingle();
+
+    if (error || !data) return null;
+
+    return {
+      address: typeof data.address === "string" ? data.address : null,
+      phone: typeof data.phone === "string" ? data.phone : null,
+      email: typeof data.email === "string" ? data.email : null,
+    };
+  } catch (err) {
+    console.error("getContactSection sorgu hatası:", err);
+    return null;
+  }
+});
+
+export interface SiteSettingsData {
+  tenantName: string;
+  seoTitle: string | null;
+  seoDescription: string | null;
+  ctaTitle: string | null;
+  ctaDescription: string | null;
+  ctaButtonText: string | null;
+  ctaButtonLink: string | null;
+  facebookUrl: string | null;
+  instagramUrl: string | null;
+  linkedinUrl: string | null;
+}
+
+/**
+ * Eylem Çağrısı içeriği + Footer sosyal medya linkleri — ikisi de
+ * site_settings'te (bkz. supabase/migrations/20260810120000_...,
+ * "İçerik ayarlardan gelsin" yönergesi). `cache()`: CtaSection ve Footer
+ * aynı istekte ikisi de çağırsa bile tek sorguya iner.
+ */
+export const getSiteSettings = cache(async (): Promise<SiteSettingsData | null> => {
+  try {
+    const supabase = createServiceRoleClient();
+    const tenantId = await getActiveTenantId();
+
+    if (!tenantId) return null;
+
+    const { data, error } = await supabase
+      .from("tenants")
+      .select(
+        "name, site_settings(seo_title, seo_description, cta_title, cta_description, cta_button_text, cta_button_link, facebook_url, instagram_url, linkedin_url)"
+      )
+      .eq("id", tenantId)
+      .maybeSingle();
+
+    if (error || !data) return null;
+
+    const settingsRow = Array.isArray(data.site_settings)
+      ? data.site_settings[0]
+      : data.site_settings;
+
+    return {
+      tenantName: data.name,
+      seoTitle: typeof settingsRow?.seo_title === "string" ? settingsRow.seo_title : null,
+      seoDescription:
+        typeof settingsRow?.seo_description === "string" ? settingsRow.seo_description : null,
+      ctaTitle: typeof settingsRow?.cta_title === "string" ? settingsRow.cta_title : null,
+      ctaDescription:
+        typeof settingsRow?.cta_description === "string" ? settingsRow.cta_description : null,
+      ctaButtonText:
+        typeof settingsRow?.cta_button_text === "string" ? settingsRow.cta_button_text : null,
+      ctaButtonLink:
+        typeof settingsRow?.cta_button_link === "string" ? settingsRow.cta_button_link : null,
+      facebookUrl:
+        typeof settingsRow?.facebook_url === "string" ? settingsRow.facebook_url : null,
+      instagramUrl:
+        typeof settingsRow?.instagram_url === "string" ? settingsRow.instagram_url : null,
+      linkedinUrl:
+        typeof settingsRow?.linkedin_url === "string" ? settingsRow.linkedin_url : null,
+    };
+  } catch (err) {
+    console.error("getSiteSettings sorgu hatası:", err);
+    return null;
+  }
+});
+
+/**
+ * page_sections — bir tenant sitesindeki bölümlerin sırası/görünürlüğü/
+ * varyantı (bkz. supabase/migrations/20260810120000_..., KISITLAR: "Bölüm
+ * kayıtları veritabanında dursun"). Sadece `is_visible = true` satırlar,
+ * `order_index` sırasıyla — DB sorgusunda, JS'te değil. Bilinmeyen bir
+ * section_key (silinmiş bir bölüm türü, elle yapılmış bir DB düzenlemesi)
+ * `isSectionKey` ile elenir — components/site/PageSections.tsx bu listeyi
+ * güvenle SectionKey olarak kullanabilir. `cache()`: Navbar/Footer/
+ * PageSections aynı istekte üçü de çağırsa tek sorguya iner.
+ *
+ * page_sections kolonları için tip artık var (migration uygulandı +
+ * `npm run types:generate` çalıştırıldı, 2026-08-10) — tipli client
+ * kullanılıyor.
+ */
+export const getPageSections = cache(async (): Promise<PageSectionRow[]> => {
+  try {
+    const supabase = createServiceRoleClient();
+    const tenantId = await getActiveTenantId();
+
+    if (!tenantId) return [];
+
+    const { data, error } = await supabase
+      .from("page_sections")
+      .select("id, section_key, variant")
+      .eq("tenant_id", tenantId)
+      .eq("is_visible", true)
+      .order("order_index");
+
+    if (error || !data) {
+      throw error ?? new Error("Bölüm sırası alınamadı.");
+    }
+
+    return data
+      .filter((row) => isSectionKey(row.section_key))
+      .map((row) => ({
+        id: String(row.id),
+        sectionKey: row.section_key as PageSectionRow["sectionKey"],
+        variant: typeof row.variant === "string" ? row.variant : null,
+      }));
+  } catch (err) {
+    console.error("getPageSections sorgu hatası:", err);
+    return [];
+  }
+});

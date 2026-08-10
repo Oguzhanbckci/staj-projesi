@@ -15,8 +15,9 @@ dosya hem migration güncellenir.
 KRİTERİ formatında) karşılaştırılıp üç noktada revize edildi (aşağıda
 "Yönergeyle Karşılaştırma" bölümünde). **RLS her tabloda açık VE
 okuma/yazma politikaları da yazılıp gerçek veriyle test edildi** (bkz.
-`GUVENLIK.md`, `KARAR-GUNLUGU.md` 2026-08-07). Toplam **12 tablo**,
-hepsi gerçek Supabase projesine uygulandı (bkz. madde "SQL Migration").
+`GUVENLIK.md`, `KARAR-GUNLUGU.md` 2026-08-07). Toplam **13 tablo** (12'si
+gerçek Supabase projesine uygulandı; `page_sections`, 2026-08-10'da
+eklendi, **henüz uygulanmadı** — bkz. madde "SQL Migration").
 Bu dosyanın en güncel/otoriter kaynak olduğu unutulmamalı — bazı kolonlar
 (bkz. her tablonun altındaki "2026-08-08 eklendi" notları) tasarım
 aşamasından SONRA, gerçek bileşen/sayfa yazımı sırasında ortaya çıkan
@@ -134,6 +135,13 @@ yapıldı:
 | `contact_email` | text, nullable | üstbilgi/altbilgi/SEO gösterim amaçlı |
 | `contact_phone` | text, nullable | üstbilgi/altbilgi/SEO gösterim amaçlı |
 | `theme_preset` | text, not null, default 'kurumsal-mavi', check | *(2026-08-08 eklendi)* `kurumsal-mavi`\|`modern-koyu` — hazır tema ön ayarı (marka rengi/radius/font kombinasyonu), bkz. `TEMA-MIMARISI.md` |
+| `cta_title` | text, nullable | *(2026-08-10 eklendi)* Eylem Çağrısı başlığı — boşsa bölüm hiç render edilmez |
+| `cta_description` | text, nullable | *(2026-08-10 eklendi)* Eylem Çağrısı kısa açıklama |
+| `cta_button_text` | text, nullable | *(2026-08-10 eklendi)* Eylem Çağrısı buton metni |
+| `cta_button_link` | text, nullable | *(2026-08-10 eklendi)* Eylem Çağrısı buton linki |
+| `facebook_url` | text, nullable | *(2026-08-10 eklendi)* Footer sosyal medya linki |
+| `instagram_url` | text, nullable | *(2026-08-10 eklendi)* Footer sosyal medya linki |
+| `linkedin_url` | text, nullable | *(2026-08-10 eklendi)* Footer sosyal medya linki |
 
 ### `hero_sections` — Hero (Tekil)
 
@@ -272,6 +280,23 @@ genelde pazarlama amaçlı yuvarlak sayılardır (ör. dijitalleşmeden önceki
 projeler DB'de yok) — panelden serbestçe girilebilen bir tablo tercih
 edildi.
 
+### `page_sections` — Bölüm Sırası/Görünürlüğü/Varyantı (Liste) *(2026-08-10 eklendi)*
+
+| Kolon | Tip | Açıklama |
+|---|---|---|
+| `id`, `created_at` | — | ortak |
+| `tenant_id` | uuid, not null, → tenants.id | |
+| `section_key` | text, not null, check | `hero`\|`about`\|`services`\|`projects`\|`testimonials`\|`stats`\|`faq`\|`team`\|`cta`\|`contact` — `lib/sections/config.ts`'teki `SectionKey` union'ıyla birebir eşleşmeli |
+| `order_index` | integer, not null, default 0 | bölümler arası sıra |
+| `is_visible` | boolean, not null, default true | panelden aç/kapat (Faz 5) |
+| `variant` | text, nullable | bölüme özel varyant (ör. hero: `a`/`b`) — doğrulaması burada değil, ilgili bölümün kendi registry'sinde |
+
+**Neden `is_published` değil `is_visible`:** Bu satırlar "içerik" değil,
+bir bölümün sayfadaki durumu — `is_published` diğer tablolarda "taslak mı
+yayında mı" anlamına geliyor, burada anlamı farklı olduğu için ayrı bir
+isim seçildi. `unique (tenant_id, section_key)` — bir tenant'ın aynı
+bölümden iki kaydı olamaz.
+
 ## SQL Migration
 
 Altı migration dosyası var, sırayla:
@@ -294,11 +319,17 @@ Altı migration dosyası var, sırayla:
 8. `20260808170000_add_testimonial_logo_and_stats_table.sql` —
    `testimonials.logo_path` + yeni `stats` tablosu (RLS dahil) → toplam
    **12 tablo**.
+9. `20260810120000_add_page_sections_and_settings_extensions.sql` — yeni
+   `page_sections` tablosu (RLS dahil) + `site_settings`'e Eylem Çağrısı
+   (`cta_*`) ve sosyal medya (`facebook_url`/`instagram_url`/
+   `linkedin_url`) kolonları + Akme için `page_sections` seed'i/CTA
+   içeriği + `team_members` içerik yenileme → toplam **13 tablo**.
+   **Henüz gerçek Supabase projesine uygulanmadı.**
 
-**Hepsi gerçek Supabase projesine uygulandı** (2026-08-08 itibarıyla).
+Migration 1-8 gerçek Supabase projesine uygulandı (2026-08-08 itibarıyla).
 Her migration'da `create table`/`alter table`, `check`/`unique`
 kısıtlamaları, `default` değerleri, `comment on table`/`comment on
-column` ve (4-8 için) ilgili `enable row level security` + politikalar
+column` ve (4-9 için) ilgili `enable row level security` + politikalar
 var. Bu dosya güncellenirse ilgili migration da eşlenik olarak
 güncellenmeli — sıra bu tabloda korunmalı, her yeni şema değişikliği bu
 listeye eklenmeli (silinmez).
@@ -317,8 +348,11 @@ about_sections/testimonials/faqs içeriği hâlâ yok** — bu yüzden geçici
 düşüyor (bkz. `DURUM.md`). Liste tablolarında `contact_messages` 2 satır
 aynı tenant altında; `services` (6, artık kategorize + backfill'li),
 `projects` (8, artık kategori/açıklamalı), `testimonials` (4, biri logo
-yolu backfill'li), `faqs` (5), `team_members` (4) ise Akme İnşaat için
-hazırlanmış gerçekçi demo içeriği (bkz. `content/demo-icerik.md`) —
+yolu backfill'li), `faqs` (5), `team_members` (4, 2026-08-10'da 3
+bilgisayar mühendisi + 1 elektrik mühendisi personasıyla yenilendi) ise
+Akme İnşaat için hazırlanmış gerçekçi demo içeriği (bkz. `content/
+demo-icerik.md` — team_members kısmı artık bu dosyayla birebir örtüşmüyor,
+güncel içerik için migration 9'a bakılmalı) —
 `order_index` 10'ar artıyor, her tabloda yaklaşık yarısı
 `is_published = true` yarısı `false`.
 

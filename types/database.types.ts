@@ -1,4 +1,4 @@
-export type Json =
+﻿export type Json =
   | string
   | number
   | boolean
@@ -222,6 +222,44 @@ export type Database = {
           },
         ]
       }
+      page_sections: {
+        Row: {
+          created_at: string
+          id: string
+          is_visible: boolean
+          order_index: number
+          section_key: string
+          tenant_id: string
+          variant: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_visible?: boolean
+          order_index?: number
+          section_key: string
+          tenant_id: string
+          variant?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_visible?: boolean
+          order_index?: number
+          section_key?: string
+          tenant_id?: string
+          variant?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "page_sections_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       projects: {
         Row: {
           category: string | null
@@ -324,7 +362,14 @@ export type Database = {
           contact_email: string | null
           contact_phone: string | null
           created_at: string
+          cta_button_link: string | null
+          cta_button_text: string | null
+          cta_description: string | null
+          cta_title: string | null
+          facebook_url: string | null
           id: string
+          instagram_url: string | null
+          linkedin_url: string | null
           logo_path: string | null
           primary_color: string | null
           secondary_color: string | null
@@ -337,7 +382,14 @@ export type Database = {
           contact_email?: string | null
           contact_phone?: string | null
           created_at?: string
+          cta_button_link?: string | null
+          cta_button_text?: string | null
+          cta_description?: string | null
+          cta_title?: string | null
+          facebook_url?: string | null
           id?: string
+          instagram_url?: string | null
+          linkedin_url?: string | null
           logo_path?: string | null
           primary_color?: string | null
           secondary_color?: string | null
@@ -350,7 +402,14 @@ export type Database = {
           contact_email?: string | null
           contact_phone?: string | null
           created_at?: string
+          cta_button_link?: string | null
+          cta_button_text?: string | null
+          cta_description?: string | null
+          cta_title?: string | null
+          facebook_url?: string | null
           id?: string
+          instagram_url?: string | null
+          linkedin_url?: string | null
           logo_path?: string | null
           primary_color?: string | null
           secondary_color?: string | null

@@ -13,7 +13,7 @@ export async function StatsSection() {
   if (stats.length === 0) return null;
 
   return (
-    <section className="bg-brand py-12 text-brand-on">
+    <section id="istatistikler" className="bg-brand py-12 text-brand-on">
       <Container>
         <div className="grid grid-cols-2 gap-6 text-center sm:grid-cols-4">
           {stats.map((stat) => (

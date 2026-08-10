@@ -10,16 +10,21 @@ import type { GalleryVariant } from "./types";
 // kodda sabit değil, yayınlanmış projelerdeki farklı değerlerden
 // türetiliyor. Kayıt yoksa bölüm hiç render edilmez (Hizmetler/
 // Hakkımızda'yla aynı ilke).
+//
+// variant, page_sections'tan gelen bir override — verilmezse "grid"
+// varsayılanı kullanılır (bkz. ServicesSection'daki aynı desen).
 export async function ProjectsSection({
-  galleryVariant = "grid",
+  variant,
 }: {
-  galleryVariant?: GalleryVariant;
-}) {
+  variant?: string | null;
+} = {}) {
   const projects = await getProjects();
 
   if (projects.length === 0) {
     return null;
   }
+
+  const galleryVariant: GalleryVariant = variant === "mosaic" ? "mosaic" : "grid";
 
   const categories = Array.from(
     new Set(projects.map((p) => p.category).filter((c): c is string => Boolean(c)))

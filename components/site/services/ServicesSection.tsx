@@ -8,20 +8,22 @@ import type { ServiceCardVariant } from "./types";
 // Kayıt yoksa bölüm hiç render edilmez (boş bir alan bırakmak yerine) —
 // bilinçli tasarım kararı, bkz. docs/TASARIM-SISTEMI.md.
 //
-// cardVariant şu an bir prop (Hero'daki gibi DB'den değil) — henüz
-// istenmedi, ama aynı registry deseni sayesinde ileride
-// site_settings'e benzer bir kolon eklenip buraya bağlanması kolay.
+// variant, page_sections'tan (bkz. lib/sections/registry.ts) gelen bir
+// override — verilmezse "icon" varsayılanı kullanılır. Diğer bölümlerle
+// (Hero, Referanslar, SSS) aynı prop adı — generic composer'ın (PageSections)
+// tek tip arayüzle çalışabilmesi için.
 export async function ServicesSection({
-  cardVariant = "icon",
+  variant,
 }: {
-  cardVariant?: ServiceCardVariant;
-}) {
+  variant?: string | null;
+} = {}) {
   const services = await getServices();
 
   if (services.length === 0) {
     return null;
   }
 
+  const cardVariant: ServiceCardVariant = variant === "image" ? "image" : "icon";
   const ServiceCard = SERVICE_CARD_VARIANTS[cardVariant];
 
   return (

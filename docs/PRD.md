@@ -5,7 +5,7 @@ geçmişi) farklı bir iş görür: **bir özelliğin yapılıp yapılmayacağı
 karar vermek için tek referans**. Yeni bir özellik önerisi geldiğinde önce
 buraya bakılır. Kod içermez.
 
-**Son güncelleme:** 2026-08-07
+**Son güncelleme:** 2026-08-10
 
 ## 1. Ürün Tanımı (tek cümle)
 
@@ -50,11 +50,18 @@ bir kurumsal web sitesi hizmeti — "tek müşteri = tek kurulum" iş modelinde.
 
 - Kendi alan adında yayınlanan, herkese açık kurumsal site.
 - Hazır bölüm kütüphanesinden seçilmiş bölümler (Hero, Hakkımızda, Hizmetler,
-  Projeler, İletişim, **Referanslar, SSS, Ekip Üyeleri** — bkz.
-  `RAKIP-ANALIZI.md`; blog/haberler bölümü kapsam dışı, bkz. madde 4).
-  Referanslar/SSS/Ekip Üyeleri kapsamı 2026-08-06'da netleşen ilk 5 bölümden
-  sonra, 2026-08-07'de demo içerik ihtiyacıyla eklendi (bkz.
-  `KARAR-GUNLUGU.md`).
+  Projeler, İletişim, **Referanslar, SSS, Ekip Üyeleri, İstatistikler, Eylem
+  Çağrısı** — bkz. `RAKIP-ANALIZI.md`; blog/haberler bölümü kapsam dışı, bkz.
+  madde 4). Referanslar/SSS/Ekip Üyeleri kapsamı 2026-08-06'da netleşen ilk 5
+  bölümden sonra 2026-08-07'de demo içerik ihtiyacıyla, İstatistikler
+  2026-08-08'de, Eylem Çağrısı 2026-08-10'da eklendi (bkz. `KARAR-GUNLUGU.md`).
+- Bölümlerin sayfadaki **sırası, görünürlüğü ve varyantı** veritabanından
+  (`page_sections`, bkz. `VERİ-MODELİ.md`) yönetilir — panelden bu tabloyu
+  düzenleme arayüzü Faz 5 kapsamında, henüz yok.
+- **Footer** her tenant sitesinde sabit: iletişim bilgileri, görünür
+  bölümlere bağlantılar, sosyal medya, telif satırı. Bölüm kütüphanesinin
+  parçası değil (sıralanamaz/gizlenemez) — sayfa düzeninin sabit bir
+  parçası (chrome), Navbar gibi.
 - **Ekip Üyeleri sadece tenant sitelerinde kullanılır, platform sahibinin
   kendi tanıtım sitesinde yer almaz** (marka anonim kalma kuralı, aşağıda).
 - Açık/koyu tema desteği.
@@ -80,6 +87,7 @@ aç/kapat) ve bölüm `sıra`sı (bölümler arası sürükle-bırak sıralama).
 | Referanslar | Liste | referans veren kişi/firma adı, unvanı, yorum metni, puan (opsiyonel), sıra |
 | SSS | Liste | soru, cevap, sıra |
 | Ekip Üyeleri | Liste | ad-soyad, unvan, kısa biyografi, fotoğraf, sıra — **sadece tenant sitelerinde, platform sahibi kullanmaz** |
+| Eylem Çağrısı | Tekil (ayarlarda) | başlık, açıklama, buton metni, buton linki — site geneli ayarlardan (`site_settings`) gelir, ayrı bir içerik tablosu yok |
 
 Tenant başına ayrıca (bölüm değil, tenant meta verisi): **tema** (açık/koyu
 tercih, marka rengi), **domain**, **iletişim formu alıcı e-postası**.
@@ -110,7 +118,7 @@ tercih, marka rengi), **domain**, **iletişim formu alıcı e-postası**.
 - Herhangi bir ziyaretçi/kullanıcıya platform paneline erişim vermek — her
   ziyaretçi birbirinin aynısı, tek bir (herkese açık) arayüz görür.
 - Panel'e kullanıcı adı/şifre olmadan erişim (auth'suz erişim asla açık
-  bırakılmaz; bir tenant domaininde `panel` middleware seviyesinde tamamen
+  bırakılmaz; bir tenant domaininde `panel` proxy seviyesinde tamamen
   erişilemez olur).
 - Gerçek Elementor tarzı tam serbest sürükle-bırak / page builder (sadece
   hazır bölümlerin sıralanması/aç-kapatılması var, serbest eleman/sütun
