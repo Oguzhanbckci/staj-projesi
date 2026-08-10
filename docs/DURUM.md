@@ -676,6 +676,16 @@ bazlı alan farkları tablosu. İçerik, bir önceki oturumda yazılan gerçek
 UI metinleriyle (buton etiketleri, onay mesajları) birebir eşleşecek
 şekilde yazıldı — uydurulmadı. Detay ve gerekçe: `KARAR-GUNLUGU.md`.
 
+**Navbar'daki çift "İletişim" düzeltildi (2026-08-14, aynı gün):**
+Kullanıcı arayüzde fark etti — nav linkleri listesindeki sade "İletişim"
+metni ile yanındaki dolgulu CTA butonu aynı adrese (`/iletisim`)
+gidiyordu, görsel tekrar. `components/site/Navbar.tsx`'te, CTA
+butonuyla aynı `href`'e sahip link menü listesinden filtrelendi
+(`menuLinks`) — hem masaüstü hem mobil menüde (aynı listeyi paylaşıyor)
+düzeldi. `lib/sections/config.ts`/`Footer.tsx`'e dokunulmadı (Footer'da
+bu tekrar yok, kapsam dışı). `npm run build`/`lint` temiz, gerçek
+sunucuda `curl` ile doğrulandı (header'da tek "İletişim" kaldı).
+
 ## Sıradaki adım
 
 1. Vitest ve Playwright'ı kur (bkz. `TEST-STRATEJISI.md`) — hâlâ yarım

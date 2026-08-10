@@ -33,6 +33,11 @@ export function Navbar({
   const [menuOpen, setMenuOpen] = useState(false);
   const toggleButtonRef = useRef<HTMLButtonElement>(null);
 
+  // "İletişim" hem sade bir menü linki hem de aşağıdaki dolgulu CTA
+  // butonu olarak aynı adrese (contactHref) gidiyordu — görsel tekrar.
+  // Sade linki menüden çıkarıyoruz, CTA buton tek "İletişim" olarak kalıyor.
+  const menuLinks = links.filter((link) => link.href !== contactHref);
+
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 8);
     onScroll();
@@ -56,7 +61,7 @@ export function Navbar({
           {logoText}
         </Link>
         <ul className="hidden gap-6 lg:flex">
-          {links.map((link) => (
+          {menuLinks.map((link) => (
             <li key={link.href}>
               <Link href={link.href} className="text-base text-text hover:text-brand">
                 {link.label}
@@ -87,7 +92,7 @@ export function Navbar({
         id="mobile-menu"
         open={menuOpen}
         onClose={closeMenu}
-        links={links}
+        links={menuLinks}
         contactHref={contactHref}
         contactLabel={contactLabel}
       />
