@@ -50,7 +50,7 @@ export function ProjectDetailModal({
           {project.description && (
             <p className="mt-3 text-base text-text-muted">{project.description}</p>
           )}
-          <dl className="mt-4 grid grid-cols-3 gap-3 text-base">
+          <dl className="mt-4 grid grid-cols-1 gap-3 text-base sm:grid-cols-3">
             {project.city && (
               <div>
                 <dt className="text-caption font-semibold text-text-muted">Konum</dt>

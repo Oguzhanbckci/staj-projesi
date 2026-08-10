@@ -455,13 +455,15 @@ export interface ContactSectionData {
   address: string | null;
   phone: string | null;
   email: string | null;
+  workingHours: string | null;
 }
 
 /**
  * contact_sections — sadece statik gösterim bilgisi (bkz.
  * docs/VERİ-MODELİ.md, "form verisi burada değil"). Kayıt yoksa/yayında
  * değilse null döner, ContactSection/Footer bunu "gösterecek bir şey yok"
- * olarak ele alır.
+ * olarak ele alır. `working_hours` için tip artık var (migration uygulandı
+ * + `npm run types:generate` çalıştırıldı, 2026-08-11).
  */
 export const getContactSection = cache(async (): Promise<ContactSectionData | null> => {
   try {
@@ -472,7 +474,7 @@ export const getContactSection = cache(async (): Promise<ContactSectionData | nu
 
     const { data, error } = await supabase
       .from("contact_sections")
-      .select("address, phone, email")
+      .select("address, phone, email, working_hours")
       .eq("tenant_id", tenantId)
       .eq("is_published", true)
       .maybeSingle();
@@ -483,6 +485,7 @@ export const getContactSection = cache(async (): Promise<ContactSectionData | nu
       address: typeof data.address === "string" ? data.address : null,
       phone: typeof data.phone === "string" ? data.phone : null,
       email: typeof data.email === "string" ? data.email : null,
+      workingHours: typeof data.working_hours === "string" ? data.working_hours : null,
     };
   } catch (err) {
     console.error("getContactSection sorgu hatası:", err);

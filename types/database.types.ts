@@ -102,6 +102,7 @@ export type Database = {
           is_published: boolean
           phone: string | null
           tenant_id: string
+          working_hours: string | null
         }
         Insert: {
           address?: string | null
@@ -111,6 +112,7 @@ export type Database = {
           is_published?: boolean
           phone?: string | null
           tenant_id: string
+          working_hours?: string | null
         }
         Update: {
           address?: string | null
@@ -120,6 +122,7 @@ export type Database = {
           is_published?: boolean
           phone?: string | null
           tenant_id?: string
+          working_hours?: string | null
         }
         Relationships: [
           {

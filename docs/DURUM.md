@@ -13,7 +13,7 @@ kontrast doğrulaması, bileşen envanteri/API kuralları) ve `TEMA-MIMARISI.md`
 önlemi), gerekirse `KARAR-GUNLUGU.md`'yi (tarihli, hiç silinmeyen karar
 geçmişi) oku.
 
-**Son güncelleme:** 2026-08-10
+**Son güncelleme:** 2026-08-11
 
 ## Proje bağlamı
 
@@ -532,21 +532,59 @@ Oturum Yönetimi/Admin Hesabı Yönetimi bölümleri eklendi. 3 doğrulama testi
 (girişsiz erişim engeli, yanlış şifre, tam giriş+çıkış akışı) elle
 çalıştırılıp geçti. `npm run build`/`lint` temiz.
 
+**İletişim formu + doğrulama şeması + duyarlı tasarım denetimi
+(2026-08-11):** `lib/validation/contact.ts` — zod ile tek doğrulama
+şeması (ad soyad/e-posta/telefon [opsiyonel]/konu/mesaj, PRD'nin ötesine
+genişledi — bkz. `KARAR-GUNLUGU.md`), React'ten bağımsız, hem
+`ContactForm.tsx` (istemci) hem `actions.ts` (Server Action, gerçek
+sunucu doğrulaması) aynı şemayı kullanıyor. Form durumları
+(`useActionState`): gönderiliyor (buton devre dışı + metin değişir),
+başarılı (form temizlenir + teşekkür mesajı), başarısız (alan bazlı hata
++ ekranın üstünde bir hata ÖZETİ, ikisi de `role="alert"`/
+`aria-describedby` ile duyurulur, hata rengi her zaman metinle birlikte).
+`ContactSection` iki sütuna bölündü: iletişim bilgisi (adres+harita linki,
+telefon, e-posta, çalışma saatleri — yeni `working_hours` kolonu) +
+form. **Harita gömülmedi** (performans/KVKK gerekçesiyle, bkz.
+`KARAR-GUNLUGU.md`) — sadece Google Maps'e giden bir link var; ileride
+görsel bir "tat" isteniyorsa JS'siz bir statik harita görseli (Google/
+Mapbox Static Maps API, tek `<img>`) değerlendirilebilir.
+
+Ayrıca site geneli 3 ekran boyutunda (mobil/tablet/masaüstü) kod
+seviyesinde bir duyarlı tasarım denetimi yapıldı (gerçek tarayıcı testi
+değil — bu ortamda tarayıcı aracı `localhost`'a erişemiyor). 2 sorun
+bulunup düzeltildi (`Navbar`'ın masaüstü menüsü `sm:`→`lg:` breakpoint'ine
+taşındı — 7 bağlantıya kadar çıkabildiği için tablet genişliğinde taşma
+riski vardı; proje detay penceresindeki 3 sütunlu ızgara dar telefonlarda
+tek sütuna düşecek şekilde düzeltildi). Detay: `TEST-STRATEJISI.md` madde
+8 (yeni "Ziyaretçi Sitesi Manuel Test Kontrol Listesi").
+
+**Doğrulama:** `npm install zod` kullanıcıdan istendi. Migration
+(`20260811120000_add_contact_working_hours.sql`) henüz gerçek Supabase
+projesine uygulanmadı. Duyarlı tasarım bulguları gerçek bir tarayıcıda
+kullanıcı tarafından henüz teyit edilmedi.
+
 ## Sıradaki adım
 
-1. Vitest ve Playwright'ı kur (bkz. `TEST-STRATEJISI.md`) — hâlâ yarım
+1. **Kullanıcı** `npm install zod` çalıştırmalı, `20260811120000_...`
+   migration'ını SQL Editor'de çalıştırıp `npm run types:generate`
+   yapmalı, sonra site genelinde 3 ekran boyutunda (özellikle Navbar'ı)
+   gerçek tarayıcıda hızlıca kontrol etmeli.
+2. Vitest ve Playwright'ı kur (bkz. `TEST-STRATEJISI.md`) — hâlâ yarım
    kalmış bir kurulum, `npm install` adımları henüz çalıştırılmadı.
-2. İletişim formu için `app/api/contact/` route handler'ı yaz (service role
-   ile `contact_messages`'a insert + e-posta gönderimi), sonra
-   `ContactSection`'a gerçek form ekle.
-3. Site tasarımı ilerledikçe `KURUMSAL-SITE-STANDARTLARI.md`'deki kontrol listesini
+3. İletişim formunun **gerçek kaydı**: `contact_messages`'a
+   `sender_email`/`subject` kolonları eklenmeli (şu an sadece
+   `sender_name`/`sender_phone`/`message` var), sonra `actions.ts`'teki
+   Server Action'a gerçek bir `createServiceRoleClient()` insert'i + bir
+   e-posta bildirimi eklenmeli (bkz. `KARAR-GUNLUGU.md`, 2026-08-11 "Karar
+   2").
+4. Site tasarımı ilerledikçe `KURUMSAL-SITE-STANDARTLARI.md`'deki kontrol listesini
    madde madde işaretle.
-4. Gerçek görsel(ler) Storage'a yüklenince Lighthouse'u tekrar çalıştırıp
+5. Gerçek görsel(ler) Storage'a yüklenince Lighthouse'u tekrar çalıştırıp
    sayfa ağırlığındaki gerçek görsel etkisini ölç (bkz. yukarıdaki not).
-5. Panelden bölüm sırası/görünürlük/varyant + preset seçimi arayüzü (Faz 5) —
+6. Panelden bölüm sırası/görünürlük/varyant + preset seçimi arayüzü (Faz 5) —
    `page_sections` veri modeli hazır, panel auth da hazır; sıradaki mantıklı
    adım bu arayüzü panel içine kodlamak.
-6. Host header'a göre gerçek tenant çözümleyen `proxy.ts` mantığı yazılınca
+7. Host header'a göre gerçek tenant çözümleyen `proxy.ts` mantığı yazılınca
    (a) `getActiveTenantId()`'i sabit domain yerine parametreye çevir, (b)
    aynı `proxy.ts`'e tenant/domain bazlı panel erişim engelini de ekle —
    Next.js proje başına tek proxy dosyasına izin veriyor, ikisi birleşecek

@@ -1800,3 +1800,69 @@ satırı `proxy.ts`'in tanındığını doğruladı. Kullanıcı 3 testi (giriş
 erişim engeli → yönlendirme, yanlış şifre → hata mesajı, doğru giriş →
 panel + e-posta göstergesi → çıkış → tekrar engellenme) elle çalıştırıp
 hepsinin geçtiğini onayladı.
+
+---
+
+## 2026-08-11 — İletişim formu + doğrulama şeması + duyarlı tasarım denetimi
+
+**Karar 1 — Doğrulama kütüphanesi olarak `zod` seçildi.** Yönerge "tek bir
+şemada tanımla, hem istemci hem sunucuda kullanılabilsin" istiyordu.
+Next.js'in kendi resmi kimlik doğrulama kılavuzu
+(`node_modules/next/dist/docs/01-app/02-guides/authentication.md`) tam da
+bu senaryo için Zod'u örnek gösteriyor — elle yazılmış doğrulama
+fonksiyonlarını yeniden icat etmek yerine (e-posta biçimi, uzunluk
+sınırları, zorunlu alan gibi kuralları), test edilmiş/standart bir
+kütüphane tercih edildi. `lib/validation/contact.ts` — React'e, Next'e,
+hiçbir framework'e bağımlı değil (KABUL KRİTERİ: "şema sunucu tarafında
+da çalışacak şekilde saf kalsın").
+
+**Karar 2 — Form alanları PRD'nin ötesine genişledi.** `PRD.md` madde 3.4
+iletişim formunu "ad-soyad, telefon, mesaj" olarak tanımlıyordu; bu
+yönerge e-posta (zorunlu) ve konu (seçim) alanlarını da istedi. PRD.md
+güncellendi. **Not — henüz çözülmemiş bir tutarsızlık:** `contact_messages`
+tablosunda (`sender_name`, `sender_phone`, `message`) e-posta veya konu
+kolonu yok; form verisi Supabase'e kaydedilmeye başlandığında
+(`DURUM.md` "Sıradaki adım") bu tabloya `sender_email`/`subject` kolonları
+eklenmesi gerekecek — bilerek şimdi eklenmedi çünkü BAĞLAM açıkça "form
+verisi ileride Supabase'e kaydedilecek" diyordu, henüz var olmayan bir
+özellik için şema genişletmek erken olurdu.
+
+**Karar 3 — Harita gömülmedi, sadece link.** Yönerge performans
+açısından değerlendirip gerekçelendirmemi istedi. Gömülü bir harita
+(Google Maps iframe veya Leaflet gibi bir JS kütüphanesi) sayfaya üçüncü
+taraf JS/CSS + birden fazla ek ağ isteği ekler (Google Maps'te ayrıca
+üçüncü taraf çerezi, KVKK açısından ayrı bir değerlendirme gerektirir) —
+bu proje Lighthouse Performance ≥90 hedefini bilinçli olarak koruyor
+(bkz. `TEST-STRATEJISI.md`, önceki ölçüm 96). Bunun yerine sıfır ek
+ağırlıklı bir "Haritada Görüntüle" linki eklendi (tıklanınca Google
+Maps'i yeni sekmede açar). Kullanıcıya sorulmadı çünkü net bir performans
+gerekçesiyle savunulabilir, düşük riskli bir karardı; ileride görsel bir
+"tat vermek" isteniyorsa statik harita görseli (tek `<img>`, JS'siz) bir
+ara seçenek olarak `docs/DURUM.md`'ye not düşüldü.
+
+**Karar 4 — Çalışma saatleri içeriği soru sormadan uydurma demo veri
+olarak eklendi** ("Pazartesi - Cuma: 09:00 - 18:00" vb.) — Akme İnşaat
+için önceki oturumlarda kurulan "gerçekçi ama uydurma" demo içerik
+ilkesiyle tutarlı, düşük riskli bir içerik kararı.
+
+**Uygulama özeti:** `lib/validation/contact.ts` (zod şeması + konu
+seçenekleri), `components/site/contact/actions.ts` (Server Action —
+gerçek sunucu tarafı doğrulama çalışıyor, Supabase'e kayıt bilinçli
+olarak yok), `components/site/contact/ContactForm.tsx` (`useActionState`,
+hata özeti + alan hatası, gönderiliyor/başarılı/başarısız durumları,
+başarıda form temizlenir), `ContactSection.tsx` yeniden düzenlendi (form
++ yanında iletişim bilgisi bloğu). Migration:
+`20260811120000_add_contact_working_hours.sql`.
+
+**Duyarlı tasarım denetimi (3 ekran boyutu):** Kod seviyesinde (tarayıcı
+tabanlı görsel test değil — bu ortamda tarayıcı aracı `localhost`'a
+erişemiyor, bkz. 2026-08-10 kaydındaki aynı kısıt) tüm `components/site/`
+Tailwind breakpoint'leri gözden geçirildi. 2 gerçek sorun bulunup
+düzeltildi — detay ve gerekçe: `TEST-STRATEJISI.md` madde 8 ("Son
+çalıştırma"). En önemlisi: `Navbar`'ın masaüstü menüsü `sm:` (640px)
+noktasında açılıyordu ama 7 bağlantıya kadar çıkabildiği için tablet
+genişliğinde taşma riski vardı — `lg:` (1024px) noktasına taşındı.
+
+**Doğrulama:** `npm run build`/`lint` — `zod` kurulumu kullanıcıdan
+istendi (bkz. sohbet). Duyarlı tasarım bulguları gerçek bir tarayıcıda
+henüz kullanıcı tarafından teyit edilmedi.

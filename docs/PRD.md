@@ -83,7 +83,7 @@ aç/kapat) ve bölüm `sıra`sı (bölümler arası sürükle-bırak sıralama).
 | Hakkımızda | Tekil | başlık, açıklama, görsel (opsiyonel), kuruluş/deneyim yılı (opsiyonel) |
 | Hizmetler | Liste | başlık, açıklama, ikon, sıra |
 | Projeler | Liste | başlık, görsel, konum, yıl, sıra |
-| İletişim | Tekil | adres, telefon, e-posta (statik gösterim) + form (ad-soyad, telefon, mesaj) — form gönderiminde **o tenant'a** e-posta gider (alıcı adresi tenant ayarlarında tutulur, içerik verisi değil) |
+| İletişim | Tekil | adres, telefon, e-posta, çalışma saatleri (statik gösterim) + form (ad-soyad, e-posta, telefon [opsiyonel], konu, mesaj — bkz. `lib/validation/contact.ts`, 2026-08-11) — form gönderiminde **o tenant'a** e-posta gider (alıcı adresi tenant ayarlarında tutulur, içerik verisi değil; `contact_messages`'a gerçek kayıt henüz yok, bkz. `DURUM.md`) |
 | Referanslar | Liste | referans veren kişi/firma adı, unvanı, yorum metni, puan (opsiyonel), sıra |
 | SSS | Liste | soru, cevap, sıra |
 | Ekip Üyeleri | Liste | ad-soyad, unvan, kısa biyografi, fotoğraf, sıra — **sadece tenant sitelerinde, platform sahibi kullanmaz** |

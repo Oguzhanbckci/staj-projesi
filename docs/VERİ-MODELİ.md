@@ -8,16 +8,17 @@ Kod içermez — gerçek çalışır SQL
 değişirse önce `KARAR-GUNLUGU.md`'ye tarihli bir kayıt düşülür, sonra hem bu
 dosya hem migration güncellenir.
 
-**Son güncelleme:** 2026-08-08
+**Son güncelleme:** 2026-08-11
 
 **Durum:** Tablolar + kolonlar + kısıtlamalar tasarlandı ve SQL'e döküldü.
 2026-08-06'da dışarıdan gelen bir yönergeyle (BAĞLAM/İSTEK/KISITLAR/KABUL
 KRİTERİ formatında) karşılaştırılıp üç noktada revize edildi (aşağıda
 "Yönergeyle Karşılaştırma" bölümünde). **RLS her tabloda açık VE
 okuma/yazma politikaları da yazılıp gerçek veriyle test edildi** (bkz.
-`GUVENLIK.md`, `KARAR-GUNLUGU.md` 2026-08-07). Toplam **13 tablo** (12'si
-gerçek Supabase projesine uygulandı; `page_sections`, 2026-08-10'da
-eklendi, **henüz uygulanmadı** — bkz. madde "SQL Migration").
+`GUVENLIK.md`, `KARAR-GUNLUGU.md` 2026-08-07). Toplam **13 tablo**, 12'si
+gerçek Supabase projesine uygulandı; en son kolon eklemesi
+(`contact_sections.working_hours`) **henüz uygulanmadı** — bkz. madde
+"SQL Migration".
 Bu dosyanın en güncel/otoriter kaynak olduğu unutulmamalı — bazı kolonlar
 (bkz. her tablonun altındaki "2026-08-08 eklendi" notları) tasarım
 aşamasından SONRA, gerçek bileşen/sayfa yazımı sırasında ortaya çıkan
@@ -206,6 +207,7 @@ Platform sahibi bu tabloyu kullanmaz (anonim kalma kuralı, bkz. `PRD.md`).
 | `address` | text, nullable | |
 | `phone` | text, nullable | WhatsApp butonu da bu alandan üretilir |
 | `email` | text, nullable | |
+| `working_hours` | text, nullable | *(2026-08-11 eklendi)* serbest metin çalışma saatleri, İletişim bölümünde form yanında gösteriliyor |
 
 **Not — form verisi burada değil:** Bu tablo sadece *statik gösterim*
 bilgisini tutar. Ziyaretçinin doldurduğu form `contact_messages`'ta.
@@ -299,7 +301,7 @@ bölümden iki kaydı olamaz.
 
 ## SQL Migration
 
-Altı migration dosyası var, sırayla:
+On iki migration dosyası var, sırayla:
 
 1. `20260806120000_create_content_tables.sql` — ilk 8 tablo (`tenants`,
    `site_settings`, `hero_sections`, `about_sections`, `services`,
@@ -324,12 +326,18 @@ Altı migration dosyası var, sırayla:
    (`cta_*`) ve sosyal medya (`facebook_url`/`instagram_url`/
    `linkedin_url`) kolonları + Akme için `page_sections` seed'i/CTA
    içeriği + `team_members` içerik yenileme → toplam **13 tablo**.
-   **Henüz gerçek Supabase projesine uygulanmadı.**
+10. `20260810130000_add_stats_for_akme.sql` — Akme için örnek istatistikler
+    (eskiden sadece platform tenant'ındaydı).
+11. `20260810140000_reset_akme_primary_color.sql` — Akme'nin tasarım
+    sisteminden önceki yer tutucu `primary_color`'ı `null`'a çekildi.
+12. `20260811120000_add_contact_working_hours.sql` —
+    `contact_sections.working_hours` + Akme için demo veri.
+    **Henüz gerçek Supabase projesine uygulanmadı.**
 
-Migration 1-8 gerçek Supabase projesine uygulandı (2026-08-08 itibarıyla).
+Migration 1-11 gerçek Supabase projesine uygulandı (2026-08-10 itibarıyla).
 Her migration'da `create table`/`alter table`, `check`/`unique`
 kısıtlamaları, `default` değerleri, `comment on table`/`comment on
-column` ve (4-9 için) ilgili `enable row level security` + politikalar
+column` ve (ilgili olanlarda) `enable row level security` + politikalar
 var. Bu dosya güncellenirse ilgili migration da eşlenik olarak
 güncellenmeli — sıra bu tabloda korunmalı, her yeni şema değişikliği bu
 listeye eklenmeli (silinmez).

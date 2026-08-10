@@ -5,7 +5,7 @@ sayılması" için gereken koşulları tanımlar. `AI-KURALLARI.md` madde 7 bura
 işaret eder; test kararı değişirse önce `KARAR-GUNLUGU.md`'ye kayıt düşülür,
 sonra bu dosya güncellenir. Kod içermez.
 
-**Son güncelleme:** 2026-08-06
+**Son güncelleme:** 2026-08-11
 
 ## 0. Bağlam
 
@@ -99,6 +99,59 @@ Proje sonunda (staj yönergesi gereği), madde 3'teki tüm kritik akışları
 kapsayan e2e test paketi tek seferde çalıştırılır — bu, projenin son teslim
 "kapısı"dır.
 
-## 8. Açık Sorular
+## 8. Ziyaretçi Sitesi Manuel Test Kontrol Listesi *(2026-08-11 eklendi)*
+
+Otomatik teste ek olarak — özellikle sayfa düzeni/duyarlı tasarım gibi
+"gözle bakılması gereken" konularda — yeni bir bölüm/özellik tamamlandığında
+veya yayın öncesi bu liste elle işaretlenir. Üç ekran genişliğinde
+gezilerek (~375px mobil, ~768px tablet, ~1280px+ masaüstü — tarayıcı
+DevTools'taki cihaz araç çubuğu veya pencereyi elle daraltıp genişletmek
+yeterli):
+
+**Düzen / duyarlı tasarım:**
+- [ ] Navbar'daki masaüstü menü hiçbir genişlikte taşmıyor/kırılmıyor
+      (bkz. aşağıdaki "Son çalıştırma" — bu tam olarak bulunan bir hataydı).
+- [ ] Mobil/tablette hamburger menü doğru açılıp kapanıyor, odak tuzağı
+      çalışıyor, Escape ile kapanıyor.
+- [ ] Tüm bölümler (Hero → İletişim) sırayla gezilip aralarındaki
+      boşluk/hizalama tutarlı.
+- [ ] Proje detay penceresi (modal) dar ekranda içerik taşırmadan okunabilir.
+- [ ] Kart ızgaraları (Hizmetler/Projeler/Referanslar/Ekip) her genişlikte
+      makul sayıda sütuna diziliyor, kart içeriği taşmıyor.
+
+**İletişim formu (bkz. `components/site/contact/`):**
+- [ ] Her alan görünür bir `<label>`'a sahip, zorunlu alanlar işaretli.
+- [ ] Boş/hatalı gönderimde: sayfanın üstünde bir hata ÖZETİ VE her alanın
+      kendi altında hata metni görünüyor (ikisi de var, sadece biri değil).
+- [ ] Hata olan alanın kenarlığı renkle değişiyor AMA yanında ayrıca metin
+      de var — sadece renge bakarak değil, metni okuyarak da hangi alanın
+      hatalı olduğu anlaşılabiliyor (renk körü kullanıcı senaryosu).
+- [ ] Ekran okuyucu (veya tarayıcının erişilebilirlik denetçisi) hata
+      özetini bir `alert`/canlı bölge olarak duyuruyor.
+- [ ] Gönder butonuna basınca buton devre dışı kalıyor ve metni
+      "Gönderiliyor…" olarak değişiyor.
+- [ ] Geçerli veriyle gönderimde form temizleniyor ve bir teşekkür mesajı
+      görünüyor.
+- [ ] Sadece klavyeyle (fare kullanmadan) tüm alanlar dolduruluyor ve form
+      gönderilebiliyor.
+
+**Son çalıştırma (2026-08-11):** Kod seviyesinde (Tailwind breakpoint'leri
+okunarak) 3 ekran genişliği gözden geçirildi — tarayıcı tabanlı gerçek bir
+görsel test değil, bkz. `KARAR-GUNLUGU.md`'deki gerekçe (bu ortamda
+tarayıcı aracı `localhost`'a erişemiyor). Bulunan ve düzeltilen sorunlar:
+1. **(Kritik)** `Navbar`'daki masaüstü menü `sm:` (640px) noktasında
+   açılıyordu, ama görünür bağlantı sayısı 7'ye kadar çıkabiliyor —
+   640-1024px (tablet) aralığında taşma riski vardı. `lg:` (1024px)
+   noktasına taşındı (`Navbar.tsx` + `MobileMenu.tsx`, üçü birden tutarlı
+   olacak şekilde).
+2. **(Orta)** `ProjectDetailModal`'daki konum/yıl/kategori ızgarası sabit
+   3 sütundu, dar telefonlarda (~360-400px) metinler sıkışıyordu —
+   `grid-cols-1 sm:grid-cols-3` yapıldı.
+
+Bu bulgular gerçek bir tarayıcıda (kullanıcı tarafından) henüz teyit
+edilmedi — sıradaki adımda kullanıcının kendi tarayıcısında hızlı bir
+görsel kontrol yapması öneriliyor.
+
+## 9. Açık Sorular
 
 Şu an aktif açık soru yok.

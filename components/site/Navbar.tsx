@@ -52,7 +52,7 @@ export function Navbar({
         <a href="#hero" className="text-h6 font-bold text-text">
           {logoText}
         </a>
-        <ul className="hidden gap-6 sm:flex">
+        <ul className="hidden gap-6 lg:flex">
           {links.map((link) => (
             <li key={link.href}>
               <a href={link.href} className="text-base text-text hover:text-brand">
@@ -61,7 +61,7 @@ export function Navbar({
             </li>
           ))}
         </ul>
-        <div className="hidden sm:block">
+        <div className="hidden lg:block">
           <LinkButton href={contactHref} size="sm">
             {contactLabel}
           </LinkButton>
@@ -72,7 +72,7 @@ export function Navbar({
           aria-expanded={menuOpen}
           aria-controls="mobile-menu"
           onClick={() => setMenuOpen(true)}
-          className="rounded-md p-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand sm:hidden"
+          className="rounded-md p-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand lg:hidden"
         >
           <span className="sr-only">Menüyü aç</span>
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">

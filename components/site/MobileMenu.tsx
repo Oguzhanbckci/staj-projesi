@@ -36,7 +36,7 @@ export function MobileMenu({
       role="dialog"
       aria-modal="true"
       aria-label="Menü"
-      className="fixed inset-0 z-50 bg-surface p-6 sm:hidden"
+      className="fixed inset-0 z-50 bg-surface p-6 lg:hidden"
     >
       <button
         type="button"
