@@ -21,8 +21,12 @@ const LOGIN_PATH = "/panel/giris";
  * ÖNEMLİ (Next.js'in kendi belgesindeki uyarı): Proxy, "tam bir oturum
  * yönetimi/yetkilendirme çözümü" olarak kullanılmamalı — sadece hızlı bir
  * yönlendirme katmanı. Asıl güvenlik kontrolü her zaman ayrıca
- * `app/panel/layout.tsx`'te (Server Component, `getUser()` ile) tekrar
- * yapılıyor — bkz. o dosya.
+ * `app/panel/(protected)/layout.tsx`'te (Server Component, `getUser()`
+ * ile) tekrar yapılıyor — bkz. o dosya. Bu iki katman birbirinden
+ * bağımsız, sonsuz döngü riski yok: bu fonksiyon sadece `/panel/giris`
+ * DIŞINDAKİ panel rotalarını login'e yönlendirir, `/panel/giris`'in
+ * kendisini hiç kontrol etmez (bkz. `isLoginPage` kontrolü) — login
+ * sayfası kendi kendini asla tekrar login'e göndermez.
  */
 export async function updateSession(request: NextRequest) {
   let response = NextResponse.next({ request });
@@ -55,7 +59,16 @@ export async function updateSession(request: NextRequest) {
   const isPanelRoute = pathname.startsWith("/panel");
 
   if (isPanelRoute && !isLoginPage && !user) {
-    return NextResponse.redirect(new URL(LOGIN_PATH, request.url));
+    // Kullanıcı giriş yaptıktan sonra asıl gitmek istediği sayfaya geri
+    // dönebilsin diye, o an gidilmek istenen yol (+ varsa query string)
+    // "next" parametresinde taşınıyor. Doğrulama/güvenli varsayılana
+    // düşürme işi giriş sayfasında yapılıyor (bkz. app/panel/giris/page.tsx,
+    // "next" harici bir adrese yönlendirmek için kötüye kullanılamaz —
+    // açık yönlendirme/open redirect koruması orada).
+    const loginUrl = new URL(LOGIN_PATH, request.url);
+    const originalPath = `${request.nextUrl.pathname}${request.nextUrl.search}`;
+    loginUrl.searchParams.set("next", originalPath);
+    return NextResponse.redirect(loginUrl);
   }
 
   if (isLoginPage && user) {

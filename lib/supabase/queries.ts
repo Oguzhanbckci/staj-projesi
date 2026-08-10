@@ -29,7 +29,7 @@ import { isSectionKey, type PageSectionRow } from "@/lib/sections/config";
 // Footer + PageSections aynı anda) birden fazla çağrılsa da tek sorguya iner.
 const ACTIVE_TENANT_DOMAIN = "akmeinsaat.com.tr";
 
-const getActiveTenantId = cache(async (): Promise<string | null> => {
+export const getActiveTenantId = cache(async (): Promise<string | null> => {
   try {
     const supabase = createServiceRoleClient();
     const { data, error } = await supabase

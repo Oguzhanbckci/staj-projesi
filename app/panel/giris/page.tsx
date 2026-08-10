@@ -1,23 +1,46 @@
 import { redirect } from "next/navigation";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { getSafeRedirectPath } from "@/lib/utils";
 import { Container } from "@/components/ui/Container";
 import { TextField } from "@/components/ui/TextField";
 import { Button } from "@/components/ui/Button";
+
+const LOGIN_PATH = "/panel/giris";
+const DEFAULT_REDIRECT = "/panel";
 
 async function signInAction(formData: FormData) {
   "use server";
 
   const email = String(formData.get("email") ?? "");
   const password = String(formData.get("password") ?? "");
+  // "next" gizli alanı proxy.ts'in eklediği query param'dan geliyor (bkz.
+  // lib/supabase/proxy.ts) — kullanıcı /panel/mesajlar gibi belirli bir
+  // sayfaya gitmek isterken buraya düştüyse, girişten sonra oraya dönsün.
+  const rawNext = String(formData.get("next") ?? "");
+
+  // Hata durumunda da "next"i kaybetmemek için yönlendirme URL'sine tekrar
+  // ekleniyor — kullanıcı yanlış şifre girip tekrar denediğinde asıl
+  // hedefini kaybetmesin.
+  const nextQuery = rawNext ? `&next=${encodeURIComponent(rawNext)}` : "";
 
   const supabase = await createServerSupabaseClient();
   const { error } = await supabase.auth.signInWithPassword({ email, password });
 
   if (error) {
-    redirect(`/panel/giris?hata=${encodeURIComponent("E-posta veya şifre hatalı.")}`);
+    redirect(`${LOGIN_PATH}?hata=${encodeURIComponent("E-posta veya şifre hatalı.")}${nextQuery}`);
   }
 
-  redirect("/panel");
+  // Açık yönlendirme (open redirect) koruması: "next" sadece /panel altında
+  // bir yolsa kabul edilir, /panel/giris'in kendisine dönmesi de engellenir
+  // (aksi halde anlamsız bir "giriş yaptım, tekrar giriş sayfasındayım"
+  // durumu oluşurdu) — bkz. lib/utils.ts, docs/GUVENLIK.md.
+  const destination = getSafeRedirectPath(rawNext, {
+    prefix: "/panel",
+    exclude: [LOGIN_PATH],
+    fallback: DEFAULT_REDIRECT,
+  });
+
+  redirect(destination);
 }
 
 // Kayıt olma formu YOK (bilinçli — bkz. docs/PRD.md, tek admin kullanıcısı
@@ -26,9 +49,9 @@ async function signInAction(formData: FormData) {
 export default async function PanelGirisPage({
   searchParams,
 }: {
-  searchParams: Promise<{ hata?: string }>;
+  searchParams: Promise<{ hata?: string; next?: string }>;
 }) {
-  const { hata } = await searchParams;
+  const { hata, next } = await searchParams;
 
   return (
     <div className="flex min-h-full items-center justify-center bg-surface py-16">
@@ -45,6 +68,7 @@ export default async function PanelGirisPage({
         )}
 
         <form action={signInAction} className="mt-6 space-y-4">
+          <input type="hidden" name="next" value={next ?? ""} />
           <TextField label="E-posta" name="email" type="email" autoComplete="email" required />
           <TextField
             label="Şifre"

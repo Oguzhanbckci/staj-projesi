@@ -62,6 +62,7 @@ export type Database = {
         Row: {
           created_at: string
           id: string
+          is_read: boolean
           message: string
           sender_name: string
           sender_phone: string | null
@@ -70,6 +71,7 @@ export type Database = {
         Insert: {
           created_at?: string
           id?: string
+          is_read?: boolean
           message: string
           sender_name: string
           sender_phone?: string | null
@@ -78,6 +80,7 @@ export type Database = {
         Update: {
           created_at?: string
           id?: string
+          is_read?: boolean
           message?: string
           sender_name?: string
           sender_phone?: string | null

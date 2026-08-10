@@ -1,7 +1,15 @@
 import type { ReactNode } from "react";
 import { redirect } from "next/navigation";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
-import { Button } from "@/components/ui/Button";
+import { PanelShell } from "@/components/panel/PanelShell";
+
+// Bu ağacın tamamı oturuma bağlı, asla statik üretilemez — bunu açıkça
+// belirtmezsek Next.js her derlemede önce statik üretmeyi dener, çerez
+// kullanımına takılıp "Dynamic server usage" hatası loglar (zararsız ama
+// gürültülü, gerçek bir sorun değil). `force-dynamic`, bu denemeyi hiç
+// başlatmayıp gürültüyü kesiyor — tüm alt sayfalara (page.tsx, mesajlar/
+// vb.) miras kalır, her birinde ayrı ayrı tekrarlamaya gerek yok.
+export const dynamic = "force-dynamic";
 
 async function signOutAction() {
   "use server";
@@ -18,6 +26,15 @@ async function signOutAction() {
 // Proxy alone", bkz. lib/supabase/proxy.ts'teki yorum). `getUser()`
 // kullanılıyor (çerezi Supabase sunucusuna karşı doğrular), `getSession()`
 // DEĞİL (bkz. docs/GUVENLIK.md).
+//
+// ÖNEMLİ (KABUL KRİTERİ: "içerik bir an bile görünmesin"): `redirect()`
+// burada, `{children}` (gerçek panel sayfası — özet sayıları, mesajlar
+// vb.) render edilmeden ÖNCE çağrılıyor ve React ağacının geri kalanının
+// hiç render edilmemesine (throw ederek) neden oluyor. Yani sayfanın kendi
+// veri sorguları (ör. app/panel/(protected)/page.tsx'teki
+// getServicesCount()) oturum yoksa ÇAĞRILMAZ bile — sızacak bir şey
+// üretilmeden önce akış durur. Bkz. docs/GUVENLIK.md, "Yetkisiz Erişim
+// Test Sonuçları" (gerçek bir curl testiyle doğrulandı).
 export default async function ProtectedPanelLayout({ children }: { children: ReactNode }) {
   const supabase = await createServerSupabaseClient();
   const {
@@ -29,16 +46,8 @@ export default async function ProtectedPanelLayout({ children }: { children: Rea
   }
 
   return (
-    <div className="min-h-full bg-surface">
-      <header className="flex items-center justify-between border-b border-neutral-300 bg-surface-raised px-6 py-4">
-        <span className="text-base text-text-muted">{user.email}</span>
-        <form action={signOutAction}>
-          <Button type="submit" variant="ghost" size="sm">
-            Çıkış Yap
-          </Button>
-        </form>
-      </header>
-      <main className="p-6">{children}</main>
-    </div>
+    <PanelShell userEmail={user.email ?? ""} signOutAction={signOutAction}>
+      {children}
+    </PanelShell>
   );
 }
