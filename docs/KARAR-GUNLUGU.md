@@ -1625,3 +1625,178 @@ bir Alert/Toast bileşeni) yazılırken hatırlanması gereken bir ders.
 
 **Not:** `npm run build`/`lint` temiz, henüz commit'lenmedi; yeni
 migration da henüz gerçek projeye uygulanmadı.
+
+---
+
+## 2026-08-10 — Bölüm sıralama/görünürlük sistemi + Ekip/Eylem Çağrısı/Footer eklendi, aktif tenant değişti
+
+**Karar:** Dışarıdan gelen bir yönerge (BAĞLAM/İSTEK/KISITLAR/KABUL KRİTERİ
+formatında), panelin (Faz 5'te gelecek) bölüm sırasını/görünürlüğünü/
+varyantını yönetebileceği bir veri modeli + bunu okuyan sayfa render
+mantığı istedi; ayrıca Ekip, Eylem Çağrısı, Footer bölümlerini ve tüm
+bölümlerin gerçek bir ana sayfada birleştirilmesini istedi. Uygulanan
+kararlar:
+
+1. **Yeni `page_sections` tablosu** (`tenant_id`, `section_key`,
+   `order_index`, `is_visible`, `variant`) — bir tenant'taki bölümlerin
+   sırasını/görünürlüğünü/varyantını tutan tek kaynak. `section_key`,
+   yeni `lib/sections/config.ts`'teki `SectionKey` union'ıyla (10 değer:
+   hero/about/services/projects/testimonials/stats/faq/team/cta/contact)
+   birebir eşleşen bir check constraint'e sahip. RLS diğer liste
+   tablolarıyla (`stats`, `testimonials`) birebir aynı desende.
+   Migration: `supabase/migrations/20260810120000_...` — **henüz gerçek
+   Supabase projesine uygulanmadı.**
+2. **Aktif tenant, platform sahibinden Akme İnşaat'a değiştirildi.**
+   `lib/supabase/queries.ts`'teki tüm sorgular şimdiye kadar
+   `is_platform_owner = true` (platform sahibinin satırı) hedefliyordu —
+   ama o satırda sadece `site_settings`/`stats` var, gerçekçi demo
+   içeriğinin tamamı (hero/services/about/projects/testimonials/faqs/
+   team_members) Akme İnşaat tenant'ında duruyor (bkz. `supabase/seed.sql`).
+   Bu yüzden "tüm bölümleri gerçek bir sayfada birleştir" isteği,
+   platform satırıyla render edilseydi neredeyse tamamen boş bir sayfa
+   üretirdi. Ayrıca PRD'ye göre Referanslar/SSS/İstatistikler/Ekip zaten
+   sadece TENANT sitelerinde bulunuyor, platformun kendi (anonim kalan)
+   tanıtım sitesinde değil (bkz. `PRD.md` madde 3.1 vs 3.3) — yani
+   platform satırını "örnek/aktif site" olarak kullanmak PRD'ye zaten
+   aykırıydı. Yeni `getActiveTenantId()` (bkz. `lib/supabase/queries.ts`)
+   `tenants.domain = 'akmeinsaat.com.tr'`'e göre sabit bir tenant hedefliyor
+   — gerçek Host-header tabanlı tenant çözümleme middleware'i (bkz.
+   `MIMARI.md` madde 7) gelene kadar bu böyle kalacak. **Bu değişiklik
+   kullanıcıya sorulmadan yapıldı çünkü alternatifi (platform satırına da
+   tam bir demo içerik seti eklemek) hem PRD'ye aykırı hem çok daha büyük
+   bir iş olurdu; kullanıcıya bu oturumda ayrıca bildirildi.**
+3. **Eylem Çağrısı (CTA) içeriği `site_settings`'e eklendi** (`cta_title`,
+   `cta_description`, `cta_button_text`, `cta_button_link`) — yönerge
+   "içerik ayarlardan gelsin" dediği için, Hero/Hakkımızda gibi ayrı bir
+   tekil tabloya çıkarmak yerine bilinçli olarak `site_settings`'e
+   eklendi (projedeki "ayarlar" kavramıyla zaten `site_settings` eşleşiyor).
+4. **Footer sosyal medya linkleri de `site_settings`'e eklendi**
+   (`facebook_url`, `instagram_url`, `linkedin_url`) — aynı gerekçeyle,
+   meta/site geneli bir ayar. Footer'ın "bölüm bağlantıları" ayrı
+   saklanmıyor, görünür `page_sections`'tan (bkz. `lib/sections/
+   config.ts`, `buildSectionNavLinks`) çalışma zamanında türetiliyor.
+5. **Ekip Üyeleri içeriği yenilendi** — yönerge 4 kişi (3 bilgisayar
+   mühendisi + 1 elektrik mühendisi) istedi; eski 4 satır (Genel Müdür/
+   Tasarım Direktörü/Proje Yöneticisi/Saha Şefi) silinip yeni personayla
+   değiştirildi, bilgisayar mühendislerinin rolü inşaat şirketi bağlamına
+   "şirket içi saha takip/raporlama yazılımı geliştirme" olarak
+   bağlandı. **Gerçek/tanınan insanların fotoğrafı kullanılmadı** — diğer
+   tüm görseller (hizmet/proje/referans logosu vb.) gibi `photo_path`
+   sadece bir Storage yer tutucu yolu, gerçek dosya yok. Yönergedeki
+   "fotoğraf olarak tanınan insanları koy" isteği bu yüzden tam
+   karşılanmadı — kullanıcıya ayrıca soruldu (bkz. sohbet).
+6. **İletişim formu bilinçli olarak eklenmedi** — `ContactSection` sadece
+   statik bilgi (adres, tıklanabilir telefon/e-posta) gösteriyor; gerçek
+   form `app/api/contact/` route handler'ı yazılmadan (hâlâ `DURUM.md`
+   "Sıradaki adım"da) eklenmedi, çalışmayan bir form yerine.
+7. **`ServicesSection`'daki `cardVariant` ve `ProjectsSection`'daki
+   `galleryVariant` prop'ları `variant`'a yeniden adlandırıldı** —
+   generic sayfa dizici (`lib/sections/registry.tsx`) tüm bölümlere aynı
+   prop adıyla çağrı yapabilsin diye.
+8. **Sayfa dizme, bir `Record<SectionKey, Component>` yerine bir switch
+   (`renderSection`) olarak yazıldı** — bazı bölümlerin kendi dar varyant
+   birleşim tipi olduğu (`TestimonialsVariant`, `FaqVariant`) ve async
+   Server Component'lerin `ComponentType<...>` tipine güvenli
+   sığdırılamayabileceği için; switch + `default` dalındaki `never`
+   ataması, yeni bir `SectionKey` eklenip case'i unutulursa derleme
+   zamanında yakalar.
+9. **`app/(site)/layout.tsx` eklendi** — Navbar+`<main>`+Footer artık
+   `(site)` route grubunun ortak layout'unda (kök `app/layout.tsx`'te
+   değil, çünkü `panel` bunun dışında kalmalı). Bu, uzun süredir açık
+   kalan bir axe bulgusunu (`landmark-one-main`, bkz. 2026-08-08 kaydı)
+   çözdü. `generateMetadata()` ile `<title>`/açıklama artık
+   `site_settings.seo_title`/`seo_description`'dan geliyor —
+   create-next-app'in "Create Next App" yer tutucu başlığı temizlendi
+   (kök `app/layout.tsx`'teki varsayılan da genel bir başlığa güncellendi,
+   sadece henüz kendi metadata'sı olmayan `panel` gibi rotalar için yedek).
+10. **Eski geçici test sayfaları silindi** (`app/test-sections/`,
+    `app/test-social-proof/`, `app/test-projects/`) — hepsi artık gerçek
+    `app/(site)/page.tsx` kompozisyonu tarafından kapsanıyor (aynı
+    "gerçek bileşen yazılınca test sayfası silinir" ilkesi, bkz.
+    `test-services` örneği).
+
+**Doğrulama:** `npm run build`/`lint` temiz. `page_sections` tablosu
+henüz gerçek projeye uygulanmadığı için build sırasında beklenen bir
+hata loglandı (`Could not find the table 'public.page_sections'`) —
+kod bunu yakalayıp boş dizi döndürüyor, sayfa çökmüyor (KISITLAR'daki
+"bilinmeyen/eksik veri sayfayı çökertmesin" ilkesiyle tutarlı). Migration
+uygulanıp `npm run types:generate` çalıştırılınca `lib/supabase/
+server.ts`'teki geçici `createUntypedServiceRoleClient()` (sadece
+`getPageSections()` içinde kullanılıyor) kaldırılıp tipli client'a
+taşınmalı — daha önce de aynı ara adım (services.image_path, stats
+tablosu vb.) birkaç kez yaşandı.
+
+**Sıralama tetikleme (DOĞRULAMA sorusu):** `page_sections` şu an panelden
+değil migration'dan yönetiliyor (panel Faz 5'te). Panel geldiğinde, bir
+sıra/görünürlük/varyant güncellemesi kaydedildiğinde `revalidatePath("/")`
+(veya `getPageSections`'ın `cache()` yerine `unstable_cache` ile
+etiketlenip `revalidateTag`'e geçilmesi) çağrılarak ana sayfanın yeniden
+üretilmesi tetiklenmeli — bu, mimaride zaten planlanmış olan on-demand
+ISR stratejisinin (bkz. `MIMARI.md` madde 6) doğrudan bir uygulaması,
+yeni bir mekanizma gerektirmiyor.
+
+---
+
+## 2026-08-10 (aynı gün) — Panel kimlik doğrulaması kuruldu, rota adı ve middleware→proxy kararları
+
+**Karar 1 — Rota adı `/panel` olarak korundu.** Dışarıdan gelen bir
+yönerge `/admin` kullanıyordu, ama proje başından beri (PRD.md,
+AI-KURALLARI.md, MIMARI.md) hep `/panel` planlanmıştı ve boş bir
+`app/panel/page.tsx` zaten vardı. Kullanıcıya soruldu, `/panel`'de kalınmasına
+karar verildi — hiçbir dosya/klasör `/admin`'e taşınmadı, giriş sayfası
+`/panel/giris` oldu.
+
+**Karar 2 — `middleware.ts` değil `proxy.ts`.** Yönerge "middleware"
+istiyordu, ama `node_modules/next/dist/docs/.../file-conventions/
+middleware.md` kontrol edildiğinde Next.js 16'da bu dosya adının
+**kullanımdan kaldırılıp `proxy.ts`'e yeniden adlandırıldığı** görüldü
+(davranış aynı, sadece dosya adı ve export adı `middleware` → `proxy`
+değişti). `AGENTS.md`'nin uyardığı türden bir sürüm farkı — kod buna göre
+yazıldı (`proxy.ts`, `export function proxy(...)`), deprecated isim
+kullanılmadı. Kaynak: Next.js'in kendi paketindeki belgeler (bkz.
+`node_modules/next/dist/docs/01-app/03-api-reference/03-file-conventions/
+proxy.md`, "Migration to Proxy" bölümü).
+
+**Karar 3 — İki katmanlı auth koruması.** Next.js'in resmi auth kılavuzu
+(`node_modules/next/dist/docs/01-app/02-guides/authentication.md`) açıkça
+uyarıyor: *"Proxy should not be used as a full session management or
+authorization solution"* ve *"Always verify authentication ... inside
+each Server Function rather than relying on Proxy alone."* Bu yüzden
+`proxy.ts` (hızlı, iyimser ön kontrol) + `app/panel/(protected)/layout.tsx`
+(bağımsız, kesin `getUser()` kontrolü) olmak üzere iki ayrı katman
+kuruldu — biri diğerinin yerine geçmiyor, bkz. `GUVENLIK.md` madde 5.
+
+**Karar 4 — Admin hesabı: yeni değil, mevcut test hesabı kullanıldı.**
+Kullanıcıya soruldu: 2026-08-07'de RLS testi için oluşturulmuş
+`oguzhanbckc@gmail.com` hesabı mı kullanılsın, yoksa yeni/ayrı bir admin
+hesabı mı açılsın. Kullanıcı mevcut hesabı seçti — ekstra Dashboard işlemi
+gerekmedi, şifresi zaten `.env.local`'deki `TEST_AUTH_PASSWORD`'de
+kayıtlıydı.
+
+**Uygulama özeti:** `@supabase/ssr` kuruldu (deprecated
+`@supabase/auth-helpers-nextjs` DEĞİL). `lib/supabase/client.ts`
+(tarayıcı), `lib/supabase/server.ts`'e `createServerSupabaseClient`
+eklendi (sunucu, `next/headers` çerezleriyle), `lib/supabase/proxy.ts` +
+kök `proxy.ts` (oturum tazeleme + `/panel` koruması, `getUser()` ile —
+`getSession()` değil, bkz. Supabase'in kendi güvenlik uyarısı).
+`app/panel/giris/page.tsx` (herkese açık, Server Action ile
+`signInWithPassword`, tasarım sistemi bileşenleriyle) ve
+`app/panel/(protected)/` route group'u (`layout.tsx` — koruma + e-posta/
+çıkış göstergesi, `page.tsx` — eski placeholder'ın yeni yeri; eski
+`app/panel/page.tsx` silindi). `docs/GUVENLIK.md`'ye Kimlik Doğrulama
+Akışı/Oturum Yönetimi/Admin Hesabı Yönetimi bölümleri eklendi.
+
+**Yol boyunca bulunan/düzeltilen 2 gerçek sorun:** (1) Kullanıcı
+`npm install @supabase/ssr` çalıştırdığını sanmıştı ama paket kurulu
+değildi — build denemesiyle yakalanıp tekrar kurulması istendi. (2) İlk
+manuel testte tarayıcı `localhost:3000`'e gidiyordu ama gerçek dev sunucu
+(3000 meşgul olduğu için) `localhost:3001`'de çalışıyordu — "Internal
+Server Error" aslında yanlış porta gitmekten kaynaklanıyordu, doğru
+portta sorunsuz çalıştığı doğrulandı.
+
+**Doğrulama:** `npm run build`/`lint` temiz, build çıktısında `/panel` ve
+`/panel/giris` dinamik (ƒ) olarak işaretlendi ve `ƒ Proxy (Middleware)`
+satırı `proxy.ts`'in tanındığını doğruladı. Kullanıcı 3 testi (girişsiz
+erişim engeli → yönlendirme, yanlış şifre → hata mesajı, doğru giriş →
+panel + e-posta göstergesi → çıkış → tekrar engellenme) elle çalıştırıp
+hepsinin geçtiğini onayladı.

@@ -44,7 +44,10 @@ zamanın büyük kısmını test yazmaya değil ürüne ayırmak.
   ve WhatsApp butonunun doğru linke gittiğinin doğrulanması.
 - Açık/koyu tema geçişi.
 - **Güvenlik doğrulaması:** bir tenant domaininde `panel`'in gerçekten
-  erişilemez olduğu (middleware seviyesinde engellendiği).
+  erişilemez olduğu (proxy seviyesinde engellendiği — henüz kodlanmadı,
+  bkz. `GUVENLIK.md` madde 8 açık madde). Panel auth'un kendisi (girişsiz
+  erişim engeli, yanlış şifre, doğru giriş/çıkış akışı) 2026-08-10'da elle
+  test edildi, bkz. `KARAR-GUNLUGU.md`.
 
 ## 4. Kalite Eşikleri — Lighthouse
 

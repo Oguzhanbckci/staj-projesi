@@ -13,7 +13,7 @@ kontrast doğrulaması, bileşen envanteri/API kuralları) ve `TEMA-MIMARISI.md`
 önlemi), gerekirse `KARAR-GUNLUGU.md`'yi (tarihli, hiç silinmeyen karar
 geçmişi) oku.
 
-**Son güncelleme:** 2026-08-08
+**Son güncelleme:** 2026-08-10
 
 ## Proje bağlamı
 
@@ -469,24 +469,89 @@ gerçek veriden geldiği doğrulandı: "50+", "12+", **"1.200+"** (1200
 değerinin Türkçe binlik ayraçla — nokta — doğru biçimlendiği görüldü).
 `npm run build`/`lint` temiz.
 
+**Bölüm sıralama/görünürlük sistemi + Ekip/Eylem Çağrısı/Footer + gerçek ana
+sayfa kompozisyonu (2026-08-10):** Dışarıdan gelen bir yönerge üzerine:
+
+- Yeni **`page_sections`** tablosu (sıra/görünürlük/varyant, tek kaynak —
+  panel Faz 5'te buradan yazacak) + `lib/sections/config.ts` (tip güvenli
+  `SectionKey` union'ı) + `lib/sections/registry.tsx` (`renderSection()` —
+  bilinmeyen anahtar gelirse atlanır, sayfa çökmez).
+- Yeni bölümler: **Ekip** (`components/site/team/`, 4 üye — 3 bilgisayar
+  mühendisi + 1 elektrik mühendisi), **Eylem Çağrısı** (`components/site/
+  cta/`, içerik `site_settings`'ten), **İletişim** (`components/site/
+  contact/`, sadece statik bilgi — form yok, `app/api/contact/` beklemede),
+  **Footer** (`components/site/Footer.tsx` — iletişim + bölüm linkleri +
+  sosyal medya + telif, tel/mailto tıklanabilir).
+- **`app/(site)/layout.tsx` eklendi** — Navbar+`<main>`+Footer artık burada
+  (kök layout'ta değil), 2026-08-08'de bilerek ertelenen axe bulgusu
+  (`landmark-one-main`) çözüldü. `generateMetadata()` ile `<title>`
+  `site_settings.seo_title`'dan geliyor, create-next-app'in yer tutucu
+  başlığı temizlendi. `app/(site)/page.tsx` artık gerçek `PageSections`
+  bileşenini render ediyor (scaffold kaldırıldı).
+- Eski geçici test sayfaları silindi: `app/test-sections/`,
+  `app/test-social-proof/`, `app/test-projects/`.
+- **Önemli mimari değişiklik:** Tüm `getXSection()` sorguları artık
+  platform sahibinin satırı yerine **Akme İnşaat**'ı hedefliyor
+  (`getActiveTenantId()`, domain'e göre sabit) — gerekçe: platform satırında
+  gerçek demo içeriği hiç yok, Referanslar/SSS/Ekip/İstatistikler zaten
+  PRD'ye göre sadece tenant sitelerinde bulunuyor. Detay: `KARAR-GUNLUGU.md`,
+  2026-08-10.
+- **Yapılmadı/soruldu:** Ekip fotoğrafları için gerçek/AI-üretilmiş insan
+  görseli kullanılmadı (diğer tüm görseller gibi Storage yer tutucu yolu) —
+  kullanıcıya soruldu.
+
+**Doğrulama:** `npm run build`/`lint` temiz. Kullanıcı migration'ı
+(`20260810120000_...`) Supabase SQL Editor'de çalıştırdı,
+`npm run types:generate` yapıldı, `getPageSections()` tipli client'a
+taşındı, geçici `createUntypedServiceRoleClient()` kaldırıldı — gerçek ana
+sayfa (tüm 10 bölüm, Akme İnşaat verisiyle) gözle doğrulandı. Ayrıca aynı
+oturumda gerçek sayfa incelenirken 2 gerçek hata daha bulunup düzeltildi:
+Akme'nin `site_settings.primary_color`'ı (tasarım sisteminden ÖNCEKİ bir
+yer tutucu, neredeyse siyah `#0f172a`) tasarlanan marka mavisini
+eziyordu — `null`'a çekildi (migration:
+`20260810140000_reset_akme_primary_color.sql`); `app/globals.css`'teki
+`body` seçicisi hâlâ create-next-app'in `font-family: Arial...` varsayılanını
+kullanıyordu, tasarlanan Geist Sans/Manrope hiç devrede değildi — `var(--font-sans)`
+kullanacak şekilde düzeltildi. İstatistikler bölümü için de Akme'ye örnek
+veri eklendi (`20260810130000_add_stats_for_akme.sql`) — eski örnek veri
+sadece platform tenant'ındaydı.
+
+**Panel kimlik doğrulaması kuruldu (2026-08-10, aynı gün, dışarıdan gelen
+ikinci bir yönerge üzerine):** Supabase Auth, e-posta/şifre, kayıt kapalı,
+tek admin hesabı (Dashboard'dan elle oluşturulan/kullanılan
+`oguzhanbckc@gmail.com`). Üç ayrı istemci —
+`lib/supabase/client.ts` (tarayıcı), `lib/supabase/server.ts`'e eklenen
+`createServerSupabaseClient()` (sunucu), `lib/supabase/proxy.ts` +
+kök **`proxy.ts`** (Next.js 16'da `middleware.ts`'in yeni adı — bkz.
+`KARAR-GUNLUGU.md`). `app/panel/giris/page.tsx` (herkese açık giriş
+sayfası, tasarım sistemi bileşenleriyle) + `app/panel/(protected)/`
+route group'u (`layout.tsx` — bağımsız ikinci bir `getUser()` kontrolü +
+e-posta/çıkış göstergesi, `page.tsx` — eski `app/panel/page.tsx`
+placeholder'ının yeni yeri). `docs/GUVENLIK.md`'ye Kimlik Doğrulama Akışı/
+Oturum Yönetimi/Admin Hesabı Yönetimi bölümleri eklendi. 3 doğrulama testi
+(girişsiz erişim engeli, yanlış şifre, tam giriş+çıkış akışı) elle
+çalıştırılıp geçti. `npm run build`/`lint` temiz.
+
 ## Sıradaki adım
 
-1. Bugünkü Referanslar/İstatistikler/SSS işini commit'le ve push'la.
-2. Vitest ve Playwright'ı kur (bkz. `TEST-STRATEJISI.md`) — hâlâ yarım
+1. Vitest ve Playwright'ı kur (bkz. `TEST-STRATEJISI.md`) — hâlâ yarım
    kalmış bir kurulum, `npm install` adımları henüz çalıştırılmadı.
-3. Panel auth'u (Supabase Auth, platform sahibi girişi) kodla.
-4. Kalan bölümü (İletişim, Ekip Üyeleri) aynı desene göre kodla; gerçek
-   bir sayfa kompozisyonunda (Navbar + tüm bölümler, `app/(site)/page.tsx`)
-   birleştir — bu adımda Navbar'ın nereye taşınacağına (global layout mı,
-   sadece (site) route group'una mı) karar verilmeli ve `<main>` landmark'ı
-   doğru yere eklenmeli (bkz. yukarıdaki axe bulgusu).
-5. İletişim formu için `app/api/contact/` route handler'ı yaz (service role
-   ile `contact_messages`'a insert + e-posta gönderimi).
-6. Site tasarımı ilerledikçe `KURUMSAL-SITE-STANDARTLARI.md`'deki kontrol listesini
+2. İletişim formu için `app/api/contact/` route handler'ı yaz (service role
+   ile `contact_messages`'a insert + e-posta gönderimi), sonra
+   `ContactSection`'a gerçek form ekle.
+3. Site tasarımı ilerledikçe `KURUMSAL-SITE-STANDARTLARI.md`'deki kontrol listesini
    madde madde işaretle.
-7. Gerçek görsel(ler) Storage'a yüklenince Lighthouse'u tekrar çalıştırıp
+4. Gerçek görsel(ler) Storage'a yüklenince Lighthouse'u tekrar çalıştırıp
    sayfa ağırlığındaki gerçek görsel etkisini ölç (bkz. yukarıdaki not).
-8. Panelden preset/varyant seçimi arayüzü, panel auth'tan sonra ele alınacak.
+5. Panelden bölüm sırası/görünürlük/varyant + preset seçimi arayüzü (Faz 5) —
+   `page_sections` veri modeli hazır, panel auth da hazır; sıradaki mantıklı
+   adım bu arayüzü panel içine kodlamak.
+6. Host header'a göre gerçek tenant çözümleyen `proxy.ts` mantığı yazılınca
+   (a) `getActiveTenantId()`'i sabit domain yerine parametreye çevir, (b)
+   aynı `proxy.ts`'e tenant/domain bazlı panel erişim engelini de ekle —
+   Next.js proje başına tek proxy dosyasına izin veriyor, ikisi birleşecek
+   (bkz.
+   `MIMARI.md` madde 7).
 
 ## Açık sorular
 

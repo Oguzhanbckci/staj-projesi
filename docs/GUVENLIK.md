@@ -7,7 +7,7 @@ edilmeyen tek konudur — bu yüzden yazılı ve güncel tutulur. Kararların
 kronolojik gerekçesi için `KARAR-GUNLUGU.md`, teknik mimari için `MIMARI.md`,
 tablo/kolon tasarımı için `VERİ-MODELİ.md` referans alınır.
 
-**Son güncelleme:** 2026-08-07
+**Son güncelleme:** 2026-08-10
 
 ## 1. Tehdit Modeli
 
@@ -47,7 +47,7 @@ seviyeleri (editör, görüntüleyici vb.) yok.
 | Anonim ziyaretçi herhangi bir tabloya yazar (spam, tahrifat) | İstisnasız her tabloda insert/update/delete sadece `authenticated`'e açık |
 | `tenants.contact_recipient_email` herkese açık sitede sızar | Kolon seviyesinde `REVOKE`/`GRANT` ile anon'dan tamamen gizli |
 | Service role key/DB şifresi/access token tarayıcıya veya repoya sızar | Madde 3 — sadece sunucu tarafı, `.gitignore`'lu, chat'e hiç yazılmadı |
-| `panel` route'u bir tenant'ın kendi domaininden erişilebilir olur | Middleware ile `Host` başlığına göre kısıtlanacak (henüz kodlanmadı — bkz. madde 5, açık madde) |
+| `panel` route'u bir tenant'ın kendi domaininden erişilebilir olur | Proxy ile `Host` başlığına göre kısıtlanacak (henüz kodlanmadı — bkz. madde 8, açık madde) |
 | İletişim formuna kötü amaçlı/doğrulanmamış veri gönderilir | Sunucu tarafı doğrulama gereksinimi (`AI-KURALLARI.md` madde 6.5) — route handler henüz yazılmadı, bkz. madde 5 |
 
 ## 2. RLS Politikaları
@@ -137,7 +137,113 @@ edildi").
 `scripts/test-rls.mjs` repoda kalıcı bir doğrulama aracı olarak duruyor —
 yeni bir tablo/policy eklendiğinde tekrar çalıştırılabilir.
 
-## 5. Yayın Öncesi Güvenlik Kontrol Listesi
+## 5. Kimlik Doğrulama Akışı *(2026-08-10 eklendi)*
+
+Panel (`/panel`), Supabase Auth'un e-posta/şifre sağlayıcısıyla korunuyor.
+**Kayıt olma (sign-up) kapalı** — Supabase Dashboard → Authentication →
+Settings'te "Allow new users to sign up" kapatıldı. Tek admin hesabı,
+platform sahibi tarafından Dashboard → Authentication → Users → **Add
+user**'dan elle oluşturuldu (bkz. madde 7). Uygulama içinde hiçbir kayıt
+formu yok ve olmayacak.
+
+### İstemci ayrımı (üç ayrı oluşturma fonksiyonu)
+
+Güncel resmi yaklaşım kullanıldı: `@supabase/auth-helpers-nextjs` (kullanımdan
+kaldırıldı) değil, **`@supabase/ssr`**. Üç ayrı dosya, üç ayrı amaç:
+
+| Dosya | Fonksiyon | Nerede kullanılır | Anahtar |
+|---|---|---|---|
+| `lib/supabase/client.ts` | `createBrowserSupabaseClient()` | Sadece `"use client"` bileşenlerinde | anon key |
+| `lib/supabase/server.ts` | `createServerSupabaseClient()` | Server Component, Server Action, Route Handler — oturumu `next/headers` çerezlerinden okur/yazar | anon key |
+| `lib/supabase/server.ts` | `createServiceRoleClient()` | Sadece herkese açık içerik sorguları (`getServices()` vb.) — panel/auth'la ilgisi yok, RLS bypass eder | service role key (asla tarayıcıya gitmez) |
+| `lib/supabase/proxy.ts` | `updateSession()` | Kök `proxy.ts`'ten çağrılır — her istekte oturum çerezini tazeler + `/panel` korumasını uygular | anon key |
+
+`createServerSupabaseClient()` ve `updateSession()` **aynı anon key'i**
+kullanır ama farklı çerez arayüzleriyle (`next/headers` vs. `NextRequest`/
+`NextResponse`) — Next.js'in Server Component'lerde çerez YAZAMAMASı
+(sadece okuyabilir) yüzünden ikisi ayrı tutuluyor; `createServerSupabaseClient`
+Server Action/Route Handler'dan çağrıldığında çerez yazabilir, Server
+Component'ten çağrıldığında yazma denemesi sessizce yok sayılır (oturum
+tazeleme zaten `proxy.ts`'in işi).
+
+### Rotalar
+
+- **`app/panel/giris/page.tsx`** — herkese açık giriş sayfası. E-posta/şifre
+  formu, `TextField`/`Button` (tasarım sistemi bileşenleri), bir Server
+  Action (`signInAction`) ile `supabase.auth.signInWithPassword()` çağırır.
+  Hata varsa `?hata=...` query param'ıyla aynı sayfaya geri döner (client
+  JS gerekmez, tamamen Server Component).
+- **`app/panel/(protected)/`** — route group, `/panel`'in geri kalanı
+  (URL'e segment eklemez). `layout.tsx` her isteğinde `getUser()` ile
+  oturumu kontrol eder, yoksa `/panel/giris`'e yönlendirir; ayrıca giriş
+  yapan kullanıcının e-postasını ve bir çıkış formunu (`signOutAction` —
+  `supabase.auth.signOut()`) gösterir. `page.tsx` gerçek panel içeriği
+  (ileride dolacak).
+- **Kök `proxy.ts`** (Next.js 16'da `middleware.ts`'in yeni adı — bkz.
+  `docs/KARAR-GUNLUGU.md`) — `/panel` altındaki (giriş sayfası hariç) her
+  isteği, sayfa hiç render edilmeden önce kontrol eder.
+
+### Neden iki katmanlı koruma (`proxy.ts` + layout)
+
+Next.js'in kendi belgesi açıkça uyarıyor: *"Proxy should not be used as a
+full session management or authorization solution"* ve *"Always verify
+authentication ... inside each Server Function rather than relying on
+Proxy alone."* Bu yüzden:
+
+1. **`proxy.ts`** — hızlı, "iyimser" (optimistic) bir ön kontrol; sayfa hiç
+   render edilmeden yönlendirme yapar, iyi bir kullanıcı deneyimi sağlar.
+2. **`app/panel/(protected)/layout.tsx`** — bağımsız, gerçek/kesin kontrol;
+   `proxy.ts` bir sebeple atlanırsa (yanlış `matcher`, gelecekte bir
+   yapılandırma hatası) bile panel içeriği asla korumasız kalmaz.
+
+İkisi de `getUser()` kullanıyor, **`getSession()` değil** — `getSession()`
+sadece yerel çerezi okur, sunucu tarafında Supabase'e karşı doğrulamaz;
+sahte/değiştirilmiş bir çerezle atlatılabilir. `getUser()` her seferinde
+Supabase Auth sunucusuna sorar, bu yüzden güvenlik kontrolü için doğru
+fonksiyon budur (Supabase'in kendi resmi uyarısı).
+
+## 6. Oturum Yönetimi *(2026-08-10 eklendi)*
+
+- Oturum, Supabase Auth'un access/refresh token çiftiyle, **HttpOnly
+  çerezlerde** taşınıyor (tarayıcı JS'i çerezi okuyamaz, XSS riskini
+  azaltır) — `@supabase/ssr` bu çerezleri otomatik yönetiyor, elle bir
+  şey yazılmadı.
+- **Oturum süresi dolduğunda ne olur:** Access token varsayılan olarak
+  ~1 saat sonra süresi dolar. `proxy.ts`, her istekte `getUser()` çağırarak
+  gerekirse refresh token'ı kullanıp access token'ı **sessizce tazeler**
+  (kullanıcı hiçbir şey fark etmez, sayfada kalır). Refresh token'ın
+  KENDİSİ de süresi dolmuş/iptal edilmişse (ör. çok uzun süre
+  kullanılmama, ya da admin Dashboard'dan oturumu elle sonlandırırsa),
+  `getUser()` boş döner — bir sonraki `/panel` isteğinde/gezinmesinde
+  `proxy.ts` kullanıcıyı otomatik olarak `/panel/giris`'e yönlendirir;
+  `app/panel/(protected)/layout.tsx`'teki ikinci kontrol de aynı sonucu
+  üretir (bkz. madde 5).
+- Çıkış (`signOutAction`), Supabase'e o oturumu geçersiz kılmasını söyler
+  ve çerezleri temizler — çıkış yapıldıktan sonra `/panel`'e geri dönmeye
+  çalışmak yeniden `/panel/giris`'e yönlendirilir (bkz. Doğrulama testleri,
+  `docs/DURUM.md`).
+
+## 7. Admin Hesabı Yönetimi *(2026-08-10 eklendi)*
+
+- **Tek hesap, tek rol** — sistemde başka hiçbir kullanıcı/rol yok
+  (bkz. `AI-KURALLARI.md` madde 6.3). Hesap, Supabase Dashboard →
+  Authentication → Users → **Add user**'dan, "Auto Confirm User" işaretli
+  şekilde elle oluşturuldu — uygulama içinde bir kayıt akışı yok ve
+  olmayacak.
+- **Şifre sıfırlama:** Aynı Dashboard ekranından (Users → ilgili kullanıcı
+  → "Send password recovery" veya doğrudan yeni şifre atama) yapılır,
+  uygulama içinde "şifremi unuttum" akışı henüz yok.
+- **Müşteriye devir (gelecek):** PRD'ye göre bu ürün "tam yönetilen"
+  (platform sahibi tüm içeriği yönetir) bir hizmet, ama admin hesabı
+  bilgisi ileride müşteriye devredilebilir senaryosu göz önünde
+  bulunduruldu (bkz. kullanıcı talimatı) — devir anında yapılması
+  gerekenler: (1) Dashboard'dan yeni bir şifre ata, (2) yeni bilgiyi
+  güvenli bir kanaldan ilet, (3) eski şifreyi bir daha kullanma.
+- **Şifre hiçbir zaman koda/docs'a/sohbete yazılmaz** — sadece Dashboard
+  üzerinden, platform sahibinin kendi güvenli saklama yöntemiyle (şifre
+  yöneticisi vb.) tutulur.
+
+## 8. Yayın Öncesi Güvenlik Kontrol Listesi
 
 Bu proje şu an gerçek bir müşteriye canlıya alınmıyor (bkz. `DURUM.md`,
 "Proje bağlamı") — ama ileride bu değişirse, veya staj değerlendirmesi için
@@ -158,11 +264,16 @@ Bu proje şu an gerçek bir müşteriye canlıya alınmıyor (bkz. `DURUM.md`,
       yanlış kolon adı yazımı derleme zamanında yakalanır (bkz. `MIMARI.md`
       madde 4.2).
 
+**Tamamlanan maddeler (2026-08-10 eklendi):**
+- [x] Panel auth'u (Supabase Auth, e-posta/şifre, kayıt kapalı) kodlandı —
+      bkz. madde 5-7.
+
 **Henüz açık/yapılmamış maddeler (bilinçli olarak, sıradaki adımlarda):**
-- [ ] Panel auth'u (Supabase Auth) kodlanmadı — `/panel` şu an gerçek bir
-      oturum kontrolüne sahip değil, sadece placeholder sayfa var.
-- [ ] Middleware ile `panel` route'unun bir tenant'ın kendi domaininde
-      tamamen erişilemez olduğu henüz doğrulanmadı (kod henüz yok).
+- [ ] Proxy (`proxy.ts`) ile `panel` route'unun bir tenant'ın kendi
+      domaininde tamamen erişilemez olduğu henüz doğrulanmadı — bu, Host
+      header'a göre tenant çözümleyen ayrı bir mantık gerektiriyor (bkz.
+      `MIMARI.md` madde 7), henüz yazılmadı. Şu anki `proxy.ts` sadece
+      oturum kontrolü yapıyor, tenant/domain ayrımı yapmıyor.
 - [ ] `app/api/contact/` route handler'ı (iletişim formu → sunucu tarafı
       doğrulama → `contact_messages`'a insert + e-posta) henüz yazılmadı.
 - [ ] Kullanıcıdan alınan formlarda rate limiting / spam koruması yok.

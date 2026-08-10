@@ -55,8 +55,10 @@ staj-projesi/
 
 `(site)` ve `panel` route grupları birbirinden ayrı tutulur; `(site)` hiçbir
 zaman `panel`'e ait bir bileşeni import etmez. `panel` rotası yalnızca platform
-sahibinin kendi domaininde aktiftir — middleware, isteğin `Host` başlığına göre
-bir tenant domaininde `panel`'i tamamen erişilmez kılar. Mimari detay ve gerekçe
+sahibinin kendi domaininde aktiftir — proxy (Next.js 16'da `middleware`'in
+yeni adı), isteğin `Host` başlığına göre bir tenant domaininde `panel`'i
+tamamen erişilmez kılar (bu tenant/domain ayrımı henüz kodlanmadı, bkz.
+`GUVENLIK.md` madde 8 açık madde). Mimari detay ve gerekçe
 için `KARAR-GUNLUGU.md` (2026-08-06, "Panel mimarisi düzeltildi: tek panel, tek
 kullanıcı, tam yönetilen hizmet").
 
@@ -101,15 +103,18 @@ henüz oluşturulmadı, ilk gerçek ihtiyaç doğduğunda eklenecek.
 ## 6. Güvenlik
 
 1. Tüm Supabase tablolarında RLS varsayılan olarak açık tutulur.
-2. `panel`'e erişim Supabase Auth ile korunur, oturum kontrolü middleware'de
-   yapılır.
+2. `panel`'e erişim Supabase Auth ile korunur — oturum kontrolü iki
+   katmanda yapılır: kök `proxy.ts`'te (hızlı ön kontrol) ve
+   `app/panel/(protected)/layout.tsx`'te (bağımsız, kesin kontrol) — bkz.
+   `GUVENLIK.md` madde 5.
 3. Platformda tek bir kullanıcı/rol vardır: platform sahibi (kullanıcı
    adı/şifre girişi). Tenant'ların (müşterilerin) kendi login'i, kendi paneli
    veya çoklu yetki seviyesi (editör, görüntüleyici vb.) yoktur — tüm
    içerik/tema güncellemeleri platform sahibi tarafından `panel` üzerinden
-   yapılır. `panel`, bir tenant'ın kendi domaininde middleware seviyesinde
+   yapılır. `panel`, bir tenant'ın kendi domaininde proxy seviyesinde
    tamamen erişilemez kılınır (sadece platform sahibinin kendi domaininde
-   aktiftir).
+   aktiftir) — bu tenant/domain ayrımı henüz kodlanmadı (bkz. `GUVENLIK.md`
+   madde 8 açık madde).
 4. Gizli anahtarlar (service role key, DB bağlantı bilgisi) yalnızca sunucu tarafı
    ortam değişkenlerinde tutulur.
 5. Kullanıcıdan alınan formlar (iletişim formu vb.) sunucu tarafında doğrulanır,

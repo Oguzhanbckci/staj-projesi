@@ -6,7 +6,7 @@ yapılacağını" (özellik kapsamı), bu dosya "nasıl yapılacağını" (tekni
 seçimler) tanımlar. Kod içermez. Karar değişirse önce `KARAR-GUNLUGU.md`'ye
 kayıt düşülür, sonra bu dosya güncellenir.
 
-**Son güncelleme:** 2026-08-07
+**Son güncelleme:** 2026-08-10
 
 ## 0. Bağlam
 
@@ -19,7 +19,8 @@ kararını doğrudan etkiliyor (madde 5).
 
 **Next.js 16, App Router.**
 
-- Server Component varsayılan; middleware ile `Host` başlığına göre istek
+- Server Component varsayılan; proxy (Next.js 16'da `middleware`'in yeni
+  adı, bkz. `KARAR-GUNLUGU.md` 2026-08-10) ile `Host` başlığına göre istek
   bir tenant domainine mi yoksa platform sahibinin kendi domainine mi
   geldiğini ayırt eder (bkz. madde 7).
 - API route handler'ları (`app/api/`) — iletişim formu gönderimi gibi sunucu
@@ -141,6 +142,16 @@ Regeneration).**
 - **`/panel`'in kendisi tamamen dinamik/SSR'dır** — auth korumalı, her
   istekte taze veri; statik üretime dahil edilmez.
 
+**Somut örnek (2026-08-10, `page_sections`):** Panelden bir bölümün
+sırası/görünürlüğü/varyantı değiştirildiğinde, o kaydı yazan sunucu
+eylemi/route handler'ı `revalidatePath("/")` çağırmalı — bu, sayfanın bir
+sonraki istekte yeniden üretilmesini tetikler. `page_sections`'ı okuyan
+`getPageSections()` (bkz. `lib/supabase/queries.ts`) React'in `cache()`
+fonksiyonuyla sarılı (tek istek içindeki tekrarı önlemek için), Next'in
+kendi veri önbelleğini değil — bu yüzden `revalidatePath`/`revalidateTag`
+davranışını etkilemez. Panel henüz kodlanmadığı için bu çağrı da henüz
+yok; kodlandığında eklenmesi gereken tek satır bu.
+
 ## 7. Domain & Tenant Çözümleme
 
 Platform sahibi için ayrı bir tablo/altyapı yok — o da `tenants` tablosunda
@@ -148,7 +159,7 @@ Platform sahibi için ayrı bir tablo/altyapı yok — o da `tenants` tablosunda
 tenant'larla **aynı içerik tablolarını** paylaşır (bkz.
 `VERİ-MODELİ.md`).
 
-Next.js middleware, gelen isteğin `Host` başlığını `tenants.domain` ile
+Next.js proxy'si (eski adıyla middleware), gelen isteğin `Host` başlığını `tenants.domain` ile
 eşleştirir:
 
 - Eşleşen satırda `is_platform_owner = true` ise → `/panel` rotası aktif olur
@@ -161,6 +172,19 @@ Karar ve gerekçe: `KARAR-GUNLUGU.md`, 2026-08-06 ("Domain stratejisi: her
 tenant kendi alan adını kullanır", "Panel mimarisi düzeltildi",
 "Platform sahibi tenants tablosunda birleştirildi").
 
+**Geçici (2026-08-10):** Tenant çözümleyen proxy mantığı henüz yazılmadığı
+için `lib/supabase/queries.ts`'teki `getActiveTenantId()`, Host header
+yerine sabit bir domain'e (`akmeinsaat.com.tr`) göre tek bir tenant
+hedefliyor — tüm sorgu fonksiyonları (`getServices`, `getHeroSection`,
+`getPageSections` vb.) ve tema çözümlemesi (`getSiteThemeSettings`) bu tek
+fonksiyona bağlı. Bu mantık yazıldığında `getActiveTenantId()` bir
+`tenantDomain` parametresi alacak şekilde genişletilmeli (Host header →
+proxy → sayfa/layout → bu fonksiyona parametre olarak akmalı) — kök
+`proxy.ts` zaten var (panel auth için, bkz. `GUVENLIK.md` madde 5), tenant
+çözümleme AYNI dosyaya eklenmeli (Next.js proje başına tek proxy dosyasına
+izin veriyor). Detay ve gerekçe (neden platform sahibinin satırı değil):
+`KARAR-GUNLUGU.md`, 2026-08-10.
+
 ## 8. Proje Klasör Yapısı
 
 `AI-KURALLARI.md` madde 3'teki ağaç şemasının detaylı gerekçesi. Next.js
@@ -169,12 +193,15 @@ scaffold'ı (`create-next-app`, 2026-08-06) kurulduktan sonra oluşturuldu.
 - **`app/`** — Next.js App Router. Kök `layout.tsx` ve `globals.css` burada
   (her iki alt rotaya da uygulanır). İçinde iki route group var:
   - **`app/(site)/`** — herkese açık kurumsal site sayfaları. Route group
-    olduğu için URL'e segment eklemez (`/` kökten render edilir). Middleware
-    (madde 7) buraya sadece istek bir tenant domaininden veya platform
-    sahibinin kendi domaininden geldiğinde yönlendirir.
-  - **`app/panel/`** — tek yönetim paneli (madde 4, 7). Şu an sadece bir
-    placeholder sayfa var; auth (Supabase) ve gerçek panel arayüzü ileride
-    eklenecek.
+    olduğu için URL'e segment eklemez (`/` kökten render edilir). Proxy
+    (madde 7, henüz tenant çözümleme kısmı yok) buraya sadece istek bir
+    tenant domaininden veya platform sahibinin kendi domaininden geldiğinde
+    yönlendirir.
+  - **`app/panel/`** — tek yönetim paneli (madde 4, 7). *(2026-08-10)*
+    Auth kuruldu: `giris/page.tsx` (herkese açık giriş sayfası) +
+    `(protected)/` route group'u (`layout.tsx` — oturum kontrolü +
+    e-posta/çıkış göstergesi, `page.tsx` — gerçek panel içeriği, hâlâ
+    placeholder). Detay: `docs/GUVENLIK.md` madde 5-7.
   - **`app/api/`** — henüz oluşturulmadı; ilk route handler (ör. iletişim
     formu → e-posta gönderimi, bkz. `PRD.md`) eklendiğinde açılacak.
   - **`app/test-services/`** — geçici doğrulama sayfası (2026-08-07), Supabase
@@ -185,15 +212,25 @@ scaffold'ı (`create-next-app`, 2026-08-06) kurulduktan sonra oluşturuldu.
     input, kart vb.) — henüz boş, `panel` ve `(site)` inşa edilirken
     doldurulacak.
   - **`components/site/`** — hazır bölüm kütüphanesi (Hero, Hakkımızda,
-    Hizmetler, Projeler, İletişim — bkz. `PRD.md` madde 3.3, `RAKIP-ANALIZI.md`).
-    Henüz boş; `docs/DURUM.md`'deki sıradaki adımda ilk bileşenler buraya
-    yazılacak.
+    Hizmetler, Projeler, Referanslar, İstatistikler, SSS, Ekip, Eylem
+    Çağrısı, İletişim, Footer — bkz. `PRD.md` madde 3.3, `RAKIP-ANALIZI.md`).
+    Her bölüm kendi alt klasöründe (`types.ts` + varyant(lar) + kendi
+    verisini kendi çeken `<X>Section.tsx`); `PageSections.tsx`,
+    `page_sections`'a göre hepsini sıraya dizen üst düzey bileşen
+    (2026-08-10).
 - **`lib/`** — sunucu/iş mantığı yardımcıları:
   - **`lib/supabase/`** — client/server Supabase istemcileri ve sorgu
-    fonksiyonları (bkz. madde 4). `server.ts` (service role client) ve
-    `queries.ts` (`getServices()`) yazıldı ve gerçek veriyle doğrulandı
-    (2026-08-07); tarayıcı tarafı client (`client.ts`, panel auth için)
-    henüz yok.
+    fonksiyonları (bkz. madde 4). `server.ts` (`createServiceRoleClient` —
+    herkese açık içerik sorguları; `createServerSupabaseClient` —
+    *(2026-08-10)* panel auth için, oturum çerezini okur/yazar) ve
+    `queries.ts` (tüm `getXSection()` fonksiyonları) yazıldı ve gerçek
+    veriyle doğrulandı. `client.ts` *(2026-08-10)* — tarayıcı tarafı
+    (`"use client"`) istemcisi, panel giriş/çıkış için. `proxy.ts`
+    *(2026-08-10)* — kök `proxy.ts`'in çağırdığı oturum tazeleme +
+    `/panel` koruma mantığı (bkz. `GUVENLIK.md` madde 5).
+  - **`lib/sections/`** *(2026-08-10)* — `config.ts` (tip güvenli
+    `SectionKey` union'ı + anchor/nav etiket eşlemeleri) ve `registry.tsx`
+    (`SectionKey` → doğru bölüm bileşeni dizici, `renderSection()`).
   - **`lib/utils.ts`** — genel yardımcı fonksiyonlar (tarih/metin formatlama
     vb.). Henüz placeholder.
 - **`types/`** — paylaşılan TypeScript tipleri. `database.types.ts`,
