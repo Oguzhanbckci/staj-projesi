@@ -1,11 +1,11 @@
 "use client";
 
 import { useActionState, useEffect, useRef } from "react";
-import { useFormStatus } from "react-dom";
 import { TextField } from "@/components/ui/TextField";
 import { TextareaField } from "@/components/ui/TextareaField";
 import { SelectField } from "@/components/ui/SelectField";
-import { Button } from "@/components/ui/Button";
+import { SubmitButton } from "@/components/ui/SubmitButton";
+import { FormErrorSummary } from "@/components/ui/FormErrorSummary";
 import {
   CONTACT_FIELD_LABELS,
   CONTACT_SUBJECTS,
@@ -23,21 +23,7 @@ const initialContactFormState: ContactFormState = {
   values: {},
 };
 
-// Alan id'leri hata özetindeki linklerin hedefi olsun diye sabit — her
-// alana açıkça id={fieldId("x")} veriliyor (TextField vb. kendi useId()
-// üretebilir ama o zaman özetten atlanamaz).
-function fieldId(name: string) {
-  return `iletisim-${name}`;
-}
-
-function SubmitButton() {
-  const { pending } = useFormStatus();
-  return (
-    <Button type="submit" isLoading={pending} disabled={pending} className="w-full sm:w-auto">
-      {pending ? "Gönderiliyor…" : "Gönder"}
-    </Button>
-  );
-}
+const FIELD_ID_PREFIX = "iletisim";
 
 // KISITLAR: gönderiliyor/başarılı/başarısız durumları, hata özeti + alan
 // bazlı hata (aria-describedby, aria-invalid — TextField/TextareaField/
@@ -48,10 +34,6 @@ export function ContactForm() {
   const [state, formAction] = useActionState(submitContactForm, initialContactFormState);
   const formRef = useRef<HTMLFormElement>(null);
   const summaryRef = useRef<HTMLDivElement>(null);
-  const errorEntries = Object.entries(state.errors) as [
-    keyof typeof CONTACT_FIELD_LABELS,
-    string,
-  ][];
 
   useEffect(() => {
     if (state.status === "success") {
@@ -75,30 +57,15 @@ export function ContactForm() {
 
   return (
     <form ref={formRef} action={formAction} noValidate className="space-y-4">
-      {errorEntries.length > 0 && (
-        <div
-          ref={summaryRef}
-          role="alert"
-          tabIndex={-1}
-          className="rounded-md border border-error bg-surface-raised px-4 py-3 focus:outline-none"
-        >
-          <p className="font-semibold text-error">
-            Formda düzeltilmesi gereken {errorEntries.length} hata var:
-          </p>
-          <ul className="mt-2 list-disc space-y-1 pl-5 text-base text-error">
-            {errorEntries.map(([field, message]) => (
-              <li key={field}>
-                <a href={`#${fieldId(field)}`} className="underline hover:no-underline">
-                  {CONTACT_FIELD_LABELS[field]}: {message}
-                </a>
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
+      <FormErrorSummary
+        ref={summaryRef}
+        errors={state.errors}
+        fieldLabels={CONTACT_FIELD_LABELS}
+        fieldIdPrefix={FIELD_ID_PREFIX}
+      />
 
       <TextField
-        id={fieldId("fullName")}
+        id={`${FIELD_ID_PREFIX}-fullName`}
         label="Ad Soyad"
         name="fullName"
         autoComplete="name"
@@ -107,7 +74,7 @@ export function ContactForm() {
         error={state.errors.fullName}
       />
       <TextField
-        id={fieldId("email")}
+        id={`${FIELD_ID_PREFIX}-email`}
         label="E-posta"
         name="email"
         type="email"
@@ -117,7 +84,7 @@ export function ContactForm() {
         error={state.errors.email}
       />
       <TextField
-        id={fieldId("phone")}
+        id={`${FIELD_ID_PREFIX}-phone`}
         label="Telefon (opsiyonel)"
         name="phone"
         type="tel"
@@ -126,7 +93,7 @@ export function ContactForm() {
         error={state.errors.phone}
       />
       <SelectField
-        id={fieldId("subject")}
+        id={`${FIELD_ID_PREFIX}-subject`}
         label="Konu"
         name="subject"
         required
@@ -143,7 +110,7 @@ export function ContactForm() {
         ))}
       </SelectField>
       <TextareaField
-        id={fieldId("message")}
+        id={`${FIELD_ID_PREFIX}-message`}
         label="Mesaj"
         name="message"
         rows={5}
@@ -153,7 +120,9 @@ export function ContactForm() {
         error={state.errors.message}
       />
 
-      <SubmitButton />
+      <SubmitButton pendingLabel="Gönderiliyor…" className="w-full sm:w-auto">
+        Gönder
+      </SubmitButton>
     </form>
   );
 }

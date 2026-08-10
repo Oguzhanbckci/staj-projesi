@@ -6,7 +6,7 @@ yapılacağını" (özellik kapsamı), bu dosya "nasıl yapılacağını" (tekni
 seçimler) tanımlar. Kod içermez. Karar değişirse önce `KARAR-GUNLUGU.md`'ye
 kayıt düşülür, sonra bu dosya güncellenir.
 
-**Son güncelleme:** 2026-08-13
+**Son güncelleme:** 2026-08-14 (2. güncelleme — düzenleme/silme eklendi)
 
 ## 0. Bağlam
 
@@ -205,9 +205,12 @@ scaffold'ı (`create-next-app`, 2026-08-06) kurulduktan sonra oluşturuldu.
     parametresiyle geri dönüş) + `(protected)/` route group'u
     (`layout.tsx` — oturum kontrolü + `PanelShell` kabuğu). *(2026-08-12)*
     `page.tsx` artık gerçek bir özet ekranı (hizmet/proje/okunmamış mesaj
-    sayıları), `mesajlar/page.tsx` gerçek mesaj listesi, `icerikler/`
-    `medya/` `tema/` `ayarlar/` basit "yakında" placeholder'ları. Detay:
-    `docs/GUVENLIK.md` madde 5-9.
+    sayıları), `mesajlar/page.tsx` gerçek mesaj listesi, `medya/`/`tema/`/
+    `ayarlar/` basit "yakında" placeholder'ları. Detay: `docs/GUVENLIK.md`
+    madde 5-9. *(2026-08-14)* `icerikler/` artık bir dizin sayfası +
+    `hizmetler/` ve `projeler/` — her ikisi de liste tablosu + ekleme
+    formu + sunucu eylemi (bkz. madde 9-10, "İçerik Yönetimi Deseni" /
+    "Sunucu Eylemleri Kuralları").
   - **`app/api/`** — henüz oluşturulmadı; ilk route handler (ör. iletişim
     formu → e-posta gönderimi, bkz. `PRD.md`) eklendiğinde açılacak.
   - **`app/test-services/`** — geçici doğrulama sayfası (2026-08-07), Supabase
@@ -218,7 +221,9 @@ scaffold'ı (`create-next-app`, 2026-08-06) kurulduktan sonra oluşturuldu.
     input, kart vb.) — hem `(site)` hem `panel` bunları kullanır.
   - **`components/panel/`** *(2026-08-12 eklendi)* — sadece panele özel
     bileşenler: `PanelShell.tsx` (kenar menü + üst başlık + mobil açılır
-    menü kabuğu) ve `navItems.ts` (5 menü öğesi). `components/ui/`'daki
+    menü kabuğu), `navItems.ts` (menü öğeleri). *(2026-08-14)*
+    `AdminListTable.tsx` + `StatusBadge.tsx` — içerik yönetim
+    tablolarının paylaşılan bileşenleri (bkz. madde 9). `components/ui/`'daki
     genel bileşenleri (Button, Card) kullanır ama kendi başına
     `components/site/`'tan tamamen bağımsız — ikisi asla birbirini
     import etmez (bkz. `AI-KURALLARI.md` madde 3).
@@ -241,11 +246,18 @@ scaffold'ı (`create-next-app`, 2026-08-06) kurulduktan sonra oluşturuldu.
     `/panel` koruma mantığı (bkz. `GUVENLIK.md` madde 5, 8). `panelQueries.ts`
     *(2026-08-12)* — sadece `app/panel/(protected)/` içinden çağrılan,
     `createServerSupabaseClient` kullanan (service role DEĞİL) panel
-    özeti/mesaj sorguları — herkese açık içerik sorgularından bilinçli
+    özeti/mesaj/liste sorguları (`getAllServices`, `getNextOrderIndex`
+    vb., *(2026-08-14)* genişletildi) — herkese açık içerik sorgularından bilinçli
     olarak ayrı bir dosyada.
   - **`lib/sections/`** *(2026-08-10)* — `config.ts` (tip güvenli
     `SectionKey` union'ı + anchor/nav etiket eşlemeleri) ve `registry.tsx`
     (`SectionKey` → doğru bölüm bileşeni dizici, `renderSection()`).
+  - **`lib/validation/`** *(2026-08-11 eklendi, 2026-08-14 genişledi)* —
+    saf zod şemaları (`contact.ts`, `service.ts`, `project.ts`) — hem
+    istemci formunda hem sunucu eyleminde AYNI şema (bkz. madde 9).
+  - **`lib/panel/`** *(2026-08-14 eklendi)* — `actionResult.ts`:
+    `ActionResult<T>` (panel sunucu eylemlerinin ortak tipli dönüş şekli)
+    + `requireAdminUser()` (bkz. madde 10).
   - **`lib/utils.ts`** — genel yardımcı fonksiyonlar. *(2026-08-12)*
     `getSafeRedirectPath()` eklendi — panel girişindeki açık yönlendirme
     (open redirect) koruması (bkz. `GUVENLIK.md` madde 8).
@@ -267,6 +279,96 @@ scaffold'ı (`create-next-app`, 2026-08-06) kurulduktan sonra oluşturuldu.
   varsayılan SVG'leri var (`next.svg`, `vercel.svg` vb.); gerçek
   marka/portfolyo görselleri eklenince temizlenecek.
 
-## 9. Açık Sorular
+## 9. İçerik Yönetimi Deseni *(2026-08-14 eklendi)*
+
+Panelden içerik ekleme (Hizmetler, Projeler — Faz 5'te diğer liste
+içerikleri de aynı desene uyacak) hep aynı 5 parçadan oluşur:
+
+1. **Doğrulama şeması** (`lib/validation/<varlık>.ts`) — saf bir zod
+   şeması, React'e/Next.js'e bağımlı değil. Hem formda (istemci, canlı
+   hata metni) hem sunucu eyleminde (gerçek doğrulama) AYNI şema
+   kullanılır — kural iki yerde ayrı ayrı yazılıp birbirinden sapmaz.
+2. **Okuma sorgusu** (`lib/supabase/panelQueries.ts`) — `getAllX()`,
+   `createServerSupabaseClient()` (authenticated, service role DEĞİL)
+   kullanır, `is_published` filtresi YOK (admin taslakları da görmeli).
+3. **Sunucu eylemi** (`app/panel/(protected)/icerikler/<varlık>/actions.ts`)
+   — bkz. madde 10, "Sunucu Eylemleri Kuralları".
+4. **Form** (`.../<Varlık>Form.tsx`, `"use client"`) — `useActionState` +
+   paylaşılan `components/ui/SubmitButton.tsx` (gönderiliyor durumu) ve
+   `components/ui/FormErrorSummary.tsx` (hata özeti, `role="alert"`,
+   alanlara linkli). Hata varsa form alanları DOM'da olduğu gibi kalır
+   (React `defaultValue`'yu var olan bir DOM node'da yeniden zorlamaz) —
+   ayrıca "values" taşımaya gerek yok.
+5. **Liste tablosu** (`components/panel/AdminListTable.tsx`, paylaşılan) —
+   başlık/durum (`StatusBadge` — Yayında/Taslak, renk + her zaman metin)/
+   sıra/işlem sütunları. *(2026-08-14)* "Düzenle" gerçek bir sayfaya
+   (`[id]/page.tsx` — kayıt bulunamazsa `notFound()`) giden link, "Sil"
+   `components/panel/DeleteButton.tsx` (paylaşılan — `window.confirm()`
+   ile onay, geri alınamaz bir işlem olduğu için).
+
+**Düzenleme formu, ekleme formuyla AYNI bileşen** (`<X>Form.tsx`) — bir
+`service`/`project` prop'u verilirse düzenleme moduna geçer: alanlar
+mevcut değerlerle doldurulur, `updateXAction`'a `id`
+`.bind(null, id)` ile önceden bağlanır (Next.js'in Server Action'lara ekstra
+bağlam geçirme yöntemi — `useActionState`'in `(prevState, formData)`
+imzasından ÖNCE bağlanır). Silme ve güncelleme eylemleri de `.eq("tenant_id",
+tenantId)` ile ekstra bir tenant kontrolü yapar — RLS zaten
+authenticated'e tam yetki veriyor, bu ONA GÜVENMEK YERİNE bilinçli bir
+ek savunma katmanı.
+
+**Yeni bir içerik türü eklemek** (ör. Referanslar, Faz 5'te) bu 5 parçayı
+aynı isimlendirme/dosya yerleşimiyle tekrarlamak demektir — `AdminListTable`
+ve `SubmitButton`/`FormErrorSummary` zaten paylaşılan, sadece şema/sorgu/
+eylem/form o varlığa özel yazılır.
+
+**Sıra numarası** (`order_index`) admin'den ham bir sayı olarak
+istenmiyor — `getNextOrderIndex()` (panelQueries.ts) mevcut en büyük
+değer + 10'u otomatik hesaplıyor (çakışma riski yok, seed verisindeki
+10'ar artış deseniyle tutarlı, bkz. `VERİ-MODELİ.md`).
+
+## 10. Sunucu Eylemleri Kuralları *(2026-08-14 eklendi)*
+
+Paneldeki her yazma işlemi (`"use server"` fonksiyonu) şu sırayı TAKİP
+ETMEK ZORUNDADIR:
+
+1. **Oturum kontrolü İLK satır olmalı** (`requireAdminUser()`, bkz.
+   `lib/panel/actionResult.ts`). Sayfa zaten panel auth'un arkasında
+   (`app/panel/(protected)/layout.tsx`) ama Next.js Server Action'ları
+   sayfadan bağımsız, doğrudan çağrılabilir uç noktalar olarak da
+   yayınlanır — bu kontrol olmadan biri sayfayı hiç açmadan eylemi
+   çağırabilir. Bkz. `docs/GUVENLIK.md` madde 5, aynı ilke panel formu
+   Server Action'ları için de geçerli.
+2. **İstemciden gelen veriye asla güvenilmez** — `FormData`'dan çıkarılan
+   ham veri, istemcideki AYNI zod şemasıyla sunucuda TEKRAR doğrulanır.
+   İstemci tarafı doğrulama sadece UX içindir (hızlı geri bildirim),
+   güvenlik sınırı değildir.
+3. **Dönüş tipi her zaman `ActionResult<TFields>`** (bkz.
+   `lib/panel/actionResult.ts`) — `{success:true}` ya da
+   `{success:false, fieldErrors, formError?}`. Çağıran taraf (form)
+   `if (state.success)` ile dallanabilir, `undefined`/`any` yok.
+4. **Veritabanı hatası asla ham olarak kullanıcıya dönmez** —
+   `console.error()` ile sunucuya loglanır, kullanıcıya sabit, Türkçe,
+   ne yapması gerektiğini söyleyen bir mesaj döner (ör. "Hizmet
+   kaydedilirken bir sorun oluştu. Lütfen tekrar deneyin.") — asla
+   "Bir hata oluştu" gibi belirsiz bir mesaj değil, ama Postgres/Supabase
+   hata detayı da değil (bilgi sızıntısı riski).
+5. **Başarıda `revalidatePath()` ile DOĞRU yol tazelenir** — hangi yolun
+   tazeleneceği, o içeriğin ziyaretçi sitesinde NEREDE render edildiğine
+   bakılarak belirlenir (Hizmetler/Projeler → sadece `"/"`, çünkü
+   `page_sections`'a göre ana sayfada render ediliyorlar, bkz.
+   `components/site/services/ServicesSection.tsx`). `/panel`'in kendisi
+   zaten `force-dynamic` (bkz. madde 8, `(protected)/layout.tsx`) —
+   panel sayfaları için ayrıca revalidate GEREKMEZ, her istekte zaten
+   taze veri okur.
+
+**Doğrulama (2026-08-14, gerçek — kod incelemesi değil):** Bir hizmet
+gerçek Supabase Auth oturumuyla eklenip, `revalidatePath("/")`
+çağrılmadan ÖNCE ana sayfanın hâlâ eski (statik) hâli gösterdiği, çağrıdan
+SONRA ise yeni hizmetin anında göründüğü `curl` ile kanıtlandı — bu, hem
+doğru yolun seçildiğini hem statik+on-demand ISR mimarisinin
+(`docs/MIMARI.md` madde 6) gerçekten çalıştığını gösterdi. Test verisi
+ve geçici test route'u/script'leri doğrulama sonrası silindi.
+
+## 11. Açık Sorular
 
 Şu an aktif açık soru yok.

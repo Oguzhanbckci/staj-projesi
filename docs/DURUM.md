@@ -13,7 +13,7 @@ kontrast doğrulaması, bileşen envanteri/API kuralları) ve `TEMA-MIMARISI.md`
 önlemi), gerekirse `KARAR-GUNLUGU.md`'yi (tarihli, hiç silinmeyen karar
 geçmişi) oku.
 
-**Son güncelleme:** 2026-08-13
+**Son güncelleme:** 2026-08-14
 
 ## Proje bağlamı
 
@@ -599,6 +599,29 @@ linkleri. `Navbar`/`MobileMenu`'deki iç linkler `next/link`'in `Link`'ine
 çevrildi (Next.js'in `no-html-link-for-pages` kuralı gerçek bir sayfaya
 giden düz `<a>`'yı yakaladı — artık kısmen çok sayfalı bir site).
 Gerçek sunucuda `curl` ile doğrulandı (bkz. `KARAR-GUNLUGU.md`).
+
+**Hizmet/Proje ekleme: sunucu eylemi, doğrulama, önbellek tazeleme
+(2026-08-14):** `app/panel/(protected)/icerikler/` artık gerçek —
+Hizmetler ve Projeler için liste tablosu (başlık/durum/sıra, "Düzenle"
+bilinçli olarak devre dışı) + ekleme formu + sunucu eylemi. Şema
+(`lib/validation/service.ts`/`project.ts`, zod) hem istemcide hem
+sunucuda aynı; eylemler oturumu kendi içinde kontrol ediyor
+(`requireAdminUser()`), DB hatasını ham göstermeden loglayıp Türkçe bir
+mesaja çeviriyor, başarıda `revalidatePath("/")` çağırıyor. Paylaşılan
+parçalar (`SubmitButton`, `FormErrorSummary`, `AdminListTable`,
+`StatusBadge`, `ActionResult<T>`) İletişim formuyla da (retroaktif
+refactor) ortak. Şema değişikliği yok, migration gerekmedi. Uçtan uca
+gerçek bir `curl` testiyle doğrulandı (revalidate öncesi/sonrası fark
+gösterildi) — detay `MIMARI.md` madde 9-10, `KARAR-GUNLUGU.md`.
+
+**Hizmetler/Projeler'e düzenleme ve silme eklendi (2026-08-14, aynı
+gün):** `getServiceById`/`getProjectById` + `update*Action`/
+`delete*Action` (aynı auth/doğrulama/hata kuralları) +
+`components/panel/DeleteButton.tsx` (onaylı silme). "Düzenle" artık
+gerçek bir sayfa (`[id]/page.tsx`), aynı `<X>Form.tsx` bileşeni hem
+ekleme hem düzenleme modunda çalışıyor. Script + `curl` ile doğrulandı;
+yeni `[id]` rotalarının da mevcut proxy korumasından otomatik geçtiği
+ayrıca teyit edildi. Detay: `KARAR-GUNLUGU.md`.
 
 ## Sıradaki adım
 

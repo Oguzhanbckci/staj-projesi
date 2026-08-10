@@ -74,6 +74,189 @@ export async function getUnreadMessagesCount(): Promise<number> {
   }
 }
 
+export interface AdminServiceRow {
+  id: string;
+  title: string;
+  isPublished: boolean;
+  orderIndex: number;
+}
+
+// Ziyaretçi sitesindeki getServices() (queries.ts) sadece
+// `is_published = true` döner — panel yönetim tablosu TASLAKLARI da
+// görebilmeli (bkz. yönerge: "yayınlanmamışlar ayırt edilebilsin"), bu
+// yüzden burada is_published filtresi YOK.
+export async function getAllServices(): Promise<AdminServiceRow[]> {
+  try {
+    const supabase = await createServerSupabaseClient();
+    const tenantId = await getActiveTenantId();
+    if (!tenantId) return [];
+
+    const { data, error } = await supabase
+      .from("services")
+      .select("id, title, is_published, order_index")
+      .eq("tenant_id", tenantId)
+      .order("order_index");
+
+    if (error || !data) {
+      throw error ?? new Error("Hizmetler alınamadı.");
+    }
+
+    return data.map((row) => ({
+      id: String(row.id),
+      title: String(row.title),
+      isPublished: Boolean(row.is_published),
+      orderIndex: Number(row.order_index),
+    }));
+  } catch (err) {
+    console.error("getAllServices sorgu hatası:", err);
+    return [];
+  }
+}
+
+export interface ServiceDetail {
+  id: string;
+  title: string;
+  description: string | null;
+  icon: string | null;
+  isPublished: boolean;
+}
+
+// Düzenleme sayfasının formu doldurmak için ihtiyaç duyduğu tam kayıt
+// (bkz. app/panel/(protected)/icerikler/hizmetler/[id]/page.tsx). Kayıt
+// bulunamazsa ya da başka bir tenant'a aitse null döner — çağıran taraf
+// bunu `notFound()` ile ele alır.
+export async function getServiceById(id: string): Promise<ServiceDetail | null> {
+  try {
+    const supabase = await createServerSupabaseClient();
+    const tenantId = await getActiveTenantId();
+    if (!tenantId) return null;
+
+    const { data, error } = await supabase
+      .from("services")
+      .select("id, title, description, icon, is_published")
+      .eq("id", id)
+      .eq("tenant_id", tenantId)
+      .maybeSingle();
+
+    if (error || !data) return null;
+
+    return {
+      id: String(data.id),
+      title: String(data.title),
+      description: typeof data.description === "string" ? data.description : null,
+      icon: typeof data.icon === "string" ? data.icon : null,
+      isPublished: Boolean(data.is_published),
+    };
+  } catch (err) {
+    console.error("getServiceById sorgu hatası:", err);
+    return null;
+  }
+}
+
+export interface AdminProjectRow {
+  id: string;
+  title: string;
+  location: string | null;
+  year: number | null;
+  isPublished: boolean;
+  orderIndex: number;
+}
+
+export async function getAllProjects(): Promise<AdminProjectRow[]> {
+  try {
+    const supabase = await createServerSupabaseClient();
+    const tenantId = await getActiveTenantId();
+    if (!tenantId) return [];
+
+    const { data, error } = await supabase
+      .from("projects")
+      .select("id, title, location, year, is_published, order_index")
+      .eq("tenant_id", tenantId)
+      .order("order_index");
+
+    if (error || !data) {
+      throw error ?? new Error("Projeler alınamadı.");
+    }
+
+    return data.map((row) => ({
+      id: String(row.id),
+      title: String(row.title),
+      location: typeof row.location === "string" ? row.location : null,
+      year: typeof row.year === "number" ? row.year : null,
+      isPublished: Boolean(row.is_published),
+      orderIndex: Number(row.order_index),
+    }));
+  } catch (err) {
+    console.error("getAllProjects sorgu hatası:", err);
+    return [];
+  }
+}
+
+export interface ProjectDetail {
+  id: string;
+  title: string;
+  description: string | null;
+  category: string | null;
+  location: string | null;
+  year: number | null;
+  liveUrl: string | null;
+  isPublished: boolean;
+}
+
+// getServiceById ile aynı desen.
+export async function getProjectById(id: string): Promise<ProjectDetail | null> {
+  try {
+    const supabase = await createServerSupabaseClient();
+    const tenantId = await getActiveTenantId();
+    if (!tenantId) return null;
+
+    const { data, error } = await supabase
+      .from("projects")
+      .select("id, title, description, category, location, year, live_url, is_published")
+      .eq("id", id)
+      .eq("tenant_id", tenantId)
+      .maybeSingle();
+
+    if (error || !data) return null;
+
+    return {
+      id: String(data.id),
+      title: String(data.title),
+      description: typeof data.description === "string" ? data.description : null,
+      category: typeof data.category === "string" ? data.category : null,
+      location: typeof data.location === "string" ? data.location : null,
+      year: typeof data.year === "number" ? data.year : null,
+      liveUrl: typeof data.live_url === "string" ? data.live_url : null,
+      isPublished: Boolean(data.is_published),
+    };
+  } catch (err) {
+    console.error("getProjectById sorgu hatası:", err);
+    return null;
+  }
+}
+
+// Yeni bir kayıt eklenirken sırayı listenin sonuna koyar (mevcut en
+// büyük order_index + 10 — araya ekleme payı bırakan 10'ar artış deseni
+// zaten seed verisinde de kullanılıyordu, bkz. docs/VERİ-MODELİ.md).
+// Admin'den ham bir sıra numarası istemek yerine burada hesaplanıyor —
+// çakışma/yanlış girdi riskini ortadan kaldırır.
+export async function getNextOrderIndex(
+  table: "services" | "projects",
+  tenantId: string
+): Promise<number> {
+  const supabase = await createServerSupabaseClient();
+  const { data, error } = await supabase
+    .from(table)
+    .select("order_index")
+    .eq("tenant_id", tenantId)
+    .order("order_index", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (error || !data) return 10;
+  return Number(data.order_index) + 10;
+}
+
 export interface ContactMessageRow {
   id: string;
   senderName: string;

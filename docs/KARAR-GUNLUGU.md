@@ -1967,3 +1967,88 @@ artık `id="ekip"`/`id="iletisim"` yok, Navbar linkleri doğru karışık
 (`/#hakkimizda` vb. + `/ekip`/`/iletisim`), her iki yeni sayfa gerçek
 Akme verisiyle render oluyor, Eylem Çağrısı butonu `/iletisim`'e gidiyor.
 `npm run build`/`lint` temiz.
+
+---
+
+## 2026-08-14 — Hizmet/Proje ekleme: sunucu eylemi, doğrulama, önbellek tazeleme
+
+**Karar 1 — Yönergedeki `lib/schemas/service.ts` yolu kullanılmadı.**
+BAĞLAM "doğrulama şemam zaten yazılı (lib/schemas/service.ts)" diyordu —
+kontrol edildi, böyle bir dosya yoktu, panel içerik yönetimi hâlâ
+"yakında" placeholder'ıydı. Şema sıfırdan yazıldı ama mevcut konvansiyona
+uysun diye (`lib/validation/contact.ts`) `lib/validation/service.ts`'e
+kondu — yeni, paralel bir `lib/schemas/` klasörü açılmadı.
+
+**Karar 2 — Panel form/liste deseni paylaşılan bileşenlere çıkarıldı.**
+Yönerge zaten "deseni projelere çoğalt, tekrarlanan kodu ortak bileşene
+çıkar" diyordu. Çıkarılanlar: `components/ui/SubmitButton.tsx` +
+`FormErrorSummary.tsx` (İletişim formundan da retroaktif olarak
+kullanacak şekilde refactor edildi — üç formda da birebir aynı davranış),
+`components/panel/AdminListTable.tsx` + `StatusBadge.tsx`,
+`lib/panel/actionResult.ts` (`ActionResult<T>` tipi + `requireAdminUser()`).
+Hizmet/Proje ekleme sunucu eylemleri ve formları BİREBİR aynı deseni
+kullanıyor, sadece şema/alanlar farklı.
+
+**Karar 3 — "Düzenle" butonu bilinçli olarak devre dışı.** Yönetim
+tablosu "işlem butonları" istiyordu ama bu görevde sadece EKLEME
+istendi — düzenleme/silme sunucu eylemleri yok. Çalışmayan bir link
+yerine (KISITLAR ruhuna aykırı: yarım bırakılmış özellik) native
+`disabled` bir "Düzenle" butonu kondu, dürüstçe "henüz yok" diyor.
+
+**Karar 4 — Sıra numarası admin'den istenmiyor.** `order_index`
+formda bir alan değil — `getNextOrderIndex()` mevcut en büyüğü bulup
++10 ekliyor (seed verisindeki 10'ar artış deseniyle tutarlı, çakışma
+riski yok).
+
+**Uygulama:** `lib/validation/service.ts` + `project.ts` (zod), her ikisi
+için `app/panel/(protected)/icerikler/{hizmetler,projeler}/` (`page.tsx`
+— liste + form, `actions.ts` — `create*Action`, `*Form.tsx`). Her eylem:
+(1) `requireAdminUser()` ile oturum kontrolü İLK satır, (2) aynı zod
+şemasıyla sunucuda gerçek doğrulama, (3) DB hatası ham gösterilmeden
+loglanıp Türkçe/anlamlı bir mesaja çevrilir, (4) başarıda `revalidatePath("/")`
+— Hizmetler/Projeler SADECE ana sayfada render edildiği için doğru yol
+budur (panel zaten `force-dynamic`, ayrıca tazelemeye gerek yok).
+`app/panel/(protected)/icerikler/page.tsx` artık Hizmetler/Projeler'e
+linkleyen bir dizin. Şema değişikliği YOK (mevcut kolonlar yeterliydi),
+migration gerekmedi.
+
+**Uçtan uca doğrulama (gerçek, kod incelemesi değil — bkz.
+`MIMARI.md` madde 10):** Gerçek admin oturumuyla bir hizmet eklendi,
+`revalidatePath` çağrılmadan ÖNCE ana sayfanın hâlâ eski hâli gösterdiği,
+çağrıdan SONRA yeni hizmetin anında göründüğü `curl` ile kanıtlandı.
+Test verisi ve geçici doğrulama araçları (script'ler, geçici
+`app/api/test-revalidate` route'u) sonrasında tamamen silindi. Gerçek
+formu tıklayarak test edemedim (tarayıcı aracı bu ortamdan `localhost`'a
+erişemiyor) — kullanıcıdan ayrıca panelden gerçek bir tıklamayla
+denemesi istendi.
+
+**Doğrulama:** `npm run build`/`lint` temiz.
+
+---
+
+## 2026-08-14 (aynı gün) — Düzenleme ve silme eklendi
+
+**Karar — Ekleme/düzenleme formu TEK bileşen.** `ServiceForm`/`ProjectForm`
+opsiyonel bir `service`/`project` prop'u alıyor; verilirse düzenleme
+moduna geçiyor (mevcut değerlerle dolu, `updateXAction`'a `id`
+önceden `.bind()` ile bağlanmış). İki ayrı bileşen yazmak yerine tek
+bileşende dallanmak tercih edildi — alanlar, doğrulama, hata gösterimi
+zaten birebir aynıydı, sadece varsayılan değerler ve hedef eylem farklı.
+
+**Uygulama:** `getServiceById`/`getProjectById` (panelQueries.ts, kayıt
+yoksa/başka tenant'a aitse `null`), `update*Action`/`delete*Action`
+(her ikisi de `requireAdminUser()` + aynı zod şeması + `.eq("tenant_id",
+tenantId)` ekstra kontrolü + `revalidatePath("/")`),
+`app/panel/(protected)/icerikler/{hizmetler,projeler}/[id]/page.tsx`
+(kayıt yoksa `notFound()`), `components/panel/DeleteButton.tsx`
+(paylaşılan — `window.confirm()` ile onay, silme başarısız olursa
+buton altında hata mesajı). `AdminListTable`'daki devre dışı "Düzenle"
+gerçek bir linke, "İşlemler" sütunu gerçek "Sil" butonuna kavuştu.
+
+**Doğrulama (gerçek, script + curl ile):** Bir test hizmeti eklenip
+authenticated olarak güncellendiği ve silindiği, silindikten sonra
+gerçekten sorguya düşmediği doğrulandı. Ayrıca yeni `[id]` rotalarının
+da mevcut proxy korumasından otomatik geçtiği — çerezsiz bir isteğin
+`next` parametresiyle (derin linki koruyarak) `/panel/giris`'e
+yönlendiği — ayrıca doğrulandı, ek bir koruma kodu yazmaya gerek
+kalmadı. `npm run build`/`lint` temiz.
