@@ -1,6 +1,6 @@
 import type { AnchorHTMLAttributes } from "react";
 
-type LinkButtonVariant = "primary" | "secondary" | "ghost";
+type LinkButtonVariant = "primary" | "secondary" | "accent" | "ghost";
 type LinkButtonSize = "sm" | "md" | "lg";
 
 export interface LinkButtonProps extends AnchorHTMLAttributes<HTMLAnchorElement> {
@@ -12,6 +12,8 @@ const VARIANT_CLASSES: Record<LinkButtonVariant, string> = {
   primary: "bg-brand text-brand-on hover:opacity-90",
   secondary:
     "bg-surface-raised text-text border border-neutral-300 hover:bg-neutral-100",
+  // Button.tsx'teki "accent" varyantıyla aynı gerekçe/token.
+  accent: "bg-accent text-accent-on hover:opacity-90",
   ghost: "bg-transparent text-brand hover:bg-neutral-100",
 };
 

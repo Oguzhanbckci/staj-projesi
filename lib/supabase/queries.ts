@@ -6,6 +6,8 @@ import {
   type ThemePresetKey,
 } from "@/lib/theme/presets";
 import type { SiteThemeSettings } from "@/lib/theme/resolve";
+import { isBorderRadiusScaleKey } from "@/lib/theme/radiusScales";
+import { isFontFamilyKey } from "@/lib/theme/fonts";
 import type { HeroSectionData, HeroVariant } from "@/components/site/hero/types";
 import type { ServiceItem } from "@/components/site/services/types";
 import type { AboutSectionData } from "@/components/site/about/types";
@@ -143,6 +145,9 @@ const FALLBACK_THEME_SETTINGS: SiteThemeSettings = {
   themeMode: "light",
   themePreset: DEFAULT_THEME_PRESET,
   primaryColor: null,
+  secondaryColor: null,
+  borderRadiusScale: null,
+  fontFamilyKey: null,
 };
 
 function isThemePresetKey(value: unknown): value is ThemePresetKey {
@@ -177,7 +182,9 @@ export async function getSiteThemeSettings(): Promise<SiteThemeSettings> {
 
     const { data, error } = await supabase
       .from("tenants")
-      .select("theme_mode, site_settings(primary_color, theme_preset)")
+      .select(
+        "theme_mode, site_settings(primary_color, secondary_color, theme_preset, border_radius_scale, font_family_key)"
+      )
       .eq("id", tenantId)
       .maybeSingle();
 
@@ -198,6 +205,16 @@ export async function getSiteThemeSettings(): Promise<SiteThemeSettings> {
         typeof settingsRow?.primary_color === "string"
           ? settingsRow.primary_color
           : null,
+      secondaryColor:
+        typeof settingsRow?.secondary_color === "string"
+          ? settingsRow.secondary_color
+          : null,
+      borderRadiusScale: isBorderRadiusScaleKey(settingsRow?.border_radius_scale)
+        ? settingsRow.border_radius_scale
+        : null,
+      fontFamilyKey: isFontFamilyKey(settingsRow?.font_family_key)
+        ? settingsRow.font_family_key
+        : null,
     };
   } catch {
     return FALLBACK_THEME_SETTINGS;
@@ -495,6 +512,7 @@ export const getContactSection = cache(async (): Promise<ContactSectionData | nu
 
 export interface SiteSettingsData {
   tenantName: string;
+  slogan: string | null;
   seoTitle: string | null;
   seoDescription: string | null;
   ctaTitle: string | null;
@@ -504,13 +522,16 @@ export interface SiteSettingsData {
   facebookUrl: string | null;
   instagramUrl: string | null;
   linkedinUrl: string | null;
+  logoPath: string | null;
+  faviconPath: string | null;
 }
 
 /**
- * Eylem Çağrısı içeriği + Footer sosyal medya linkleri — ikisi de
- * site_settings'te (bkz. supabase/migrations/20260810120000_...,
- * "İçerik ayarlardan gelsin" yönergesi). `cache()`: CtaSection ve Footer
- * aynı istekte ikisi de çağırsa bile tek sorguya iner.
+ * Eylem Çağrısı içeriği + Footer sosyal medya linkleri + site kimliği
+ * (slogan/logo/favicon) — hepsi site_settings'te (bkz. supabase/migrations/
+ * 20260810120000_..., 20260815120000_..., "İçerik ayarlardan gelsin"
+ * yönergesi). `cache()`: CtaSection/Footer/(site) layout aynı istekte
+ * birden fazla çağırsa da tek sorguya iner.
  */
 export const getSiteSettings = cache(async (): Promise<SiteSettingsData | null> => {
   try {
@@ -522,7 +543,7 @@ export const getSiteSettings = cache(async (): Promise<SiteSettingsData | null> 
     const { data, error } = await supabase
       .from("tenants")
       .select(
-        "name, site_settings(seo_title, seo_description, cta_title, cta_description, cta_button_text, cta_button_link, facebook_url, instagram_url, linkedin_url)"
+        "name, site_settings(slogan, seo_title, seo_description, cta_title, cta_description, cta_button_text, cta_button_link, facebook_url, instagram_url, linkedin_url, logo_path, favicon_path)"
       )
       .eq("id", tenantId)
       .maybeSingle();
@@ -535,6 +556,7 @@ export const getSiteSettings = cache(async (): Promise<SiteSettingsData | null> 
 
     return {
       tenantName: data.name,
+      slogan: typeof settingsRow?.slogan === "string" ? settingsRow.slogan : null,
       seoTitle: typeof settingsRow?.seo_title === "string" ? settingsRow.seo_title : null,
       seoDescription:
         typeof settingsRow?.seo_description === "string" ? settingsRow.seo_description : null,
@@ -551,6 +573,9 @@ export const getSiteSettings = cache(async (): Promise<SiteSettingsData | null> 
         typeof settingsRow?.instagram_url === "string" ? settingsRow.instagram_url : null,
       linkedinUrl:
         typeof settingsRow?.linkedin_url === "string" ? settingsRow.linkedin_url : null,
+      logoPath: typeof settingsRow?.logo_path === "string" ? settingsRow.logo_path : null,
+      faviconPath:
+        typeof settingsRow?.favicon_path === "string" ? settingsRow.favicon_path : null,
     };
   } catch (err) {
     console.error("getSiteSettings sorgu hatası:", err);

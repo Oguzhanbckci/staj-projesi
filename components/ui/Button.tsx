@@ -1,6 +1,6 @@
 import type { ButtonHTMLAttributes } from "react";
 
-type ButtonVariant = "primary" | "secondary" | "ghost" | "danger";
+type ButtonVariant = "primary" | "secondary" | "accent" | "ghost" | "danger";
 type ButtonSize = "sm" | "md" | "lg";
 
 export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
@@ -13,6 +13,10 @@ const VARIANT_CLASSES: Record<ButtonVariant, string> = {
   primary: "bg-brand text-brand-on hover:opacity-90",
   secondary:
     "bg-surface-raised text-text border border-neutral-300 hover:bg-neutral-100",
+  // Tenant'ın ikincil (accent) rengi — site_settings.secondary_color boşken
+  // "secondary" varyantıyla GÖRSEL OLARAK aynı (bkz. app/globals.css
+  // --color-accent varsayılanı), tenant renk girince otomatik ayrışır.
+  accent: "bg-accent text-accent-on hover:opacity-90",
   ghost: "bg-transparent text-brand hover:bg-neutral-100",
   // Yıkıcı eylemler (silme onayı) için — dolgu değil, kenarlık + metin
   // (2026-08-08'deki kontrast düzeltmesiyle aynı ilke: "ayrışsın ama

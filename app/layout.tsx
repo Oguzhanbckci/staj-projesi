@@ -1,6 +1,6 @@
 import type { CSSProperties } from "react";
 import type { Metadata } from "next";
-import { Geist, Geist_Mono, Manrope } from "next/font/google";
+import { Geist, Geist_Mono, Manrope, Inter, Poppins, Work_Sans } from "next/font/google";
 import { getSiteThemeSettings } from "@/lib/supabase/queries";
 import { resolveThemeTokens } from "@/lib/theme/resolve";
 import "./globals.css";
@@ -15,13 +15,33 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-// "Modern Koyu" preset'inin font'u (bkz. lib/theme/presets.ts) — hangi
-// preset seçili olursa olsun her iki font da build zamanında yükleniyor,
-// runtime'da hangisinin kullanılacağına --font-sans değişkeni karar veriyor
-// (next/font, font seçimini çalışma zamanı verisine göre şartlı yapmaya
-// izin vermiyor). Detay: docs/TEMA-MIMARISI.md "Yeni tema nasıl eklenir".
+// Panelden seçilebilen 5 font ailesinden 4'ü (bkz. lib/theme/fonts.ts,
+// Geist Sans yukarıda zaten yüklü) — hangisi seçili olursa olsun HEPSİ
+// build zamanında yükleniyor, runtime'da hangisinin kullanılacağına
+// --font-sans değişkeni karar veriyor (next/font, font seçimini çalışma
+// zamanı verisine göre şartlı yapmaya izin vermiyor). Detay:
+// docs/TEMA-MIMARISI.md "Yeni tema nasıl eklenir".
 const manrope = Manrope({
   variable: "--font-manrope",
+  subsets: ["latin"],
+});
+
+const inter = Inter({
+  variable: "--font-inter",
+  subsets: ["latin"],
+});
+
+// Poppins değişken ağırlık desteklemiyor (next/font/google) — sabit bir
+// ağırlık dizisi gerekiyor; docs/TASARIM-SISTEMI.md madde 3'ün "en fazla
+// 700" kuralına uygun 4 ağırlık seçildi.
+const poppins = Poppins({
+  variable: "--font-poppins",
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+});
+
+const workSans = Work_Sans({
+  variable: "--font-work-sans",
   subsets: ["latin"],
 });
 
@@ -43,7 +63,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
       lang="en"
       data-theme={dataTheme}
       style={styleVars as CSSProperties}
-      className={`${geistSans.variable} ${geistMono.variable} ${manrope.variable} h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} ${manrope.variable} ${inter.variable} ${poppins.variable} ${workSans.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">{children}</body>
     </html>

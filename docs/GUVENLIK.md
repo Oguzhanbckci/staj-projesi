@@ -389,6 +389,12 @@ dayanır.
 | `projects_bucket_authenticated_update` | authenticated | update |
 | `projects_bucket_authenticated_delete` | authenticated | delete |
 
+**İkinci bucket: `"branding"`, `public=true` (2026-08-15 eklendi).**
+(`supabase/migrations/20260815120000_add_theme_settings_and_branding.sql`)
+`"projects"` ile BİREBİR aynı 5-policy deseni, `bucket_id = 'branding'`
+filtresiyle — panelin Tema ekranındaki logo/favicon yüklemesi için
+(`site_settings.logo_path`/`favicon_path`).
+
 **Önemli, önceden dokümante edilmemiş bir bulgu (2026-08-14 araştırmasıyla
 ortaya çıktı):** `services.image_path`, `hero_sections.
 background_image_path`, `about_sections.image_path`,
@@ -399,15 +405,17 @@ ziyaretçi sitesindeki görüntüleme bileşenleri (`ServiceCardImage.tsx`,
 `"testimonials"`, `"team"` adında bucket'lar bekliyor — **ama bu 5
 bucket'tan HİÇBİRİ henüz oluşturulmadı.** Bu tabloların `*_path`
 kolonlarına gerçek bir değer girilse bile (panelden değil, elle) görsel
-404 verir. Sadece Projeler için bu görev kapsamında bucket+RLS+yükleme
-akışı kuruldu; diğer 5'i aynı desenle (bkz. madde 12) ileride ele
-alınmalı.
+404 verir. Projeler ve (2026-08-15'te) logo/favicon için bu desende
+bucket+RLS+yükleme akışı kuruldu; diğer 5'i aynı desenle (bkz. madde 12)
+ileride ele alınmalı.
 
 ## 12. Dosya Yükleme Kuralları *(2026-08-14 eklendi)*
 
-Panelden görsel yükleme (şu an sadece Projeler,
-`app/panel/(protected)/icerikler/projeler/imageActions.ts`) şu kuralları
-İSTİSNASIZ uygular:
+Panelden görsel yükleme (Projeler —
+`app/panel/(protected)/icerikler/projeler/imageActions.ts` — ve
+2026-08-15'ten itibaren logo/favicon —
+`app/panel/(protected)/tema/imageActions.ts`) şu kuralları İSTİSNASIZ
+uygular:
 
 1. **Oturum kontrolü İLK satır** (`requireAdminUser()`, madde 5'teki
    AYNI ilke) — hem uygulama katmanında hem Storage RLS katmanında

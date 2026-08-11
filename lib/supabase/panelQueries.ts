@@ -1,4 +1,6 @@
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { isBorderRadiusScaleKey, type BorderRadiusScaleKey } from "@/lib/theme/radiusScales";
+import { isFontFamilyKey, type FontFamilyKey } from "@/lib/theme/fonts";
 
 // Bu dosyadaki sorgular sadece `app/panel/(protected)/` altından çağrılır
 // — çağıran taraf zaten oturumu doğrulamış olmalı (bkz. o layout'taki
@@ -696,6 +698,76 @@ export async function getContactMessageById(id: string): Promise<ContactMessageR
     return mapContactMessageRow(data);
   } catch (err) {
     console.error("getContactMessageById sorgu hatası:", err);
+    return null;
+  }
+}
+
+export interface ThemeSettingsData {
+  companyName: string;
+  slogan: string | null;
+  primaryColor: string | null;
+  secondaryColor: string | null;
+  borderRadiusScale: BorderRadiusScaleKey | null;
+  fontFamilyKey: FontFamilyKey | null;
+  logoPath: string | null;
+  faviconPath: string | null;
+  facebookUrl: string | null;
+  instagramUrl: string | null;
+  linkedinUrl: string | null;
+  address: string | null;
+  phone: string | null;
+  email: string | null;
+}
+
+// Tema Ayarları ekranı için — tenants (firma adı) + site_settings (renkler/
+// radius/font/slogan/logo/favicon/sosyal) + contact_sections (adres/tel/
+// e-posta, Footer VE /iletisim'in ZATEN okuduğu kaynak — bkz.
+// docs/KARAR-GUNLUGU.md, 2026-08-15) TEK sorguda (nested embed), diğer
+// get*ById fonksiyonlarıyla aynı null-safe/typeof-guard deseni.
+export async function getThemeSettings(): Promise<ThemeSettingsData | null> {
+  try {
+    const supabase = await createServerSupabaseClient();
+    const tenantId = await getActiveTenantId();
+    if (!tenantId) return null;
+
+    const { data, error } = await supabase
+      .from("tenants")
+      .select(
+        "name, site_settings(primary_color, secondary_color, border_radius_scale, font_family_key, slogan, logo_path, favicon_path, facebook_url, instagram_url, linkedin_url), contact_sections(address, phone, email)"
+      )
+      .eq("id", tenantId)
+      .maybeSingle();
+
+    if (error || !data) return null;
+
+    const settings = Array.isArray(data.site_settings)
+      ? data.site_settings[0]
+      : data.site_settings;
+    const contact = Array.isArray(data.contact_sections)
+      ? data.contact_sections[0]
+      : data.contact_sections;
+
+    return {
+      companyName: String(data.name),
+      slogan: typeof settings?.slogan === "string" ? settings.slogan : null,
+      primaryColor: typeof settings?.primary_color === "string" ? settings.primary_color : null,
+      secondaryColor:
+        typeof settings?.secondary_color === "string" ? settings.secondary_color : null,
+      borderRadiusScale: isBorderRadiusScaleKey(settings?.border_radius_scale)
+        ? settings.border_radius_scale
+        : null,
+      fontFamilyKey: isFontFamilyKey(settings?.font_family_key) ? settings.font_family_key : null,
+      logoPath: typeof settings?.logo_path === "string" ? settings.logo_path : null,
+      faviconPath: typeof settings?.favicon_path === "string" ? settings.favicon_path : null,
+      facebookUrl: typeof settings?.facebook_url === "string" ? settings.facebook_url : null,
+      instagramUrl: typeof settings?.instagram_url === "string" ? settings.instagram_url : null,
+      linkedinUrl: typeof settings?.linkedin_url === "string" ? settings.linkedin_url : null,
+      address: typeof contact?.address === "string" ? contact.address : null,
+      phone: typeof contact?.phone === "string" ? contact.phone : null,
+      email: typeof contact?.email === "string" ? contact.email : null,
+    };
+  } catch (err) {
+    console.error("getThemeSettings sorgu hatası:", err);
     return null;
   }
 }

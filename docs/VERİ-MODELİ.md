@@ -128,13 +128,13 @@ yapıldı:
 | `id` | uuid, PK | |
 | `created_at` | timestamptz | |
 | `tenant_id` | uuid, not null, → tenants.id, **unique** | |
-| `logo_path` | text, nullable | Storage'daki logo dosya yolu |
+| `logo_path` | text, nullable | Storage'daki logo dosya yolu — *(2026-08-15)* `"branding"` bucket'ında, panelden yükleniyor (bkz. `TEMA-MIMARISI.md` madde 7) |
 | `primary_color` | text, nullable | marka ana rengi |
-| `secondary_color` | text, nullable | marka ikincil rengi |
+| `secondary_color` | text, nullable | marka ikincil (accent) rengi — *(2026-08-15)* artık panelden düzenlenebiliyor, `--color-accent`'i besliyor |
 | `seo_title` | text, nullable | varsayılan sayfa başlığı |
 | `seo_description` | text, nullable | varsayılan meta açıklama |
-| `contact_email` | text, nullable | üstbilgi/altbilgi/SEO gösterim amaçlı |
-| `contact_phone` | text, nullable | üstbilgi/altbilgi/SEO gösterim amaçlı |
+| ~~`contact_email`~~ | — | *(2026-08-15'te DÜŞÜRÜLDÜ)* 2026-08-06'dan beri kod tabanının hiçbir yerinde okunmuyordu — gerçek iletişim kaynağı her zaman `contact_sections` idi, ölü kolon temizlendi |
+| ~~`contact_phone`~~ | — | *(2026-08-15'te DÜŞÜRÜLDÜ)* aynı gerekçe |
 | `theme_preset` | text, not null, default 'kurumsal-mavi', check | *(2026-08-08 eklendi)* `kurumsal-mavi`\|`modern-koyu` — hazır tema ön ayarı (marka rengi/radius/font kombinasyonu), bkz. `TEMA-MIMARISI.md` |
 | `cta_title` | text, nullable | *(2026-08-10 eklendi)* Eylem Çağrısı başlığı — boşsa bölüm hiç render edilmez |
 | `cta_description` | text, nullable | *(2026-08-10 eklendi)* Eylem Çağrısı kısa açıklama |
@@ -143,6 +143,10 @@ yapıldı:
 | `facebook_url` | text, nullable | *(2026-08-10 eklendi)* Footer sosyal medya linki |
 | `instagram_url` | text, nullable | *(2026-08-10 eklendi)* Footer sosyal medya linki |
 | `linkedin_url` | text, nullable | *(2026-08-10 eklendi)* Footer sosyal medya linki |
+| `slogan` | text, nullable | *(2026-08-15 eklendi)* Footer'da firma adının altında gösterilir |
+| `favicon_path` | text, nullable | *(2026-08-15 eklendi)* Storage (`"branding"` bucket) yolu — boşsa statik `app/favicon.ico` |
+| `border_radius_scale` | text, nullable, check | *(2026-08-15 eklendi)* `keskin`\|`dengeli`\|`yuvarlak` — `theme_preset`'ten BAĞIMSIZ köşe yarıçapı override'ı, boşsa preset'in kendi değeri (bkz. `TEMA-MIMARISI.md` madde 5, `lib/theme/radiusScales.ts`) |
+| `font_family_key` | text, nullable, check | *(2026-08-15 eklendi)* `geist-sans`\|`manrope`\|`inter`\|`poppins`\|`work-sans` — `theme_preset`'ten BAĞIMSIZ font override'ı, boşsa preset'in kendi değeri (bkz. `TEMA-MIMARISI.md` madde 5, `lib/theme/fonts.ts`) |
 
 ### `hero_sections` — Hero (Tekil)
 
@@ -308,7 +312,7 @@ bölümden iki kaydı olamaz.
 
 ## SQL Migration
 
-On altı migration dosyası var, sırayla:
+On yedi migration dosyası var, sırayla:
 
 1. `20260806120000_create_content_tables.sql` — ilk 8 tablo (`tenants`,
    `site_settings`, `hero_sections`, `about_sections`, `services`,
@@ -353,11 +357,16 @@ On altı migration dosyası var, sırayla:
 16. `20260814130000_add_contact_message_email_subject.sql` —
     `contact_messages.sender_email`/`subject` (nullable) + demo veriye
     backfill.
+17. `20260815120000_add_theme_settings_and_branding.sql` — `site_settings`e
+    `border_radius_scale`/`font_family_key`/`slogan`/`favicon_path` (ilk
+    ikisi check constraint'li) eklendi, kullanılmayan `contact_email`/
+    `contact_phone` düşürüldü, `"branding"` Storage bucket'ı (RLS dahil)
+    kuruldu.
 
-Migration 1-15 gerçek Supabase projesine uygulandı (15 — Storage
-bucket — 2026-08-14'te uygulandı). **16 henüz uygulanmadı**
-(`contact_messages.sender_email`/`subject`, kullanıcı SQL Editor'de
-çalıştıracak, bkz. `DURUM.md`).
+Migration 1-16 gerçek Supabase projesine uygulandı (16 —
+`contact_messages.sender_email`/`subject` — 2026-08-14'te uygulandı).
+**17 henüz uygulanmadı** (kullanıcı SQL Editor'de çalıştıracak, bkz.
+`DURUM.md`).
 Her migration'da `create table`/`alter table`, `check`/`unique`
 kısıtlamaları, `default` değerleri, `comment on table`/`comment on
 column` ve (ilgili olanlarda) `enable row level security` + politikalar

@@ -22,6 +22,18 @@
   --color-brand: #2561c1;
   --color-brand-on: #ffffff; /* marka dolgusu üzerindeki metin/ikon rengi */
 
+  /*
+   * İkincil (accent) renk — tenant başına site_settings.secondary_color ile
+   * değişebilir (bkz. lib/theme/resolve.ts). Varsayılan (secondary_color
+   * boşken) BİLEREK mevcut Button/LinkButton "secondary" varyantının nötr
+   * görünümüyle birebir aynı (surface-raised/text) — sıfır regresyon.
+   * var() referansı olduğu için [data-theme="dark"]'ta AYRICA
+   * tanımlanmasına gerek yok: surface-raised/text zaten orada override
+   * ediliyor, accent otomatik doğru temaya döner.
+   */
+  --color-accent: var(--color-surface-raised);
+  --color-accent-on: var(--color-text);
+
   /* Semantik renkler */
   --color-success: #227745;
   --color-warning: #915f08;
@@ -86,6 +98,8 @@
   --color-neutral-900: var(--color-neutral-900);
   --color-brand: var(--color-brand);
   --color-brand-on: var(--color-brand-on);
+  --color-accent: var(--color-accent);
+  --color-accent-on: var(--color-accent-on);
   --color-success: var(--color-success);
   --color-warning: var(--color-warning);
   --color-error: var(--color-error);

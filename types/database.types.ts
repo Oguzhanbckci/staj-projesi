@@ -371,14 +371,15 @@ export type Database = {
       }
       site_settings: {
         Row: {
-          contact_email: string | null
-          contact_phone: string | null
+          border_radius_scale: string | null
           created_at: string
           cta_button_link: string | null
           cta_button_text: string | null
           cta_description: string | null
           cta_title: string | null
           facebook_url: string | null
+          favicon_path: string | null
+          font_family_key: string | null
           id: string
           instagram_url: string | null
           linkedin_url: string | null
@@ -387,18 +388,20 @@ export type Database = {
           secondary_color: string | null
           seo_description: string | null
           seo_title: string | null
+          slogan: string | null
           tenant_id: string
           theme_preset: string
         }
         Insert: {
-          contact_email?: string | null
-          contact_phone?: string | null
+          border_radius_scale?: string | null
           created_at?: string
           cta_button_link?: string | null
           cta_button_text?: string | null
           cta_description?: string | null
           cta_title?: string | null
           facebook_url?: string | null
+          favicon_path?: string | null
+          font_family_key?: string | null
           id?: string
           instagram_url?: string | null
           linkedin_url?: string | null
@@ -407,18 +410,20 @@ export type Database = {
           secondary_color?: string | null
           seo_description?: string | null
           seo_title?: string | null
+          slogan?: string | null
           tenant_id: string
           theme_preset?: string
         }
         Update: {
-          contact_email?: string | null
-          contact_phone?: string | null
+          border_radius_scale?: string | null
           created_at?: string
           cta_button_link?: string | null
           cta_button_text?: string | null
           cta_description?: string | null
           cta_title?: string | null
           facebook_url?: string | null
+          favicon_path?: string | null
+          font_family_key?: string | null
           id?: string
           instagram_url?: string | null
           linkedin_url?: string | null
@@ -427,6 +432,7 @@ export type Database = {
           secondary_color?: string | null
           seo_description?: string | null
           seo_title?: string | null
+          slogan?: string | null
           tenant_id?: string
           theme_preset?: string
         }

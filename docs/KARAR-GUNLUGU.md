@@ -2562,3 +2562,188 @@ bir hata riski taşımıyor.
 
 Test verisi (1 `contact_messages` satırı) silindi, geçici rota ve
 script'ler kaldırıldı. `npm run lint`/`build` son bir kez temiz.
+
+## 2026-08-15 — Tema Ayarları ekranı: marka rengi, kontrast koruması, canlı önizleme, logo/favicon, site kimliği
+
+**Kullanıcıyla netleştirilen 2 mimari karar (AskUserQuestion ile
+soruldu, plan modunda):** Panelin `/panel/tema` placeholder'ını gerçek
+bir ekrana dönüştürme görevinde, KISITLAR "köşe yarıçapı ve font ailesi
+için giriş alanları" diyordu ama mevcut mimari (`TEMA-MIMARISI.md`
+madde 3, o zamanki numarayla) radius/font'u BİLİNÇLİ olarak sadece
+`theme_preset`'e bağlıyordu ("ayrı ham kolonları yok, bilinçli"). İki
+gerçek fork noktası kullanıcıya soruldu:
+
+1. **Köşe yarıçapı: serbest piksel DEĞİL, hazır ölçek seçimi.**
+   Kullanıcı önerilen (varsayılan) seçeneği onayladı — mevcut
+   `primary_color`'ın preset'i override etme deseniyle tutarlı, WCAG'a
+   dokunmuyor.
+2. **Font ailesi: mevcut 2 fontun yanına 3 yeni font daha (next/font/
+   google, build-time).** Kullanıcı bu seçeneği seçti (serbest metin
+   kutusu DEĞİL — next/font runtime'da şartlı font yüklemeyi
+   desteklemiyor, bu mimari bir kısıt, tercih değil). 3 yeni font olarak
+   Inter/Poppins/Work Sans seçildi (TASARIM-SISTEMI.md'nin "abartısız,
+   ciddi ama modern" ilkesine uygun sans-serif'ler, serif kullanılmadı).
+
+**Karar 1 — Radius/font, preset'e değil `primary_color` ile AYNI override
+eksenine eklendi.** `site_settings.border_radius_scale`/`font_family_key`
+(nullable) — null ise preset'in kendi değeri geçerli. `lib/theme/
+radiusScales.ts`'teki `dengeli`/`yuvarlak` mevcut 2 preset'in ZATEN elle
+doğrulanmış radius değerleriyle birebir aynı (tekrar icat edilmedi),
+`keskin` yeni üçüncü bir seçenek. Bu, "preset SEÇİMİ arayüzü" (henüz yok,
+açık madde) ile "radius/font override'ı" (şimdi var) arasında net bir
+ayrım yarattı — `docs/TEMA-MIMARISI.md`'ye bu ayrım açıkça yazıldı, ileride
+kafa karışıklığı olmasın diye.
+
+**Karar 2 — `lib/theme/contrast.ts`: yeni, saf, WCAG-doğru modül; eski
+`pickReadableOnColor` SİLİNDİ.** Araştırma sırasında eski kodun (`lib/
+theme/resolve.ts`, kaba bir "luminance > 0.35 ise koyu metin" sezgisi)
+**gerçek bir hata** barındırdığı bulundu: `#808080` orta gri için
+yanlışlıkla BEYAZ metin öneriyordu. Gerçek hesap:
+
+```
+açık sarı #fff9c4 → siyah metin, oran 19.60:1
+açık sarı #ffeb3b → siyah metin, oran 17.20:1
+koyu lacivert #0d1b2a → beyaz metin, oran 17.39:1
+orta gri #808080 → SİYAH metin, oran 5.32:1 (beyaz olsaydı 3.95:1 — AA (4.5:1) eşiğinin ALTINDA kalırdı)
+```
+
+Yeni `pickReadableTextColor()` sabit bir luminance eşiği KULLANMIYOR —
+siyah/beyazın GERÇEK iki kontrast oranını hesaplayıp karşılaştırıyor
+(`getContrastRatio()`), bu yüzden orta gri gibi sınırda renklerde de
+doğru sonuç veriyor. KABUL KRİTERİ'nin "kontrast oranını sayı olarak da
+döndürsün" isteği `checkContrastWarning()`'in `ratio` alanıyla
+karşılandı — panelde marka/ikincil renk alanlarının altında canlı
+gösteriliyor. `resolve.ts` artık BU fonksiyonu kullanıyor — kod tekrarı
+yok, hem `primary_color` hem `secondary_color` aynı kuralla hesaplanıyor.
+Vitest bu projede henüz kurulu değil (ayrı, önceden bilinen bir altyapı
+eksiği) — bu görev kapsamında YENİ bağımlılık/kurulum yapılmadı, yukarıdaki
+4 renk gerçek hesapla (bir kerelik Node script'iyle) doğrulandı.
+
+**Karar 3 — İkincil (accent) renk, somut bir görsel karşılığa
+bağlandı.** `site_settings.secondary_color` 2026-08-06'dan beri DB'de
+vardı ama HİÇBİR token'a bağlı değildi, hiçbir yerde kullanılmıyordu.
+Yeni `--color-accent`/`--color-accent-on` token çifti eklendi
+(`app/globals.css`): `secondary_color` boşken STATİK olarak nötr
+(`var(--color-surface-raised)`/`var(--color-text)` — mevcut `Button`
+"secondary" varyantının görünümüyle birebir aynı, **sıfır regresyon**,
+Akme'de bugün `secondary_color` NULL olduğu doğrulandı); doluysa
+`resolve.ts` gerçek rengi + `pickReadableTextColor()`'ın hesapladığı
+metin rengini enjekte ediyor. Yeni `Button`/`LinkButton` `accent`
+varyantı; `CtaSection.tsx`'teki mevcut `variant="secondary"` butonu
+`variant="accent"` yapıldı — CTA zaten sabit marka rengi zeminde
+olduğu için ikincil rengin ilk gerçek, görünür kullanım yeri burası
+oldu.
+
+**Karar 4 — Canlı önizleme, gerçek `<html>`'e dokunmuyor, kod tekrarı
+yok.** `ThemeEditor.tsx` (client) form state'ini tutuyor,
+`resolveThemeTokens()`'ı (gerçek `app/layout.tsx`'in kullandığı AYNI
+fonksiyon, `themePreset: DEFAULT_THEME_PRESET` ile — preset seçimi
+arayüzü henüz olmadığı için bu şu an her tenant için doğru bir varsayım)
+çağırıp sonucu `ThemePreview.tsx`'in kendi `<div style>`'ına yazıyor.
+`app/globals.css`'teki `@theme inline` mekanizması (marka rengi/radius/
+font'un `<html>` seviyesinde zaten çalıştığı AYNI CSS özel değişken
+cascade'i) herhangi bir DOM scope'unda override edilmeye izin verdiği
+için EK KOD gerekmedi — sadece önizleme div'inin `style` attribute'u
+yeterli. Kaydetme AYRI bir Server Action; önizleme sadece client state,
+kaydedilmeden gerçek siteyi hiç etkilemiyor.
+
+**Karar 5 — Site kimliği: yeni tablo İCAT EDİLMEDİ, mevcut tablolar
+kullanıldı.** Araştırma sırasında altyapının BİR KISMININ zaten var
+olduğu ortaya çıktı: `site_settings.facebook_url/instagram_url/
+linkedin_url` zaten vardı ve `Footer.tsx` ZATEN render ediyordu;
+`tenants.name` zaten vardı. Eksik olan sadece PANEL ARAYÜZÜYDÜ. Alan-tablo
+eşlemesi:
+- Firma adı → `tenants.name` (zaten vardı)
+- Slogan → YENİ `site_settings.slogan` — Footer'da firma adının altında
+- İletişim (adres/tel/e-posta) → `contact_sections.*` (zaten vardı,
+  Footer VE `/iletisim` ZATEN buradan okuyor — form BURAYA yazıyor,
+  YENİ bir üçüncü kaynak açılmadı)
+- Sosyal medya → `site_settings.facebook_url/instagram_url/linkedin_url`
+  (zaten vardı ve render ediliyordu, sadece form eklendi)
+
+**Karar 6 — Ölü kolonlar temizlendi: `site_settings.contact_email`/
+`contact_phone`.** Grep ile doğrulandı: bu iki kolon 2026-08-06'dan beri
+kod tabanının HİÇBİR yerinde okunmuyordu/yazılmıyordu (gerçek iletişim
+kaynağı her zaman `contact_sections` idi) — panel formunun "iletişim
+bilgileri" alanlarını YANLIŞLIKLA bu ölü kolonlara bağlamak yerine,
+aynı migration'da `drop column` ile temizlendi. Karışıklık kaynağı
+(hangi "iletişim" gerçek?) kalıcı olarak ortadan kaldırıldı.
+
+**Karar 7 — Logo/favicon: `"projects"` bucket'ının birebir kopyası,
+`"branding"` adında yeni bir Storage bucket'ı.** Aynı 5-policy RLS deseni,
+aynı `lib/supabase/imageValidation.ts` (JPEG/PNG/WEBP magic-byte kontrolü,
+5MB sınır — favicon için de aynı kontrol, ICO desteklenmiyor, modern
+tarayıcılar PNG favicon'u sorunsuz gösteriyor). Panel tarafında **markup
+paylaşılıyor** (tek generic `BrandImageUploader.tsx`, `ProjectImageUploader.tsx`'in
+parametrelenmiş hali — `kind`/`title`/`uploadAction`/`deleteAction`
+prop'larıyla) ama **sunucu eylemleri AYRI** (`uploadLogoAction`/
+`deleteLogoAction`/`uploadFaviconAction`/`deleteFaviconAction`, tek
+generic `field` parametreli bir fonksiyon DEĞİL) — her biri farklı DB
+kolonuna yazıyor, güvenlik-kritik kodun (requireAdminUser + doğrulama +
+atomiklik) her dalının izole/okunabilir kalması tercih edildi
+(TASARIM-SISTEMI.md madde 9.8 ile aynı ilke: kod tekrarı, gereksiz
+soyutlamadan daha ucuz).
+
+Logo yoksa Navbar'ın mevcut "sadece metin" davranışı AYNEN korunuyor
+(KISITLAR: "logosu olmayan kurulumda düzgün bir yedek görünüm olsun") —
+`logoUrl` prop'u opsiyonel, `undefined`/`null` iken hiçbir görsel render
+edilmiyor.
+
+**Karar 8 — `revalidatePath("/", "layout")`, düz `revalidatePath("/")`
+DEĞİL.** Mevcut içerik eylemleri (`uploadProjectImageAction` vb.)
+`revalidatePath("/")` kullanıyor çünkü ilgili içerik SADECE ana sayfada
+render ediliyor. Tema ayarları farklı: marka rengi kök `app/layout.tsx`'te
+(`<html>`), site kimliği/logo `app/(site)/layout.tsx`'te (TÜM site
+sayfalarını saran layout — `/`, `/ekip`, `/iletisim` dahil). Düz
+`revalidatePath("/")` sadece ana sayfa segmentini tazeler, `/iletisim`
+gibi sayfaları bayat bırakırdı — bu yüzden `updateThemeSettingsAction` ve
+4 görsel eylemin hepsinde `"layout"` tipi kullanıldı.
+
+**Geçici tipsiz client'lar (bilinçli, dokümante edilmiş borç, aynı
+desen tekrar kullanıldı):** Migration henüz uygulanmadığı için
+`types/database.types.ts` yeni kolonları tanımıyor —
+`createUntypedServiceRoleClient`/`createUntypedServerSupabaseClient`
+(daha önce `lib/supabase/server.ts`'den kaldırılmıştı, bu görev için
+GEÇİCİ olarak geri eklendi) `getSiteThemeSettings`/`getSiteSettings`
+(queries.ts), `getThemeSettings` (panelQueries.ts), `updateThemeSettingsAction`,
+4 görsel eylemde kullanılıyor — migration uygulanıp `npm run
+types:generate` çalışınca kaldırılıp tipli client'lara geri taşınmalı.
+
+**Doğrulama (gerçek, migration uygulandıktan sonra tamamlandı):**
+Kullanıcı migration'ı SQL Editor'de çalıştırdı. `npm run types:generate`
+çalıştırılıp `types/database.types.ts` yenilendi — geçici untyped
+client'lar (`createUntypedServiceRoleClient`/`createUntypedServerSupabaseClient`)
+kaldırıldı, 5 kullanım yeri (`queries.ts` ×2, `panelQueries.ts`,
+`tema/actions.ts`, `tema/imageActions.ts` ×4) gerçek tipli client'lara
+geri taşındı. `npm run lint`/`npx tsc --noEmit`/`npm run build` son bir
+kez temiz.
+
+**Uçtan uca akış testi** (`curl` + servis-rolü script'iyle — gerçek dev
+sunucusuna, gerçek Supabase'e karşı, kod incelemesi değil):
+
+1. `npm run dev` başlatıldı, `curl http://localhost:3000/` ile başlangıç
+   durumu kaydedildi (`--color-brand:#2561c1`, varsayılan radius/font).
+2. Servis-rolü script'iyle Akme'nin `site_settings` satırı gerçek test
+   değerleriyle güncellendi: `primary_color=#ff00aa`,
+   `secondary_color=#00c853`, `border_radius_scale=keskin`,
+   `font_family_key=inter`, `slogan="E2E test sloganı"`.
+3. `curl` ile SİTE YENİDEN ÇEKİLDİ — `<html style>` gerçekten değişmişti:
+   `--color-brand:#ff00aa;--color-brand-on:#000000;--radius-sm:0.125rem;
+   ...;--font-sans:var(--font-inter);--color-accent:#00c853;
+   --color-accent-on:#000000` — hem radius hem font hem accent DOĞRU
+   şekilde enjekte edildi. Footer'da "E2E test sloganı" göründü. CTA
+   butonu `bg-accent text-accent-on` class'ına geçti (Akme'nin gerçek
+   `cta_title`'ı olduğu için bölüm zaten render oluyordu).
+4. **Bağımsız kontrast doğrulaması:** `#ff00aa` için siyah/beyaz oranları
+   ayrıca elle hesaplandı (5.83:1 vs 3.60:1 — siyah kazanıyor) ve
+   `#00c853` için de (9.39:1 vs 2.24:1 — siyah kazanıyor) — ikisi de
+   `<html style>`'daki gerçek çıktıyla (`#000000`) birebir örtüştü.
+5. Test verisi orijinal haline (hepsi `null`) geri alındı, `curl` ile
+   sitenin varsayılana tam olarak döndüğü teyit edildi. Geçici script
+   silindi.
+
+Bu, "panelden marka rengini değiştir, kaydet, ziyaretçi sitesini
+yenile ve tüm değişimi doğrula" isteğinin tam karşılığı — panel
+formunun kendisi (auth arkasında, bu ortamda tarayıcıyla erişilemiyor)
+yerine DB'ye giden AYNI yazma + siteyi render eden AYNI okuma yolu uçtan
+uca test edildi.

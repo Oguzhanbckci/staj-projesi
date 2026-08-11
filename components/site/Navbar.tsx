@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { LinkButton } from "@/components/ui/LinkButton";
 import { MobileMenu } from "./MobileMenu";
 
@@ -12,6 +13,8 @@ export interface NavLink {
 
 export interface NavbarProps {
   logoText: string;
+  /** site_settings.logo_path'ten çözülmüş gerçek URL — yoksa (KISITLAR: "düzgün bir yedek görünüm") sadece logoText metni gösterilir, regresyon yok. */
+  logoUrl?: string | null;
   links: NavLink[];
   contactHref: string;
   contactLabel?: string;
@@ -25,6 +28,7 @@ export interface NavbarProps {
 // çalışsın diye), Ekip/İletişim ise artık gerçek sayfa linkleri.
 export function Navbar({
   logoText,
+  logoUrl,
   links,
   contactHref,
   contactLabel = "İletişim",
@@ -57,7 +61,13 @@ export function Navbar({
       }`}
     >
       <nav className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
-        <Link href="/" className="text-h6 font-bold text-text">
+        <Link href="/" className="flex items-center gap-2 text-h6 font-bold text-text">
+          {logoUrl && (
+            <span className="relative h-8 w-8 shrink-0">
+              {/* alt="" — bitişikteki logoText zaten erişilebilir adı taşıyor, ikisi birden aynı ismi iki kez duyurmasın. */}
+              <Image src={logoUrl} alt="" fill sizes="32px" className="object-contain" />
+            </span>
+          )}
           {logoText}
         </Link>
         <ul className="hidden gap-6 lg:flex">

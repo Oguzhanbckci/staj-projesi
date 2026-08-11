@@ -53,9 +53,11 @@ DB'den enjekte edilebilen** token'lar:
 | Token | Kaynak | Varsayılan (statik, `globals.css`) | Runtime'da nereden gelir |
 |---|---|---|---|
 | `--color-brand` | `lib/theme/presets.ts` + `site_settings.primary_color` | `#2561c1` (açık) / `#6998e2` (koyu) | Preset veya tenant'ın özel rengi |
-| `--color-brand-on` | `lib/theme/presets.ts` + hesaplanan | `#ffffff` (açık) / `#16191d` (koyu) | Preset veya `pickReadableOnColor()` |
-| `--radius-sm/md/lg/xl` | `lib/theme/presets.ts` | 4/8/12/16px | Seçili preset |
-| `--font-sans` | `lib/theme/presets.ts` | `var(--font-geist-sans)` | Seçili preset |
+| `--color-brand-on` | `lib/theme/presets.ts` + hesaplanan | `#ffffff` (açık) / `#16191d` (koyu) | Preset veya `pickReadableTextColor()` (bkz. madde 6, "Kontrast Güvenliği") |
+| `--color-accent` | `site_settings.secondary_color` | `var(--color-surface-raised)` (nötr, "secondary" buton görünümüyle aynı) | Sadece `secondary_color` doluysa enjekte edilir |
+| `--color-accent-on` | hesaplanan | `var(--color-text)` | `secondary_color` doluysa `pickReadableTextColor()` |
+| `--radius-sm/md/lg/xl` | `lib/theme/presets.ts` + `site_settings.border_radius_scale` | 4/8/12/16px | Preset VEYA panelden seçilen bağımsız ölçek (bkz. madde 5) |
+| `--font-sans` | `lib/theme/presets.ts` + `site_settings.font_family_key` | `var(--font-geist-sans)` | Preset VEYA panelden seçilen bağımsız font (bkz. madde 5) |
 
 Diğer tüm token'lar (nötr gri ölçeği, semantik renkler, tipografi, boşluk,
 gölge) **sabittir** — hiçbir tenant/preset'e göre değişmez, sadece
@@ -112,7 +114,125 @@ aktarılıyor.
 **Yeni, tenant'a göre hiç değişmeyen statik bir token** (ör. yeni bir
 semantik renk) eklemek için **1 dosya**: sadece `app/globals.css`.
 
-## 5. FOUC Önlemi
+## 5. Tema Düzenleyici (Panel)
+
+**2026-08-15'te eklendi** — `/panel/tema`, artık gerçek bir form: marka
+rengi, ikincil (accent) renk, köşe yarıçapı, font ailesi + site kimliği
+(firma adı, slogan, iletişim, sosyal medya) + logo/favicon yükleme.
+
+**Köşe yarıçapı ve font, preset'e BAĞIMLI değil — bağımsız override.**
+Bilinçli bir karar (kullanıcıyla netleştirildi, bkz. `KARAR-GUNLUGU.md`
+2026-08-15): `theme_preset` seçimi için panelde hâlâ bir arayüz yok (açık
+madde, aşağıda), ama radius/font artık `primary_color`'la AYNI "override"
+deseniyle bağımsız ayarlanabiliyor —
+
+- `site_settings.border_radius_scale` (nullable) — `lib/theme/
+  radiusScales.ts`'teki 3 hazır ölçekten biri (`keskin`/`dengeli`/
+  `yuvarlak`; `dengeli`/`yuvarlak` mevcut 2 preset'in radius değerleriyle
+  birebir aynı, `keskin` yeni bir üçüncü seçenek). **Serbest piksel girişi
+  YOK** — next/font/google build-time yüklendiği gibi, radius de
+  isimlendirilmiş, önceden tasarlanmış bir küçük seçenek kümesinden
+  seçiliyor, tutarsız/aşırı değerlere kapı açılmıyor.
+- `site_settings.font_family_key` (nullable) — `lib/theme/fonts.ts`'teki
+  5 anahtardan biri (`geist-sans`/`manrope`/`inter`/`poppins`/`work-sans`).
+  **Serbest metin girişi YOK** — next/font/google runtime'da şartlı font
+  yüklemeyi desteklemiyor (madde 8'deki "İki font her zaman yükleniyor"
+  kısıtının doğal uzantısı), bu yüzden 3 yeni font (Inter, Poppins, Work
+  Sans) `app/layout.tsx`'e build-time eklendi — artık **5 font her zaman
+  yükleniyor**, hangisi seçili olursa olsun.
+
+Her ikisi de null iken preset'in kendi değeri geçerli kalır (`lib/theme/
+resolve.ts`) — tam olarak `primary_color`'ın çalışma şekli.
+
+**Renk seçici:** Yeni `components/ui/ColorPickerField.tsx` — native
+`<input type="color">` (gerçek bir renk seçici, yeni bağımlılık yok) +
+eşlenik hex metin kutusu, ikisi aynı state'i paylaşıyor. `components/ui/`
+altındaki **ilk client bileşen** (madde 9.9'un "gerçek state
+senkronizasyonu" istisnası — canlı önizleme her tuş vuruşunda
+güncellenmeli).
+
+**Canlı önizleme, gerçek `<html>`'e DOKUNMUYOR.** `ThemeEditor.tsx`
+(client) form state'ini tutuyor, `ThemePreview.tsx`'e geçiriyor —
+önizleme kutusu `resolveThemeTokens()`'ın (gerçek `app/layout.tsx`'in
+kullandığı AYNI fonksiyon) ürettiği `styleVars`'ı KENDİ `<div style>`'ına
+yazıyor. Bu, madde 1'deki mekanizmanın (CSS özel değişkenleri herhangi
+bir DOM scope'unda override edilebilir, sadece `<html>`'e özgü değil)
+doğal bir sonucu — ek kod gerekmedi. Kaydetme ayrı bir Server Action
+(`updateThemeSettingsAction`); önizleme sadece client state, kaydedilmeden
+gerçek siteyi hiç etkilemiyor.
+
+**İkincil renk → `--color-accent`.** `secondary_color` boşken bu token
+`app/globals.css`'te statik olarak nötr (`Button`/`LinkButton`'ın eski
+"secondary" görünümüyle birebir aynı — sıfır regresyon) bir varsayılana
+işaret ediyor; doluysa `resolve.ts` gerçek rengi + hesaplanan okunabilir
+metin rengini enjekte ediyor. İlk görünür kullanım yeri: `CtaSection.tsx`
+(Eylem Çağrısı butonu, `variant="accent"`).
+
+## 6. Kontrast Güvenliği
+
+**Yeni, saf modül: `lib/theme/contrast.ts`.** Eskiden `lib/theme/
+resolve.ts` içinde gömülü, kaba bir luminance sezgisi (`pickReadableOnColor`,
+`luminance > 0.35 ise koyu metin`) vardı — bu **gerçek bir hataya**
+sahipti: `#808080` (orta gri) için beyaz metin öneriyordu, oysa gerçek
+WCAG hesabı **siyahın** kazandığını gösteriyor (5.32:1 vs 3.95:1 — beyaz
+AA eşiğinin (4.5:1) ALTINDA kalıyor). Bu, "göz kararı yerine WCAG kontrast
+oranına dayan" isteğinin somut, ölçülebilir karşılığı.
+
+- `getRelativeLuminance(hex)` — WCAG sRGB→linear→luminance formülü.
+- `getContrastRatio(hexA, hexB)` — iki rengin WCAG kontrast oranı (sayı,
+  ör. `4.52`).
+- `pickReadableTextColor(backgroundHex)` — siyah/beyazdan HANGİSİ bu
+  arka plan üzerinde GERÇEKTEN daha yüksek kontrast veriyorsa onu döner
+  (`#000000` | `#ffffff`) — iki gerçek oranı hesaplayıp karşılaştırır,
+  sabit bir luminance eşiği KULLANMAZ.
+- `checkContrastWarning(backgroundHex, foregroundHex?, threshold=4.5)` —
+  `{ ratio, passes, recommendedTextColor }` döner; `ratio` her zaman
+  sayısal, arayüzde doğrudan gösterilebilir (panelde marka/ikincil renk
+  alanlarının altında canlı gösteriliyor, eşiğin altındaysa görünür bir
+  uyarı satırı çıkıyor).
+
+**Saf, bağımsız, test edilebilir** — React'e/Next.js'e bağımlı değil,
+throw eden tek hata yolu (geçersiz hex) `lib/theme/resolve.ts`'te tek bir
+noktada (`safeReadableTextColor`) yakalanıp kök layout'un "asla çökmez"
+ilkesi korunuyor (bkz. madde 8). Vitest bu projede henüz kurulu değil
+(bkz. `DURUM.md` açık madde) — bu görev kapsamında kurulmadı; doğrulama
+gerçek hesaplarla yapıldı (bkz. `KARAR-GUNLUGU.md`, 2026-08-15: açık
+sarı/koyu lacivert/orta gri için sonuçlar).
+
+`resolve.ts`, hem `primary_color` hem `secondary_color` için AYNI
+fonksiyonu kullanıyor — kod tekrarı yok, marka rengi ve ikincil renk
+üzerindeki metin her zaman aynı kurala göre hesaplanıyor.
+
+## 7. Site Kimliği Alanları
+
+Firma adı/slogan/iletişim/sosyal medya/logo/favicon — panelin Tema
+ekranındaki "Site Kimliği" bölümü. **Yeni tablolar İCAT EDİLMEDİ**,
+mevcut, zaten Footer/İletişim tarafından okunan tablolara yazılıyor:
+
+| Alan | Kaynak | Not |
+|---|---|---|
+| Firma adı | `tenants.name` | Zaten vardı, sadece forma eklendi |
+| Slogan | `site_settings.slogan` (yeni) | Footer'da firma adının altında |
+| Adres/telefon/e-posta | `contact_sections.*` | Footer VE `/iletisim` ZATEN buradan okuyor — form BURAYA yazıyor |
+| Sosyal medya | `site_settings.facebook_url/instagram_url/linkedin_url` | Zaten vardı ve render ediliyordu, sadece form eklendi |
+| Logo | `site_settings.logo_path` (yeni Storage bucket: `"branding"`) | Navbar'da, yoksa sadece metin (regresyon yok) |
+| Favicon | `site_settings.favicon_path` (yeni) | `app/(site)/layout.tsx`'in `generateMetadata()`'sında, yoksa statik `app/favicon.ico` |
+
+**Temizlenen ölü kolonlar:** `site_settings.contact_email`/`contact_phone`
+2026-08-06'dan beri kod tabanının hiçbir yerinde okunmuyordu (gerçek
+kaynak her zaman `contact_sections` idi) — 2026-08-15 migration'ında
+düşürüldü, karışıklık kaynağı ortadan kaldırıldı.
+
+**Logo/favicon yükleme**, Projeler'deki görsel yükleme deseninin
+(`lib/supabase/imageValidation.ts` — magic-byte tür kontrolü, 5MB sınır,
+benzersiz dosya adı, atomik temizlik) birebir tekrarı, sadece `"branding"`
+adında yeni bir Storage bucket'ında (`"projects"`in 5-policy RLS deseninin
+aynısı). Panel tarafında tek generic `BrandImageUploader.tsx` (markup
+paylaşılıyor) ama sunucu eylemleri (`uploadLogoAction`/`uploadFaviconAction`/
+`deleteLogoAction`/`deleteFaviconAction`) bilerek ayrı — her biri farklı
+DB kolonuna yazıyor.
+
+## 8. FOUC Önlemi
 
 FOUC (yanlış renkle boyanıp sonradan düzelme), genellikle tema değerinin
 sayfa tarayıcıda boyandıktan **sonra** client-side JS ile (ör. `useEffect`
@@ -131,20 +251,24 @@ render olup sonradan değişme durumu **mimari olarak mümkün değil** —
 (`<html data-theme="light" style="--color-brand:...">` baştan itibaren
 mevcut).
 
-## 6. Açık Sorular / Bilinen Sınırlar
+## 9. Açık Sorular / Bilinen Sınırlar
 
 - **Tenant çözümlemesi henüz yok.** `getSiteThemeSettings()` şu an sabit
   olarak platform sahibinin kendi kaydını okuyor; Host başlığına göre
   gerçek tenant çözümleyen middleware yazılınca bu fonksiyon bir tenant id
   parametresi almalı (bkz. `DURUM.md`).
-- **İki font her zaman yükleniyor** (Geist Sans + Manrope), hangi preset
-  seçili olursa olsun — `next/font/google` çalışma zamanı verisine göre
-  şartlı font yüklemeye izin vermiyor, font seçimi build zamanında
-  sabitleniyor. 2 preset için kabul edilebilir bir maliyet; preset sayısı
-  artarsa (Lighthouse Performance ≥90 hedefi için, bkz.
-  `TEST-STRATEJISI.md`) yeniden değerlendirilmeli.
-- Panelden preset seçimi arayüzü henüz yok — `site_settings.theme_preset`
-  şu an sadece seed/migration değeriyle var (bkz. `VERİ-MODELİ.md`).
+- **Beş font her zaman yükleniyor** (Geist Sans, Manrope, Inter, Poppins,
+  Work Sans — 2026-08-15'te 2'den 5'e çıktı), hangi preset/seçim aktif
+  olursa olsun — `next/font/google` çalışma zamanı verisine göre şartlı
+  font yüklemeye izin vermiyor, font seçimi build zamanında sabitleniyor.
+  Lighthouse Performance ≥90 hedefi (`TEST-STRATEJISI.md`) için henüz
+  yeniden ölçülmedi — bu bir açık madde.
+- **Panelden preset (`theme_preset`) SEÇİMİ arayüzü hâlâ yok** —
+  `site_settings.theme_preset` hâlâ sadece seed/migration değeriyle var
+  (bkz. `VERİ-MODELİ.md`). 2026-08-15'te eklenen köşe yarıçapı/font
+  ayarları preset'ten BAĞIMSIZ birer override (madde 5) — preset'in
+  kendisini (marka rengi ışık/koyu varyantı + radius/font varsayılanı)
+  değiştiren bir arayüz hâlâ yok, bu ayrı bir Faz 5 maddesi olarak duruyor.
 - **Yerel derleme cache'i bayat veri gösterebilir.** `theme_preset`
   migration'ı uygulanıp platform tenant satırı eklendikten sonra
   `npm run build` ilk seferde hâlâ eski (bulunamadı → fallback) sonucu

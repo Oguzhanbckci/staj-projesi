@@ -818,6 +818,57 @@ tutarsızlığı, `panelQueries.ts`'in büyümesi (~706 satır), geçici tipsiz
 client'lar. İyi yapılmış bulunanlar: RLS/auth tutarlılığı, kapsam
 disiplini (spekülatif genelleme yok).
 
+**Tema Ayarları ekranı: marka rengi, WCAG kontrast koruması, canlı
+önizleme, logo/favicon, site kimliği (2026-08-15, yeni oturum):**
+`/panel/tema` artık gerçek bir form — dışarıdan gelen bir yönerge üzerine,
+`/panel/tema`'nın statik placeholder'ı gerçek bir tema editörüne
+dönüştürüldü. Kapsamlı bir özellik, plan modunda tasarlandı (kullanıcıyla
+2 mimari kararı netleştirdikten sonra: köşe yarıçapı serbest piksel değil
+hazır ölçek seçimi, font ailesi 2 yerine 5 seçenekli next/font yüklemesi).
+
+- **`lib/theme/contrast.ts` (yeni, saf modül):** WCAG kontrast oranına
+  dayalı `pickReadableTextColor`/`getContrastRatio`/`checkContrastWarning`
+  — eski `pickReadableOnColor` (kaba luminance sezgisi) silindi. **Gerçek
+  bir hata bulundu ve düzeltildi:** eski kod `#808080` orta gri için
+  yanlışlıkla beyaz metin öneriyordu (gerçek oran 3.95:1, AA eşiğinin
+  altında); yeni kod doğru şekilde siyahı seçiyor (5.32:1). KABUL
+  KRİTERİ'ndeki 3 renk gerçek hesapla doğrulandı (bkz. `KARAR-GUNLUGU.md`).
+- **Köşe yarıçapı/font artık `theme_preset`'ten BAĞIMSIZ, `primary_color`
+  ile aynı override deseninde** (`site_settings.border_radius_scale`/
+  `font_family_key`, nullable) — 3 hazır radius ölçeği, 5 font (Inter/
+  Poppins/Work Sans yeni eklendi, `app/layout.tsx`'e build-time).
+- **Canlı önizleme:** `ThemeEditor.tsx` (client, form state) + gerçek
+  `resolveThemeTokens()`'ı kullanan `ThemePreview.tsx` — izole bir
+  `<div style>` içinde gerçek `Button`/kart/başlık render ediyor, gerçek
+  `<html>`'e dokunmadan.
+- **İkincil renk artık kullanılıyor:** yeni `--color-accent`/`-on` token
+  çifti (boşken nötr, sıfır regresyon), `Button`/`LinkButton`'a `accent`
+  varyantı, `CtaSection`'ın butonu buna geçirildi.
+- **Logo/favicon:** yeni `"branding"` Storage bucket'ı (`"projects"`in
+  aynısı), `BrandImageUploader.tsx` (generic markup, ayrı sunucu
+  eylemleri). Navbar logosuz kurulumda AYNEN eski (sadece metin) davranışı
+  koruyor — regresyon yok.
+- **Site kimliği:** firma adı (`tenants.name`, zaten vardı) + yeni
+  `slogan` + iletişim (`contact_sections` — Footer/İletişim'in ZATEN
+  okuduğu tablo, form BURAYA yazıyor) + sosyal medya (`site_settings.*`,
+  zaten vardı/render ediliyordu, sadece form eklendi).
+- **Temizlik:** `site_settings.contact_email`/`contact_phone` — 2026-08-06'dan
+  beri hiç okunmayan ölü kolonlar, aynı migration'da düşürüldü.
+- Migration `20260815120000_add_theme_settings_and_branding.sql` —
+  kullanıcı tarafından SQL Editor'de çalıştırıldı, `npm run
+  types:generate` ile tipler yenilendi, geçici tipsiz client'lar
+  kaldırılıp gerçek tipli client'lara geri taşındı.
+
+**Uçtan uca akış testi (tamamlandı):** `curl` + servis-rolü script'iyle
+gerçek dev sunucusuna karşı doğrulandı — marka rengi/ikincil renk/köşe
+yarıçapı/font/slogan değiştirildi, `curl` ile site yeniden çekilip
+`<html style>`'ın ve Footer/CTA'nın gerçekten değiştiği teyit edildi
+(`--color-brand`, `--radius-*`, `--font-sans`, `--color-accent` hepsi
+doğru), kontrast hesapları bağımsız olarak da doğrulandı, test verisi
+orijinaline geri alındı. Detay: `KARAR-GUNLUGU.md`.
+
+`npm run lint`/`npx tsc --noEmit`/`npm run build` hepsi temiz.
+
 ## Sıradaki adım
 
 1. Diğer 5 bucket (`services`/`hero`/`about`/`testimonials`/`team`) için
@@ -826,17 +877,21 @@ disiplini (spekülatif genelleme yok).
 2. Vitest ve Playwright'ı kur (bkz. `TEST-STRATEJISI.md`) — hâlâ yarım
    kalmış bir kurulum, `npm install` adımları henüz çalıştırılmadı;
    mentör değerlendirmesinde de en yüksek öncelikli sistemik eksik
-   olarak işaretlendi.
+   olarak işaretlendi. `lib/theme/contrast.ts` gibi yeni saf fonksiyonlar
+   da hâlâ gerçek Vitest testi olmadan (sadece elle doğrulanmış) duruyor.
 3. İletişim formuna bir e-posta bildirimi eklenmeli (kayıt artık gerçek,
    bildirim hâlâ yok — bkz. `GUVENLIK.md` madde 10).
 4. Site tasarımı ilerledikçe `KURUMSAL-SITE-STANDARTLARI.md`'deki kontrol listesini
    madde madde işaretle.
 5. Gerçek görsel(ler) Storage'a yüklenince Lighthouse'u tekrar çalıştırıp
-   sayfa ağırlığındaki gerçek görsel etkisini ölç (bkz. yukarıdaki not).
-6. Panelden bölüm sırası/görünürlük/varyant + preset seçimi arayüzü (Faz 5) —
-   `page_sections` veri modeli hazır, panel kabuğu da hazır (`/panel/tema`
-   placeholder'ı bu arayüzün gerçek yeri); sıradaki mantıklı adım bunu
-   kodlamak.
+   sayfa ağırlığındaki gerçek görsel etkisini ölç — artık **5 font**
+   build-time yüklendiği için (2026-08-15) bu ölçüm eskisinden daha da
+   önemli.
+6. Panelden bölüm sırası/görünürlük/varyant + preset (`theme_preset`)
+   SEÇİMİ arayüzü (Faz 5) — `page_sections` veri modeli hazır, `/panel/tema`
+   artık marka rengi/radius/font/kimlik için gerçek (2026-08-15), ama
+   preset'in KENDİSİNİ (ışık/koyu marka rengi + radius/font varsayılanı)
+   değiştiren bir seçim arayüzü hâlâ yok — bkz. `TEMA-MIMARISI.md` madde 9.
 7. Host header'a göre gerçek tenant çözümleyen `proxy.ts` mantığı yazılınca
    (a) `getActiveTenantId()`'i sabit domain yerine parametreye çevir, (b)
    aynı `proxy.ts`'e tenant/domain bazlı panel erişim engelini de ekle —

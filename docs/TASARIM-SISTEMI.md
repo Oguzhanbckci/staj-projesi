@@ -10,7 +10,7 @@ yerde: **`app/globals.css`** (Tailwind CSS v4, CSS-first `@theme`
 konfigürasyonu — bkz. `MIMARI.md` madde 3). Bu dosya "neden", `globals.css`
 "nasıl"dır — biri değişirse diğeri güncel tutulmalı.
 
-**Son güncelleme:** 2026-08-08
+**Son güncelleme:** 2026-08-15
 
 ## 0. İlkeler
 
@@ -57,6 +57,8 @@ gereği "nötr griler marka rengine hafif eğilim taşısın" isteğini karşıl
 | ------------------ | --------- | --------- | ---------------------------------------------------------------------------------- |
 | `--color-brand`    | `#2561c1` | `#6998e2` | Vurgu rengi — CTA buton, link, aktif durum. **Varsayılan**; tenant'a göre değişir. |
 | `--color-brand-on` | `#ffffff` | `#16191d` | `--color-brand` dolgusu üzerindeki metin/ikon rengi (buton etiketi)                |
+| `--color-accent`    | `var(--color-surface-raised)` | `var(--color-surface-raised)` | İkincil/accent renk (2026-08-15) — `site_settings.secondary_color` boşken nötr, doluysa tenant'ın rengi. `Button`/`LinkButton` `accent` varyantı, Eylem Çağrısı butonu. |
+| `--color-accent-on` | `var(--color-text)` | `var(--color-text)` | `--color-accent` dolgusu üzerindeki metin rengi — WCAG-doğru hesaplanır (bkz. `docs/TEMA-MIMARISI.md` madde 6, `lib/theme/contrast.ts`) |
 
 **Gerekçe (sektöre uygunluk):** 217° hue'daki mavi, mühendislik/inşaat
 sektöründe küresel olarak güven ve profesyonellik çağrıştırır (teknik
@@ -225,6 +227,7 @@ class'ları üretiyorlar). Görsel doğrulama için geçici vitrin sayfası:
 | `TextField` | `components/ui/TextField.tsx` | `label`, `error`, `helpText`, + native `<input>` props | Tek satırlık metin girişi (ad, e-posta, telefon vb.) |
 | `TextareaField` | `components/ui/TextareaField.tsx` | `label`, `error`, `helpText`, `rows`, + native `<textarea>` props | Çok satırlı metin (iletişim formu mesajı vb.) |
 | `SelectField` | `components/ui/SelectField.tsx` | `label`, `error`, `helpText`, `children` (native `<option>`'lar), + native `<select>` props | Sabit seçenekli seçim (konu, kategori vb.) |
+| `ColorPickerField` | `components/ui/ColorPickerField.tsx` | `label`, `name`, `value`, `onChange`, `error`, `helpText` | Renk seçimi (native `<input type="color">` + hex metin kutusu) — **`components/ui/`'daki ilk client bileşen** (madde 9.9 istisnası: canlı önizleme için gerçek state senkronizasyonu gerekiyor, 2026-08-15) |
 
 ## 9. Bileşen API Kuralları
 

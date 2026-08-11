@@ -31,6 +31,9 @@ export async function Footer() {
         <div className="grid gap-8 sm:grid-cols-3">
           <div>
             <p className="text-h6 font-bold text-white">{tenantName}</p>
+            {settings?.slogan && (
+              <p className="mt-1 text-caption text-neutral-400">{settings.slogan}</p>
+            )}
             {contact && (
               <ul className="mt-3 space-y-1 text-base text-neutral-300">
                 {contact.address && <li>{contact.address}</li>}

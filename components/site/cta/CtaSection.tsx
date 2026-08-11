@@ -20,7 +20,7 @@ export async function CtaSection() {
         {settings.ctaButtonText && settings.ctaButtonLink && (
           <LinkButton
             href={settings.ctaButtonLink}
-            variant="secondary"
+            variant="accent"
             size="lg"
             className="mt-8"
           >
