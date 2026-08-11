@@ -13,10 +13,28 @@ export interface SubmitButtonProps extends Omit<ButtonProps, "type" | "isLoading
 // ayrı, küçük bir alt bileşende olmalı (React kısıtı). Üç formda da
 // (İletişim, Hizmet, Proje) aynı davranış: gönderilirken buton devre dışı
 // + metin değişir (KISITLAR: "durum metinle bildirilsin").
-export function SubmitButton({ pendingLabel, children, disabled, ...rest }: SubmitButtonProps) {
+//
+// Sabit bir `aria-label` verilmişse (ör. PublishToggleButton/ReorderButtons
+// listedeki her satırı ayırt etmek için kullanır), pending sırasında bu
+// label'ı BASTIRIYORUZ: ARIA accessible-name hesaplamasında aria-label her
+// zaman içeriği (Button.tsx'in eklediği "…"/sr-only "Yükleniyor" metni)
+// ezer, yoksa ekran okuyucu kullanıcısı işlemin sürdüğünü hiç duymaz.
+export function SubmitButton({
+  pendingLabel,
+  children,
+  disabled,
+  "aria-label": ariaLabel,
+  ...rest
+}: SubmitButtonProps) {
   const { pending } = useFormStatus();
   return (
-    <Button type="submit" isLoading={pending} disabled={pending || disabled} {...rest}>
+    <Button
+      type="submit"
+      isLoading={pending}
+      disabled={pending || disabled}
+      aria-label={pending ? undefined : ariaLabel}
+      {...rest}
+    >
       {pending ? pendingLabel : children}
     </Button>
   );

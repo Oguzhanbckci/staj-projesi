@@ -1,4 +1,4 @@
-﻿export type Json =
+export type Json =
   | string
   | number
   | boolean
@@ -64,8 +64,10 @@ export type Database = {
           id: string
           is_read: boolean
           message: string
+          sender_email: string | null
           sender_name: string
           sender_phone: string | null
+          subject: string | null
           tenant_id: string
         }
         Insert: {
@@ -73,8 +75,10 @@ export type Database = {
           id?: string
           is_read?: boolean
           message: string
+          sender_email?: string | null
           sender_name: string
           sender_phone?: string | null
+          subject?: string | null
           tenant_id: string
         }
         Update: {
@@ -82,8 +86,10 @@ export type Database = {
           id?: string
           is_read?: boolean
           message?: string
+          sender_email?: string | null
           sender_name?: string
           sender_phone?: string | null
+          subject?: string | null
           tenant_id?: string
         }
         Relationships: [

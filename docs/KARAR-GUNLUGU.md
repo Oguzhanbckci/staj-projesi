@@ -2382,3 +2382,183 @@ kanıtı.
 Test verileri (2 Storage nesnesi, 1 DB satırının `image_path`'i) test
 sonrası orijinal haline geri alındı, geçici route/script'ler silindi.
 `npm run build`/`lint` son bir kez temiz doğrulandı.
+
+## 2026-08-14 (aynı gün, altıncı oturum) — İletişim formu gerçek kayıt, Mesajlar ekranı genişletmesi, panel gözden geçirmesi, mentör değerlendirmesi
+
+**Karar 1 — `leads` değil, gerçek `contact_messages` tablosu.** Dışarıdan
+gelen yönerge `leads` (name/email/phone/subject/message/is_read/
+created_at) adında var olmayan bir tablodan bahsediyordu. Araştırmayla
+doğrulandı: gerçek tablo `contact_messages` — `sender_name`/
+`sender_phone`/`message`/`is_read`/`created_at`/`tenant_id` zaten vardı,
+`sender_email`/`subject` eksikti. Bu, projenin tekrarlayan bir deseniyle
+(2026-08-08 "category/cover_path/city" örneği) birebir aynı sınıf sorun
+— kavramsal olarak aynı şey (ziyaretçi form gönderimi), sadece
+isimlendirme farkı. Kullanıcıya sorulmadı, mekanik reconciliation olarak
+ele alındı: yeni migration
+`supabase/migrations/20260814130000_add_contact_message_email_subject.sql`
+iki nullable kolon ekliyor (NOT NULL yapılmadı — zod zaten uygulama
+katmanında zorunlu tutuyor, DB permissive kalıyor, mevcut retrofit-kolon
+emsalleriyle tutarlı) + 2 demo satırını gerçekçi değerlerle dolduruyor.
+`subject` için DB check constraint eklenmedi — `z.enum(CONTACT_SUBJECTS)`
+tek doğruluk kaynağı olarak kalıyor.
+
+**Karar 2 — Yeni route handler değil, mevcut `submitContactForm` Server
+Action'ına gerçek insert.** `GUVENLIK.md`'nin 2026-08-07 tarihli notu bir
+Route Handler öneriyordu, ama bu not Server Action'lar bu kod tabanında
+hiç kullanılmadan ÖNCE yazılmıştı. 2026-08-11'den beri proje genelinde
+HER form gönderimi Server Action kullanıyor — bu tutarlılığı bozmamak
+için `submitContactForm` içine, doğrulama başarılı olduktan sonra,
+`createServiceRoleClient()` (bilinçli, dokümante edilmiş tek RLS bypass
+istisnası — `contact_messages`'ta anon için sıfır izin var, PII
+koruması) ile insert eklendi. `GUVENLIK.md`'deki eski not düzeltildi.
+Rate limiting bu görevin kapsamı DIŞINDA bırakıldı — `GUVENLIK.md`
+madde 10'da zaten açık madde, endpoint artık gerçekten DB'ye yazdığı
+için riski daha somut hale geldi notu eklendi.
+
+**Karar 3 — Mesaj listesi `AdminListTable`'ı zorla yeniden kullanmadı.**
+`AdminListRow`'un (id/title/subtitle/isPublished/orderIndex) kavramları
+mesajlara (gönderen/konu/tarih/okundu) semantik olarak uymuyor —
+`isRead`'i `isPublished`'a zorlamak yanıltıcı olurdu. Yeni
+`MessageListTable.tsx`, AynI görsel dili (tablo/başlık/hücre CSS'i)
+kullanan ama kendi veri şekliyle çalışan ayrı bir bileşen. "Yeni
+mesajlar üstte" zaten `getContactMessages()`'ın mevcut
+`.order("created_at", {ascending:false})`'uyla karşılanıyordu, değişiklik
+gerekmedi.
+
+**Karar 4 — Okundu işareti, render'a gömülü çıplak DB yazması DEĞİL,
+ayrı bir Server Action + görünmez client bileşen.** "Mesajı açınca
+otomatik okundu işaretle" isteği, projenin "her yazma auth kontrollü bir
+Server Action'dır" kuralını bozmadan karşılanmalıydı. Yeni
+`MarkMessageReadOnView.tsx` ("use client") — sayfa mount olunca (`ref`
+korumalı `useEffect`, React Strict Mode'un dev'de çift çalıştırmasına
+karşı), mesaj zaten okunmamışsa `markMessageReadAction`'ı (`useActionState`
+dispatch'i) bir kez tetikliyor, hiçbir şey render etmiyor. Ampirik olarak
+doğrulandı (`npm run lint`): `useActionState`'in dispatch fonksiyonunu
+`useEffect` içinde çağırmak `react-hooks/set-state-in-effect` kuralını
+TETİKLEMİYOR (bu kural sadece `useState` setter'larını yakalıyor).
+
+**Karar 5 — Okunmamış sayaç, sadece özet ekranında değil panel
+menüsünde.** "Müşteri panele girer girmez görsün" isteği, sayacın HER
+sayfada görünür olmasını gerektiriyordu — `(protected)/layout.tsx` zaten
+her sayfada çalıştığı için (auth kontrolü) oraya `getUnreadMessagesCount()`
+eklenip `PanelShell`'e yeni bir prop olarak geçirildi. Genel bir "her nav
+öğesi rozet alabilir" sistemi KURULMADI (tek öğe için gereksiz
+soyutlama) — `NavList` içinde sadece `item.href === "/panel/mesajlar"`
+için özel bir rozet render ediliyor, mevcut "Yeni" rozetiyle aynı görsel
+dil (`bg-brand text-brand-on rounded-full`).
+
+**Geçici tipsiz client'lar (bilinçli, dokümante edilmiş borç):**
+Migration henüz uygulanmadığı için `types/database.types.ts` yeni
+kolonları tanımıyor, tipli Supabase client çağrıları derleme hatası
+veriyordu (`Type 'string' is not assignable to type 'never'`). Aynı
+projenin önceki oturumlarında da kullanılan bir geçici çözümle
+(`lib/supabase/server.ts`'e `createUntypedServiceRoleClient`/
+`createUntypedServerSupabaseClient`, "GEÇİCİ" yorumuyla işaretli)
+3 kullanım yerinde köprülendi — migration uygulanıp
+`npm run types:generate` çalışınca kaldırılacak.
+
+**Panel gözden geçirmesi — workflow ile çok boyutlu tarama, bulunanlar
+DOĞRUDAN düzeltildi (kullanıcının açık isteği: "bulduklarını düzelt").**
+11 ajanlı bir workflow (4 keşif ajanı — buton/link tutarlılığı, boş
+durumlar, kırık linkler, erişilebilirlik — + her bulgu için bağımsız
+doğrulama ajanı) panelin 19 sayfasını taradı. 7 olası bulgudan 5'i gerçek
+çıktı:
+
+1. Özet ekranındaki "Tema ayarlarını değiştir →" linki `/panel/tema`'ya
+   (placeholder sayfa) gidiyordu, "değiştir" fiili boş bir vaat
+   veriyordu → "Tema ayarları (yakında) →" olarak düzeltildi.
+2. `navItems.ts`'teki yorum "sayfaların çoğu placeholder" diyordu, ama
+   6 nav öğesinden sadece 2'si (Tema, Ayarlar) hâlâ placeholder — yorum
+   güncel duruma göre düzeltildi.
+3. **Erişilebilirlik (asıl önemli bulgu):** `PublishToggleButton.tsx` ve
+   `ReorderButtons.tsx`'teki sabit `aria-label`'lar, ARIA accessible-name
+   hesaplama kuralı gereği (non-empty `aria-label` her zaman alt ağacı/
+   children'ı ezer) `Button.tsx`'in `isLoading` sırasında eklediği
+   `sr-only" — Yükleniyor"` metnini ekran okuyucudan TAMAMEN
+   gizliyordu — sighted kullanıcı spinner+metin değişikliğini görürken
+   ekran okuyucu kullanıcısı hiçbir "işlem sürüyor" bildirimi almıyordu.
+   Kontrast: aria-label'ı olmayan `ConfirmDeleteDialog`'un "Evet, Sil"
+   butonu doğru çalışıyordu. **Düzeltme, iki bileşende ayrı ayrı değil,
+   TEK noktadan yapıldı** — `components/ui/SubmitButton.tsx` (paylaşılan
+   birincil bileşen, `useFormStatus`'u zaten kendi içinde okuyor) artık
+   `pending` iken gelen `aria-label`'ı bastırıp `undefined`'a çeviriyor,
+   böylece accessible name içerikten (pendingLabel + sr-only metin)
+   türetiliyor. Bu, her çağıran yerin kendi `isPending` mantığını
+   yönetmesini gerektirmeden kök nedeni kapatıyor.
+4. Mobil panel menüsü (`PanelShell.tsx`) `role="dialog" aria-modal="true"`
+   taşıyordu ama `useDialogBehavior`'ın Tab-tuzağı sadece klavye
+   `keydown`'ını yakalıyor — ekran okuyucunun sanal imleç/tarama modu
+   (ok tuşları) bundan etkilenmiyor, arka plandaki sayfa içeriği hâlâ
+   erişilebilirlik ağacında kalıyordu (`aria-modal`'ın verdiği sözü
+   tutmuyordu). Aynı desen `components/site/MobileMenu.tsx`'te de var
+   (paylaşılan hook'un sistemik eksikliği, izole bir yazım hatası değil)
+   ama bu görevin kapsamı panelle sınırlı tutuldu. Düzeltme: arka plan
+   içerik `<div>`'ine `inert={mobileNavOpen}` eklendi (React 19 —
+   `inert` gerçek bir HTML attribute'u, erişilebilirlik ağacından VE
+   klavye/fare etkileşiminden tamamen çıkarır).
+5. (Reddedilen 2 bulgu — doğrulama ajanları `isReal:false` verdi:
+   Mesajlar/Medya sayfalarındaki boş-durum metinlerinin diğer 5 liste
+   sayfasından farklı bir fiil kullanması ("gelmedi"/"yüklenmemiş" vs.
+   "eklenmemiş") — anlamca doğru ve kasıtlı, sadece kalıp tutarlılığı,
+   düzeltilmedi.)
+
+`npm run lint` ve `npx tsc --noEmit` düzeltmeler sonrası temiz.
+
+**Mentör gibi proje değerlendirmesi — ayrı bir workflow (paralel
+facet-araştırma + sentez deseni), kullanıcıya doğrudan raporlandı,
+otomatik uygulanmadı (bulgular kullanıcı kararına bırakıldı).** İki
+sistemik bulgu: test altyapısı hâlâ sıfır (yüksek öncelik,
+`TEST-STRATEJISI.md`'den beri açık), docs-kod senkron borcu (bu oturumda
+`VERİ-MODELİ.md`'deki bir öz-çelişki (migration sayısı "on dört" →
+"on altı") bulunup düzeltildi). Küçük-orta bulgular: `ActionResult<T>`
+tipinin `toggle*/move*/delete*` eylemlerinde tutarlı kullanılmaması
+(proje genelinde önceden var olan bir desen, bu oturumda yeni
+eklenmedi), `panelQueries.ts`'in büyümesi (~706 satır, tek dosyada çok
+sayıda varlık için read-query'ler), geçici tipsiz client'lar (yukarıda
+Karar olarak zaten not edildi). İyi bulunanlar: RLS/auth tutarlılığı
+(her Server Action `requireAdminUser()` ile başlıyor, istisnasız),
+kapsam disiplini (spekülatif soyutlama/genelleme yok).
+
+**Doğrulama (gerçek, migration uygulandıktan sonra tamamlandı):**
+Kullanıcı migration'ı SQL Editor'de çalıştırdı, `npm run types:generate`
+çalıştırılıp `types/database.types.ts` yenilendi (`sender_email`/
+`subject` artık tipli) — 2 geçici untyped client (`createUntypedServiceRoleClient`/
+`createUntypedServerSupabaseClient`) `lib/supabase/server.ts`'den
+kaldırıldı, 3 kullanım yeri (`components/site/contact/actions.ts`,
+`lib/supabase/panelQueries.ts` ×2) gerçek tipli client'lara geri taşındı.
+
+**Uçtan uca akış testi** (`curl` + geçici bir ayna rota + servis-rolü
+script'lerle — kod incelemesi değil, gerçek Supabase'e karşı):
+
+1. Geçici `app/api/test-contact-submit-temp/route.ts` (test sonrası
+   silindi) — gerçek `submitContactForm` fonksiyonunu doğrudan import
+   edip çağıran bir ayna (2026-08-14'teki "test-upload-temp" öncülüyle
+   aynı desen). `curl` ile gerçek bir ziyaretçi gönderimi simüle edildi
+   → `{"status":"success"}` döndü.
+2. Servis-rolü script'iyle doğrudan sorgu: yeni satır `contact_messages`'ta
+   gerçekten vardı, `sender_email`/`subject` doğru kaydedilmiş,
+   `is_read=false`.
+3. `getUnreadMessagesCount()`'un birebir aynı filtresiyle (`tenant_id` +
+   `is_read=false`) sayım: gönderim sonrası okunmamış sayısı arttı.
+4. `markMessageReadAction`'ın birebir aynı sorgusuyla (`update
+   {is_read:true} .eq(id) .eq(tenant_id)`) okundu işareti simüle edildi
+   → satır `is_read=true` oldu, okunmamış sayısı **2'den 1'e düştü**
+   (tam istenen davranış: form → panelde görünme (satır var) → okundu
+   işaretleme → sayaç düşüşü, hepsi doğrulandı).
+
+**Kapsam dışı bırakılan kısım (bilinçli, gerekçeli):** Bu ortamdaki
+tarayıcı aracı `localhost`'a erişemediği için (denendi, `chrome://` "Frame
+... error page" — 2026-08-14'teki panel dialog testindeki AYNI kısıt)
+gerçek panel arayüzünden giriş yapıp tıklayarak test edilemedi; ayrıca bu
+ortamda bir test admin hesabının şifresi de yok. Bunun yerine
+`markMessageReadAction`'ın DB sorgusu birebir aynı filtrelerle test
+edildi — `requireAdminUser()` auth kapısı zaten her panel eyleminde
+tekrar eden, ayrıca kod incelemesiyle doğrulanmış standart bir desen
+(bkz. `lib/panel/actionResult.ts`), `contact_messages` RLS'inin
+`authenticated` rolüne update izni verdiği de 2026-08-07 migration'ında
+zaten teyitli. Panel UI bileşenleri (`MessageListTable`, detay sayfası,
+menü rozeti) doğrulanan bu sorgulardan doğrudan render olduğu için ayrı
+bir hata riski taşımıyor.
+
+Test verisi (1 `contact_messages` satırı) silindi, geçici rota ve
+script'ler kaldırıldı. `npm run lint`/`build` son bir kez temiz.

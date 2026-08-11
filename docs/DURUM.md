@@ -739,34 +739,113 @@ gerçek Supabase Storage'a karşı geçti. Test verileri temizlendi, geçici
 route/script'ler silindi. `npm run build`/`lint` temiz. Detay:
 `KARAR-GUNLUGU.md`.
 
+**İletişim formu gerçek kayıt + Mesajlar ekranı genişletmesi (2026-08-14,
+aynı gün, altıncı oturum):** Dışarıdan gelen bir yönerge `leads` adında
+var olmayan bir tablodan bahsediyordu — araştırmayla doğrulanıp gerçek
+`contact_messages` tablosuna (mekanik reconciliation, projenin
+tekrarlayan bir deseni) yönlendirildi:
+
+- Yeni migration `20260814130000_add_contact_message_email_subject.sql`
+  — `contact_messages`'a nullable `sender_email`/`subject` kolonları
+  ekliyor + mevcut 2 demo satırı gerçekçi değerlerle dolduruyor. **Henüz
+  kullanıcı tarafından SQL Editor'de çalıştırılmadı** (bekleme noktası,
+  önceki büyük görevlerle aynı desen).
+- `components/site/contact/actions.ts`'teki `submitContactForm` artık
+  doğrulama sonrası `contact_messages`'a gerçek bir `insert` yapıyor
+  (route handler değil, mevcut Server Action deseni — `GUVENLIK.md`'nin
+  eski notu düzeltildi, bkz. `KARAR-GUNLUGU.md`).
+- `app/panel/(protected)/mesajlar/[id]/page.tsx` — mesaj detayı (tam
+  metin, gönderen bilgileri, "E-posta ile Yanıtla" `mailto:` linki) +
+  yeni `MarkMessageReadOnView.tsx` (görünmez client bileşen, sayfa
+  açılınca `markMessageReadAction`'ı bir kez tetikleyip otomatik okundu
+  işaretliyor — çıplak DB yazması yerine yine auth kontrollü bir Server
+  Action üzerinden).
+- Panel menüsünde (`PanelShell`/`NavList`) okunmamış mesaj sayacı —
+  `(protected)/layout.tsx` her sayfada `getUnreadMessagesCount()`'u
+  çekip prop olarak geçiyor, kullanıcı panele hangi sayfadan girerse
+  girsin görüyor.
+- **Geçici tipsiz Supabase client'lar** — kullanıcı migration'ı çalıştırdı,
+  `npm run types:generate` ile tipler yenilendi, `createUntypedServiceRoleClient`/
+  `createUntypedServerSupabaseClient` kaldırıldı, 3 kullanım yeri gerçek
+  tipli client'lara geri taşındı (bkz. `KARAR-GUNLUGU.md`).
+
+**Uçtan uca akış testi (tamamlandı):** `curl` + geçici bir ayna rota +
+servis-rolü script'leriyle gerçek Supabase'e karşı doğrulandı: ziyaretçi
+gönderimi → `contact_messages`'ta gerçek satır → okunmamış sayısı arttı
+→ okundu işaretleme → okunmamış sayısı 2'den 1'e düştü. Panelin gerçek
+arayüzünden tıklayarak test edilemedi (bu ortamda tarayıcı aracı
+`localhost`'a erişemiyor, test admin şifresi de yok) — bunun yerine
+`markMessageReadAction`'ın birebir aynı DB sorgusu doğrulandı, auth
+kapısı (`requireAdminUser`) ayrıca kod incelemesiyle teyit edildi.
+Detay: `KARAR-GUNLUGU.md`.
+
+**Panel gözden geçirmesi (aynı gün, workflow ile çok boyutlu tarama):**
+Panelin 19 sayfası buton/link tutarlılığı, boş durumlar, kırık linkler
+ve erişilebilirlik açısından tarandı (11 ajan, keşif + bağımsız
+doğrulama). 7 olası bulgudan 5'i gerçek çıktı, hepsi bu oturumda
+doğrudan düzeltildi:
+
+- Özet ekranındaki "Tema ayarlarını değiştir →" linki → "Tema ayarları
+  (yakında) →" (hedef sayfa hâlâ placeholder, "değiştir" fiili boş bir
+  vaat veriyordu).
+- `navItems.ts`'teki eski yorum ("sayfaların çoğu placeholder") güncel
+  duruma göre düzeltildi — panelin 6 nav öğesinden artık sadece 2'si
+  (Tema, Ayarlar) placeholder.
+- **Erişilebilirlik:** `PublishToggleButton`/`ReorderButtons`'taki sabit
+  `aria-label`'lar, Button.tsx'in pending sırasında eklediği "Yükleniyor"
+  sr-only metnini ekran okuyucudan tamamen gizliyordu (ARIA accname
+  kuralı gereği aria-label her zaman içeriği ezer). Tek noktadan
+  (`components/ui/SubmitButton.tsx`) düzeltildi: pending iken gelen
+  aria-label bastırılıp accessible name içerikten (pendingLabel +
+  sr-only metin) türetiliyor — iki bileşenin de ayrı ayrı değişmesine
+  gerek kalmadı.
+- Mobil panel menüsü (`PanelShell.tsx`) `role="dialog" aria-modal="true"`
+  taşıyordu ama arka plandaki sayfa içeriği ekran okuyucunun tarama
+  modundan (sanal imleç) gizlenmiyordu — `inert` attribute'u eklendi.
+- (Reddedilen 2 bulgu: Mesajlar/Medya sayfalarındaki boş-durum
+  metinlerinin fiil seçimi diğer listelerden farklıydı ama anlamca doğru
+  ve kasıtlıydı — kozmetik, düzeltilmedi.)
+
+**Mentör gibi proje değerlendirmesi (aynı gün, ayrı bir workflow ile):**
+Kullanıcının isteğiyle kod tabanı + docs bütünlüğü + güvenlik + kapsam
+açısından geniş bir değerlendirme yapıldı, kullanıcıya doğrudan
+raporlandı. İki sistemik bulgu: **test altyapısı hâlâ sıfır** (Vitest/
+Playwright kurulu değil, yukarıdaki "Sıradaki adım" madde 2 ile aynı,
+öncelik yüksek) ve docs-kod senkron borcu (bu oturumda kısmen kapatıldı).
+Küçük-orta bulgular (kullanıcıya karar için sunuldu, henüz uygulanmadı):
+`ActionResult<T>` tipinin `toggle*/move*` eylemlerinde kullanılmaması
+tutarsızlığı, `panelQueries.ts`'in büyümesi (~706 satır), geçici tipsiz
+client'lar. İyi yapılmış bulunanlar: RLS/auth tutarlılığı, kapsam
+disiplini (spekülatif genelleme yok).
+
 ## Sıradaki adım
 
 1. Diğer 5 bucket (`services`/`hero`/`about`/`testimonials`/`team`) için
    de aynı desenle bucket+RLS+yükleme akışı kurulmalı — şu an bu
    tablolardaki `*_path` kolonlarına değer girilse bile görsel 404 verir.
 2. Vitest ve Playwright'ı kur (bkz. `TEST-STRATEJISI.md`) — hâlâ yarım
-   kalmış bir kurulum, `npm install` adımları henüz çalıştırılmadı.
-3. İletişim formunun **gerçek kaydı**: `contact_messages`'a
-   `sender_email`/`subject` kolonları eklenmeli (şu an sadece
-   `sender_name`/`sender_phone`/`message`/`is_read` var), sonra
-   `actions.ts`'teki Server Action'a gerçek bir insert + bir e-posta
-   bildirimi eklenmeli (bkz. `KARAR-GUNLUGU.md`, 2026-08-11 "Karar 2").
-4. Mesajlar sayfasına "okundu işaretle" aksiyonu eklenmeli — şu an sadece
-   listeleme var, `is_read`'i değiştiren bir buton/Server Action yok.
-5. Site tasarımı ilerledikçe `KURUMSAL-SITE-STANDARTLARI.md`'deki kontrol listesini
+   kalmış bir kurulum, `npm install` adımları henüz çalıştırılmadı;
+   mentör değerlendirmesinde de en yüksek öncelikli sistemik eksik
+   olarak işaretlendi.
+3. İletişim formuna bir e-posta bildirimi eklenmeli (kayıt artık gerçek,
+   bildirim hâlâ yok — bkz. `GUVENLIK.md` madde 10).
+4. Site tasarımı ilerledikçe `KURUMSAL-SITE-STANDARTLARI.md`'deki kontrol listesini
    madde madde işaretle.
-6. Gerçek görsel(ler) Storage'a yüklenince Lighthouse'u tekrar çalıştırıp
+5. Gerçek görsel(ler) Storage'a yüklenince Lighthouse'u tekrar çalıştırıp
    sayfa ağırlığındaki gerçek görsel etkisini ölç (bkz. yukarıdaki not).
-7. Panelden bölüm sırası/görünürlük/varyant + preset seçimi arayüzü (Faz 5) —
+6. Panelden bölüm sırası/görünürlük/varyant + preset seçimi arayüzü (Faz 5) —
    `page_sections` veri modeli hazır, panel kabuğu da hazır (`/panel/tema`
    placeholder'ı bu arayüzün gerçek yeri); sıradaki mantıklı adım bunu
    kodlamak.
-8. Host header'a göre gerçek tenant çözümleyen `proxy.ts` mantığı yazılınca
+7. Host header'a göre gerçek tenant çözümleyen `proxy.ts` mantığı yazılınca
    (a) `getActiveTenantId()`'i sabit domain yerine parametreye çevir, (b)
    aynı `proxy.ts`'e tenant/domain bazlı panel erişim engelini de ekle —
    Next.js proje başına tek proxy dosyasına izin veriyor, ikisi birleşecek
    (bkz.
    `MIMARI.md` madde 7).
+8. Mentör değerlendirmesindeki küçük-orta bulgular (`ActionResult<T>`
+   tutarsızlığı, `panelQueries.ts` bölünmesi) — kullanıcı isterse ele
+   alınacak, şu an açık karar bekliyor.
 
 ## Açık sorular
 

@@ -26,6 +26,17 @@ export const CONTACT_SUBJECT_LABELS: Record<ContactSubject, string> = {
   diger: "Diğer",
 };
 
+// DB'den gelen `subject` sütunu serbest `text` (bilerek CHECK constraint
+// yok, bkz. supabase/migrations/20260814130000_...) — panelde gösterirken
+// bilinmeyen/eski bir değer sayfayı çökertmesin diye güvenli bir
+// eşleme. `components/panel/mesajlar/` ekranlarında kullanılır.
+export function getContactSubjectLabel(subject: string | null): string {
+  if (!subject) return "—";
+  return subject in CONTACT_SUBJECT_LABELS
+    ? CONTACT_SUBJECT_LABELS[subject as ContactSubject]
+    : subject;
+}
+
 // Telefon opsiyonel — boş string de geçerli sayılır (alan boş
 // bırakılabilir), ama bir şey girildiyse sadece rakam/boşluk/+()- kabul
 // edilir. Format zorunluluğu yok (ülke kodu, boşluklama serbest) — amaç

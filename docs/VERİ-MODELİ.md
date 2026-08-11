@@ -219,12 +219,18 @@ bilgisini tutar. Ziyaretçinin doldurduğu form `contact_messages`'ta.
 | `id`, `created_at` | — | ortak (order_index/is_published yok — mesaj sıralanmaz/yayınlanmaz) |
 | `tenant_id` | uuid, not null, → tenants.id | mesaj hangi siteden gönderildi |
 | `sender_name` | text, not null | |
+| `sender_email` | text, **nullable** | *(2026-08-14 eklendi)* yanıtlamak için — DB seviyesinde nullable ama uygulama katmanında (zod) zorunlu, bkz. `KARAR-GUNLUGU.md` |
 | `sender_phone` | text, nullable | |
+| `subject` | text, **nullable**, CHECK yok | *(2026-08-14 eklendi)* `lib/validation/contact.ts` `CONTACT_SUBJECTS` sabit listesinden biri — DB'de kısıtlanmadı, tek doğruluk kaynağı kod |
 | `message` | text, not null | |
-| `is_read` | boolean, not null, default false | *(2026-08-12 eklendi)* panelde okundu işaretlendi mi — panel özet ekranındaki "okunmamış mesaj" sayısı bu alandan |
+| `is_read` | boolean, not null, default false | *(2026-08-12 eklendi)* panelde okundu işaretlendi mi — panel menüsü/özet ekranındaki "okunmamış mesaj" sayısı bu alandan |
 
-E-posta gönderimi başarısız olsa bile mesaj kaybolmasın diye DB'ye de
-kaydediliyor (bkz. `KARAR-GUNLUGU.md`, 2026-08-06).
+**Gerçek kayıt artık çalışıyor** *(2026-08-14)* — `components/site/contact/actions.ts`'teki
+`submitContactForm`, doğrulama sonrası `contact_messages`'a gerçekten
+insert yapıyor (`createServiceRoleClient()` — anon'un bu tabloya HİÇ RLS
+izni olmadığı için bilinçli, dokümante edilmiş bir istisna, bkz.
+`GUVENLIK.md` madde 2). E-posta bildirimi (SMTP/üçüncü taraf servis) hâlâ
+yok — sadece DB kaydı.
 
 ### `testimonials` — Referanslar (Liste)
 
@@ -302,7 +308,7 @@ bölümden iki kaydı olamaz.
 
 ## SQL Migration
 
-On dört migration dosyası var, sırayla:
+On altı migration dosyası var, sırayla:
 
 1. `20260806120000_create_content_tables.sql` — ilk 8 tablo (`tenants`,
    `site_settings`, `hero_sections`, `about_sections`, `services`,
@@ -341,8 +347,17 @@ On dört migration dosyası var, sırayla:
     sayfa, bkz. `KARAR-GUNLUGU.md`) + `site_settings.cta_button_link`
     `/iletisim`'e güncellendi. Şema değişikliği yok, sadece veri —
     `types:generate` gerekmez.
+15. `20260814120000_create_projects_storage_bucket.sql` — tablo şeması
+    değil, Supabase **Storage** şeması: `"projects"` bucket'ı (public) +
+    `storage.objects` RLS. Detay: `GUVENLIK.md` madde 11.
+16. `20260814130000_add_contact_message_email_subject.sql` —
+    `contact_messages.sender_email`/`subject` (nullable) + demo veriye
+    backfill.
 
-Migration 1-14 gerçek Supabase projesine uygulandı (2026-08-13 itibarıyla).
+Migration 1-15 gerçek Supabase projesine uygulandı (15 — Storage
+bucket — 2026-08-14'te uygulandı). **16 henüz uygulanmadı**
+(`contact_messages.sender_email`/`subject`, kullanıcı SQL Editor'de
+çalıştıracak, bkz. `DURUM.md`).
 Her migration'da `create table`/`alter table`, `check`/`unique`
 kısıtlamaları, `default` değerleri, `comment on table`/`comment on
 column` ve (ilgili olanlarda) `enable row level security` + politikalar

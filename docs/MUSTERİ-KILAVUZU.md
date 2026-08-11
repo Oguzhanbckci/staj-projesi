@@ -133,6 +133,46 @@ siteden kaldırmak (ama silmemek, ileride tekrar kullanmak) istiyorsanız
   yazılmadan geri gelmez. İleride tekrar kullanma ihtimali varsa
   silmek yerine **"Taslağa Al"**'ı tercih edin.
 
+## Gelen Mesajları Yönetme
+
+Sitenizdeki iletişim formunu dolduran ziyaretçilerin mesajları
+otomatik olarak panele düşer.
+
+1. Soldaki menüden **"Mesajlar"**'a tıklayın. Okunmamış mesajınız
+   varsa, menüdeki **"Mesajlar"** yazısının yanında kaç tane olduğunu
+   gösteren küçük bir sayı görürsünüz — panele her girdiğinizde,
+   hangi sayfada olursanız olun bu sayıyı görebilirsiniz.
+2. Mesaj listesinde her satırda gönderenin adı/e-postası, konusu,
+   tarihi ve durumu (**"Yeni"** veya **"Okundu"**) görünür. **Yeni
+   mesajlar her zaman en üstte** listelenir.
+3. Bir mesajın tam metnini okumak için satırdaki **"Görüntüle"**
+   bağlantısına tıklayın.
+4. **Mesajı açtığınız an otomatik olarak "Okundu" olarak işaretlenir**
+   — ayrıca bir işlem yapmanıza gerek yoktur. Menüdeki sayı da buna
+   göre azalır.
+5. Detay sayfasında gönderenin adı, e-postası, telefonu (varsa),
+   konusu, tarihi ve tam mesaj metni bir arada görünür.
+
+## Mesajlara Yanıt Verme
+
+Panelden doğrudan yanıt gönderilmez — yanıt, kendi e-posta
+programınız üzerinden gönderilir:
+
+1. Bir mesajın detay sayfasını açın (bkz. yukarıdaki "Gelen Mesajları
+   Yönetme").
+2. Sayfanın altındaki **"E-posta ile Yanıtla"** butonuna tıklayın.
+3. Bilgisayarınızda/telefonunuzda kayıtlı e-posta programınız (Outlook,
+   Gmail uygulaması vb.) otomatik açılır — alıcı adresi ve konu satırı
+   ("Re: ...") zaten doldurulmuş olarak gelir, siz sadece yanıt
+   metninizi yazıp göndermeniz yeterlidir.
+4. Gönderenin bir telefon numarası paylaştıysa, detay sayfasındaki
+   telefon numarasına tıklayarak da doğrudan arayabilirsiniz.
+
+**Not:** Sistem şu an mesajlara e-posta ile otomatik bildirim
+göndermiyor — yeni bir mesaj geldiğinde haberdar olmak için paneli
+düzenli aralıklarla kontrol etmeniz (veya menüdeki okunmamış sayısına
+bakmanız) gerekir.
+
 ## Bölüm Bazlı Alan Farkları
 
 Formdaki alanlar içerik türüne göre değişir, aşağıda özetlendi

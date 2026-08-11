@@ -4,22 +4,32 @@ import {
   contactFormSchema,
   type ContactFormValues,
 } from "@/lib/validation/contact";
+import { createServiceRoleClient } from "@/lib/supabase/server";
+import { getActiveTenantId } from "@/lib/supabase/queries";
 
 export interface ContactFormState {
   status: "idle" | "success" | "error";
   errors: Partial<Record<keyof ContactFormValues, string>>;
   values: Partial<Record<keyof ContactFormValues, string>>;
+  formError?: string;
 }
 
 // Aynı şemayı (lib/validation/contact.ts) istemci tarafındaki canlı
 // doğrulamayla PAYLAŞIR — burada da GERÇEKTEN çalışıyor (istemci
 // doğrulaması atlatılsa/devre dışı bırakılsa bile sunucu asıl hakemdir).
 //
-// BAĞLAM'a göre form verisinin Supabase'e (contact_messages) kaydedilmesi
-// "ileride" yapılacak bir iş — bu yüzden burada bilinçli olarak YOK.
-// Doğrulama gerçek, kayıt henüz değil. Gerçek kayıt eklendiğinde:
-// (1) burada createServiceRoleClient() ile contact_messages'a insert,
-// (2) muhtemelen bir e-posta bildirimi (bkz. docs/DURUM.md "Sıradaki adım").
+// contact_messages'a gerçek kayıt burada, service role client ile
+// yapılıyor — anon'un bu tabloya HİÇBİR RLS izni yok (select de insert
+// de, bkz. docs/GUVENLIK.md madde 1-2, ziyaretçi PII'si içerdiği için
+// bilinçli olarak kilitli), bu yüzden RLS bypass eden service role
+// GEREKLİ ve kasıtlı — "anon hiçbir koşulda yazamaz" kuralını bozmuyor,
+// service role anon key'den tamamen ayrı bir güven seviyesi (bkz.
+// docs/AI-KURALLARI.md madde 6.1/6.5). Panel Server Action'larının
+// aksine burada requireAdminUser() YOK — bu eylem BİLEREK herkese açık,
+// ziyaretçi giriş yapmadan form gönderebilmeli.
+//
+// Not (bilinçli, kapsam dışı — bkz. docs/GUVENLIK.md madde 10): rate
+// limiting/spam koruması henüz yok, açık madde olarak duruyor.
 export async function submitContactForm(
   _prevState: ContactFormState,
   formData: FormData
@@ -43,6 +53,36 @@ export async function submitContactForm(
       }
     }
     return { status: "error", errors, values: raw };
+  }
+
+  const tenantId = await getActiveTenantId();
+  if (!tenantId) {
+    return {
+      status: "error",
+      errors: {},
+      values: raw,
+      formError: "Mesajınız gönderilirken bir sorun oluştu. Lütfen daha sonra tekrar deneyin.",
+    };
+  }
+
+  const supabase = createServiceRoleClient();
+  const { error } = await supabase.from("contact_messages").insert({
+    tenant_id: tenantId,
+    sender_name: result.data.fullName,
+    sender_email: result.data.email,
+    sender_phone: result.data.phone || null,
+    subject: result.data.subject,
+    message: result.data.message,
+  });
+
+  if (error) {
+    console.error("submitContactForm insert hatası:", error);
+    return {
+      status: "error",
+      errors: {},
+      values: raw,
+      formError: "Mesajınız gönderilirken bir sorun oluştu. Lütfen daha sonra tekrar deneyin.",
+    };
   }
 
   return { status: "success", errors: {}, values: {} };

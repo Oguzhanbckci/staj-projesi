@@ -7,7 +7,8 @@ edilmeyen tek konudur — bu yüzden yazılı ve güncel tutulur. Kararların
 kronolojik gerekçesi için `KARAR-GUNLUGU.md`, teknik mimari için `MIMARI.md`,
 tablo/kolon tasarımı için `VERİ-MODELİ.md` referans alınır.
 
-**Son güncelleme:** 2026-08-14 (Storage politikaları + dosya yükleme kuralları eklendi)
+**Son güncelleme:** 2026-08-14 (2. güncelleme aynı gün — iletişim
+formu gerçek kayda bağlandı, madde 2/10 güncellendi)
 
 ## 1. Tehdit Modeli
 
@@ -76,9 +77,15 @@ politikalar eklendi. Kurallar:
   yoksa RLS varsayılan olarak reddeder.
 - **İstisna — `contact_messages`:** Ziyaretçi PII'si içerdiği için `anon`'a
   select bile açılmadı, tamamen kilitli. Anonim iletişim formunun
-  çalışabilmesi RLS/anon key üzerinden değil, henüz yazılmamış bir
-  `app/api/contact/` route handler'ı (sunucu tarafı, service role,
-  RLS'i bypass eder) üzerinden çözülecek — bkz. madde 5.
+  yazabilmesi RLS/anon key üzerinden DEĞİL — *(2026-08-14, çözüldü)*
+  `components/site/contact/actions.ts`'teki `submitContactForm` Server
+  Action'ı, doğrulama başarılı olduktan SONRA service role client (RLS'i
+  bypass eder) ile insert yapıyor. **Not (2026-08-07'deki ilk plandan
+  revize):** ayrı bir `app/api/contact/` Route Handler'ı DEĞİL, mevcut
+  Server Action kullanıldı — bu not 2026-08-07'de, proje henüz hiçbir
+  yerde Server Action kullanmadan ÖNCE yazılmıştı; 2026-08-11'den beri
+  HER form gönderimi (bu dahil) zaten bir Server Action, ayrı bir Route
+  Handler eklemek tutarsız olurdu (bkz. `KARAR-GUNLUGU.md`, 2026-08-14).
 - **Kolon seviyesinde gizlilik:** RLS satır bazlıdır, kolon gizleyemez.
   `tenants.contact_recipient_email` bu yüzden ayrıca `REVOKE`/`GRANT` ile
   anon'dan tamamen gizlendi; sadece güvenli kolonlar (`id`, `name`,
@@ -338,9 +345,13 @@ Bu proje şu an gerçek bir müşteriye canlıya alınmıyor (bkz. `DURUM.md`,
       header'a göre tenant çözümleyen ayrı bir mantık gerektiriyor (bkz.
       `MIMARI.md` madde 7), henüz yazılmadı. Şu anki `proxy.ts` sadece
       oturum kontrolü yapıyor, tenant/domain ayrımı yapmıyor.
-- [ ] `app/api/contact/` route handler'ı (iletişim formu → sunucu tarafı
-      doğrulama → `contact_messages`'a insert + e-posta) henüz yazılmadı.
-- [ ] Kullanıcıdan alınan formlarda rate limiting / spam koruması yok.
+- [x] *(2026-08-14)* İletişim formu → sunucu tarafı doğrulama →
+      `contact_messages`'a insert artık çalışıyor (bkz. madde 2 —
+      Route Handler değil, Server Action). **E-posta bildirimi HÂLÂ
+      yok** — sadece DB kaydı, bu ayrı bir açık madde olarak kalıyor.
+- [ ] Kullanıcıdan alınan formlarda rate limiting / spam koruması yok
+      (iletişim formu artık gerçekten DB'ye yazdığı için bu risk daha
+      somut hale geldi — anonim, kimliksiz bir uç nokta, teorik değil).
 - [ ] Lighthouse Best Practices skoru (güvenli header'lar, HTTPS zorunluluğu
       vb.) henüz ölçülmedi — hedef ≥90 (bkz. `TEST-STRATEJISI.md`).
 - [ ] `npm audit` ile bağımlılıklarda bilinen güvenlik açığı taraması henüz

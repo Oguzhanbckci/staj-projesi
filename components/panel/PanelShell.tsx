@@ -7,11 +7,23 @@ import { useDialogBehavior } from "@/lib/hooks/useDialogBehavior";
 import { Button } from "@/components/ui/Button";
 import { PANEL_NAV_ITEMS } from "./navItems";
 
-function NavList({ onNavigate }: { onNavigate?: () => void }) {
+// Genel bir "her nav öğesi rozet alabilir" sistemi bilerek KURULMADI
+// (tek bir öğe — Mesajlar — için gereksiz soyutlama, bkz.
+// docs/KARAR-GUNLUGU.md) — sadece o öğenin href'i eşleştiğinde özel bir
+// rozet render edilir. Rozetin görsel dili, eski mesaj listesindeki
+// "Yeni" etiketiyle aynı (bg-brand text-brand-on rounded-full).
+function NavList({
+  onNavigate,
+  unreadMessagesCount,
+}: {
+  onNavigate?: () => void;
+  unreadMessagesCount: number;
+}) {
   return (
     <ul className="space-y-1">
       {PANEL_NAV_ITEMS.map((item) => {
         const Icon = item.icon;
+        const showUnreadBadge = item.href === "/panel/mesajlar" && unreadMessagesCount > 0;
         return (
           <li key={item.href}>
             <Link
@@ -20,7 +32,15 @@ function NavList({ onNavigate }: { onNavigate?: () => void }) {
               className="flex items-center gap-3 rounded-md px-3 py-2 text-base text-text hover:bg-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand"
             >
               <Icon size={18} aria-hidden="true" />
-              {item.label}
+              <span className="flex-1">{item.label}</span>
+              {showUnreadBadge && (
+                <span
+                  className="inline-flex min-w-[1.5rem] items-center justify-center rounded-full bg-brand px-1.5 py-0.5 text-caption font-semibold text-brand-on"
+                  aria-label={`${unreadMessagesCount} okunmamış mesaj`}
+                >
+                  {unreadMessagesCount}
+                </span>
+              )}
             </Link>
           </li>
         );
@@ -43,10 +63,12 @@ function NavList({ onNavigate }: { onNavigate?: () => void }) {
 export function PanelShell({
   userEmail,
   signOutAction,
+  unreadMessagesCount,
   children,
 }: {
   userEmail: string;
   signOutAction: () => Promise<void>;
+  unreadMessagesCount: number;
   children: ReactNode;
 }) {
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
@@ -60,7 +82,7 @@ export function PanelShell({
       <aside className="hidden w-60 shrink-0 border-r border-neutral-300 bg-surface-raised p-4 lg:block">
         <p className="px-3 text-h6 font-bold text-text">Panel</p>
         <nav className="mt-6">
-          <NavList />
+          <NavList unreadMessagesCount={unreadMessagesCount} />
         </nav>
       </aside>
 
@@ -86,12 +108,18 @@ export function PanelShell({
             </button>
           </div>
           <nav className="mt-6">
-            <NavList onNavigate={closeMobileNav} />
+            <NavList onNavigate={closeMobileNav} unreadMessagesCount={unreadMessagesCount} />
           </nav>
         </div>
       )}
 
-      <div className="flex min-h-full flex-1 flex-col">
+      {/* Mobil çekmece açıkken arka plandaki içerik `aria-modal="true"`'nun
+          verdiği sözü (arkasının etkileşimsiz/gizli olması) tutmalı — Tab
+          tuzağı (useDialogBehavior) sadece klavye Tab gezinmesini kapsıyor,
+          ekran okuyucunun sanal imleç/tarama modunu (ok tuşları vb.)
+          kısıtlamıyor. `inert`, çekmece açıkken bu içeriği erişilebilirlik
+          ağacından ve klavye/fare etkileşiminden tamamen çıkarır. */}
+      <div className="flex min-h-full flex-1 flex-col" inert={mobileNavOpen}>
         <header className="flex items-center justify-between border-b border-neutral-300 bg-surface-raised px-4 py-3 sm:px-6">
           <button
             type="button"

@@ -8,9 +8,10 @@ export interface PanelNavItem {
 }
 
 // Panelin kenar menüsü — yönergedeki 5 bölüm (içerikler/medya/tema/
-// mesajlar/ayarlar) + özet ekranına dönmek için "Özet". Sayfaların çoğu
-// şimdilik placeholder (bkz. app/panel/(protected)/), gerçek içerik
-// yönetimi Faz 5'te gelecek (bkz. docs/DURUM.md).
+// mesajlar/ayarlar) + özet ekranına dönmek için "Özet". İçerikler (5 alt
+// bölüm), Medya ve Mesajlar artık gerçek/çalışır durumda; sadece Tema ve
+// Ayarlar hâlâ placeholder (bkz. app/panel/(protected)/tema,ayarlar),
+// gerçek arayüzleri Faz 5'te gelecek (bkz. docs/DURUM.md).
 export const PANEL_NAV_ITEMS: PanelNavItem[] = [
   { label: "Özet", href: "/panel", icon: LayoutDashboard },
   { label: "İçerikler", href: "/panel/icerikler", icon: FileText },

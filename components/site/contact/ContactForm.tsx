@@ -57,6 +57,15 @@ export function ContactForm() {
 
   return (
     <form ref={formRef} action={formAction} noValidate className="space-y-4">
+      {state.formError && (
+        <p
+          role="alert"
+          className="rounded-md border border-error bg-surface-raised px-4 py-3 text-base text-error"
+        >
+          {state.formError}
+        </p>
+      )}
+
       <FormErrorSummary
         ref={summaryRef}
         errors={state.errors}

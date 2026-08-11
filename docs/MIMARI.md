@@ -6,8 +6,8 @@ yapılacağını" (özellik kapsamı), bu dosya "nasıl yapılacağını" (tekni
 seçimler) tanımlar. Kod içermez. Karar değişirse önce `KARAR-GUNLUGU.md`'ye
 kayıt düşülür, sonra bu dosya güncellenir.
 
-**Son güncelleme:** 2026-08-14 (4. güncelleme — proje görselleri için
-Storage bucket + yükleme akışı + medya kütüphanesi eklendi)
+**Son güncelleme:** 2026-08-14 (5. güncelleme — iletişim formu gerçek
+kayda bağlandı, mesajlar ekranı (detay/okundu/sayaç) tamamlandı)
 
 ## 0. Bağlam
 
@@ -431,6 +431,31 @@ sadece dosya yerleşimi/mimari:
   bekliyor (bkz. `GUVENLIK.md` madde 11) ama bucket'ların kendisi henüz
   yok — aynı desen ileride tekrarlanabilir.
 
-## 12. Açık Sorular
+## 12. Mesajlar: CRUD-Dışı Bir Varlık İçin Uyarlanmış Desen *(2026-08-14 eklendi)*
+
+`contact_messages`, madde 9'daki 5-parçalı içerik yönetimi deseninin
+UYMADIĞI ilk varlık — mesajların "ekleme"si (ziyaretçi formu, anonim,
+service role ile) ve "yayınlama"sı yok, sadece okuma + tek yönlü bir
+durum değişikliği (okundu işaretleme) var. Bu yüzden:
+
+- Liste (`app/panel/(protected)/mesajlar/MessageListTable.tsx`)
+  `AdminListTable`'ı ZORLA kullanmadı — görsel dili (tablo/başlık/hücre
+  CSS'i) kopyaladı ama veri şekli farklı olduğu için ayrı bir bileşen.
+- **"Görüntüleyince okundu işaretle" — sayfa RENDER'ında değil, bir
+  Server Action'la, istemci tarafında otomatik tetiklenir.** Detay
+  sayfası (`mesajlar/[id]/page.tsx`) salt-okunur render eder; görünmez
+  bir client bileşen (`MarkMessageReadOnView.tsx`) mount olunca
+  `markMessageReadAction`'ı (mesajlar/actions.ts) bir kez çağırır (ref
+  korumalı — React Strict Mode'un dev'de çift çalıştırmasına karşı).
+  Bu, madde 10'daki "her yazma bir Server Action, `requireAdminUser()`
+  ile başlar" kuralını KORUYOR — bir Server Component'in render'ı
+  içine çıplak bir DB yazması gömülmedi.
+- `getUnreadMessagesCount()` artık SADECE özet ekranında değil,
+  `app/panel/(protected)/layout.tsx`'te (her sayfada çalışan koruma
+  katmanı) çağrılıp `PanelShell`'e prop olarak akıyor — "müşteri panele
+  girer girmez görsün" gereksinimi bunu gerektirdi (özet ekranı sadece
+  `/panel`'in kendisinde render olur, diğer sayfalarda değil).
+
+## 13. Açık Sorular
 
 Şu an aktif açık soru yok.

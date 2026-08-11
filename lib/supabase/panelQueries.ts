@@ -618,10 +618,37 @@ export async function getProjectImageUsageMap(): Promise<Map<string, string>> {
 export interface ContactMessageRow {
   id: string;
   senderName: string;
+  senderEmail: string | null;
   senderPhone: string | null;
+  subject: string | null;
   message: string;
   isRead: boolean;
   createdAt: string;
+}
+
+const CONTACT_MESSAGE_SELECT =
+  "id, sender_name, sender_email, sender_phone, subject, message, is_read, created_at";
+
+function mapContactMessageRow(row: {
+  id: string;
+  sender_name: string;
+  sender_email: string | null;
+  sender_phone: string | null;
+  subject: string | null;
+  message: string;
+  is_read: boolean;
+  created_at: string;
+}): ContactMessageRow {
+  return {
+    id: String(row.id),
+    senderName: String(row.sender_name),
+    senderEmail: typeof row.sender_email === "string" ? row.sender_email : null,
+    senderPhone: typeof row.sender_phone === "string" ? row.sender_phone : null,
+    subject: typeof row.subject === "string" ? row.subject : null,
+    message: String(row.message),
+    isRead: Boolean(row.is_read),
+    createdAt: String(row.created_at),
+  };
 }
 
 export async function getContactMessages(): Promise<ContactMessageRow[]> {
@@ -632,7 +659,7 @@ export async function getContactMessages(): Promise<ContactMessageRow[]> {
 
     const { data, error } = await supabase
       .from("contact_messages")
-      .select("id, sender_name, sender_phone, message, is_read, created_at")
+      .select(CONTACT_MESSAGE_SELECT)
       .eq("tenant_id", tenantId)
       .order("created_at", { ascending: false });
 
@@ -640,16 +667,35 @@ export async function getContactMessages(): Promise<ContactMessageRow[]> {
       throw error ?? new Error("Mesajlar alınamadı.");
     }
 
-    return data.map((row) => ({
-      id: String(row.id),
-      senderName: String(row.sender_name),
-      senderPhone: typeof row.sender_phone === "string" ? row.sender_phone : null,
-      message: String(row.message),
-      isRead: Boolean(row.is_read),
-      createdAt: String(row.created_at),
-    }));
+    return data.map(mapContactMessageRow);
   } catch (err) {
     console.error("getContactMessages sorgu hatası:", err);
     return [];
+  }
+}
+
+// getServiceById ile aynı desen — mesaj detay sayfası için (bkz.
+// app/panel/(protected)/mesajlar/[id]/page.tsx). Liste ve detay AYNI
+// şekli (ContactMessageRow) paylaşıyor — liste zaten tam mesaj metnini
+// içeriyor, ayrı bir "Detail" tipi gerekmiyor.
+export async function getContactMessageById(id: string): Promise<ContactMessageRow | null> {
+  try {
+    const supabase = await createServerSupabaseClient();
+    const tenantId = await getActiveTenantId();
+    if (!tenantId) return null;
+
+    const { data, error } = await supabase
+      .from("contact_messages")
+      .select(CONTACT_MESSAGE_SELECT)
+      .eq("id", id)
+      .eq("tenant_id", tenantId)
+      .maybeSingle();
+
+    if (error || !data) return null;
+
+    return mapContactMessageRow(data);
+  } catch (err) {
+    console.error("getContactMessageById sorgu hatası:", err);
+    return null;
   }
 }
