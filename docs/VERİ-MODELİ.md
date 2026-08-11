@@ -191,7 +191,7 @@ Platform sahibi bu tabloyu kullanmaz (anonim kalma kuralı, bkz. `PRD.md`).
 | `id`, `created_at`, `order_index`, `is_published` | — | ortak |
 | `tenant_id` | uuid, not null, → tenants.id | |
 | `title` | text, not null | |
-| `image_path` | text, nullable | Storage yolu |
+| `image_path` | text, nullable | Storage yolu — *(2026-08-14)* `"projects"` bucket'ında, panelden gerçekten yükleniyor (bkz. `GUVENLIK.md` madde 11-12); değer her zaman sunucu tarafında üretilen `${tenant_id}/${uuid}.${uzantı}` biçiminde, elle/panelden serbest metin girilmez |
 | `location` | text, nullable | tenant kullanımı |
 | `year` | integer, nullable, check (1800-2100) | tenant kullanımı |
 | `live_url` | text, nullable | platform sahibi kullanımı — gerçek URL, Storage path değil |

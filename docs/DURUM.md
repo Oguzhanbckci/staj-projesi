@@ -13,8 +13,8 @@ kontrast doğrulaması, bileşen envanteri/API kuralları) ve `TEMA-MIMARISI.md`
 önlemi), gerekirse `KARAR-GUNLUGU.md`'yi (tarihli, hiç silinmeyen karar
 geçmişi) oku.
 
-**Son güncelleme:** 2026-08-14 (4. güncelleme aynı gün —
-`docs/MUSTERİ-KILAVUZU.md` eklendi)
+**Son güncelleme:** 2026-08-14 (5. güncelleme aynı gün — proje
+görselleri için Storage bucket + yükleme akışı, uçtan uca doğrulandı)
 
 ## Proje bağlamı
 
@@ -686,26 +686,82 @@ düzeldi. `lib/sections/config.ts`/`Footer.tsx`'e dokunulmadı (Footer'da
 bu tekrar yok, kapsam dışı). `npm run build`/`lint` temiz, gerçek
 sunucuda `curl` ile doğrulandı (header'da tek "İletişim" kaldı).
 
+**Proje görselleri: Storage bucket + yükleme akışı + medya kütüphanesi
+(2026-08-14, aynı gün, beşinci oturum):** Dışarıdan gelen bir yönerge üzerine, panelde Projeler için
+gerçek görsel yükleme kuruldu. Araştırmada önemli bir bulgu ortaya
+çıktı: **hiçbir Storage bucket'ı kurulmamıştı** — DB'deki 6 farklı
+`*_path` kolonu ve site tarafındaki 8 görüntüleme bileşeni zaten 6 ayrı
+bucket adı (`projects`/`services`/`hero`/`about`/`testimonials`/`team`)
+bekliyordu ama hiçbiri Supabase'de yoktu. Bu görev **sadece
+`"projects"` bucket'ını** kurdu (kullanıcının açık talebi Projeler'e
+özeldi), diğer 5'i açık madde (bkz. aşağıda).
+
+- Yeni `supabase/migrations/20260814120000_create_projects_storage_bucket.sql`
+  — bucket (public) + `storage.objects` RLS (mevcut 5-policy desenle
+  birebir aynı, bkz. `GUVENLIK.md` madde 11).
+- `lib/supabase/imageValidation.ts` — tür kontrolü SADECE dosyanın
+  gerçek baytlarına (magic number) bakıyor, uzantıya/MIME header'ına
+  güvenmiyor; 5 MB boyut sınırı.
+- `app/panel/(protected)/icerikler/projeler/imageActions.ts` —
+  `uploadProjectImageAction`/`deleteProjectImageAction`: benzersiz
+  (`crypto.randomUUID()`) ve kullanıcı girdisinden tamamen bağımsız
+  dosya adı (path traversal yapısal olarak imkansız), DB yazması
+  başarısız olursa yüklenen dosya geri silinir (yarım kayıt kalmaz).
+- `ProjectImageUploader.tsx` — sadece proje DÜZENLEME sayfasında (dosya
+  seç → önizle → yükle, durum göstergesi).
+- `app/panel/(protected)/medya/` — eski placeholder artık gerçek Medya
+  Kütüphanesi (önizleme + dosya adı + kullanıldığı proje + Sil — mevcut
+  `DeleteButton`/`ConfirmDeleteDialog` hiç değiştirilmeden yeniden
+  kullanıldı).
+- `next.config.ts`'e **iki** transport-katmanı ayarı eklendi —
+  `experimental.serverActions.bodySizeLimit: "15mb"` VE
+  `experimental.proxyClientMaxBodySize: "15mb"` (ikincisi ilk denemede
+  unutulmuştu, aşağıdaki bulguya bakın).
+- Docs güncellendi: `GUVENLIK.md` (yeni madde 11-12, kullanıcının önceki
+  oturumdaki "Storage politikaları/dosya yükleme kuralları başlığı ekle"
+  isteği de böylece karşılandı), `VERİ-MODELİ.md`, `MIMARI.md` (yeni
+  madde 11), `MUSTERİ-KILAVUZU.md` ("Görsel Ekleme" başlığı).
+
+**Test sırasında bulunan ve düzeltilen gerçek bir hata:** Gerçek
+~10MB'lık bir test dosyasıyla (kullanıcının açık isteği) denendiğinde,
+ilk seferde `HTTP 500` + bozuk gövde hatası çıktı — sebep,
+`serverActions.bodySizeLimit`'ten TAMAMEN BAĞIMSIZ çalışan, kök
+`proxy.ts`'in kendi 10MB'lık istek gövdesi tamponlama sınırıydı
+(`experimental.proxyClientMaxBodySize`, unutulmuştu). İkisi de 15mb'a
+çekilince düzeldi — detay `GUVENLIK.md` madde 12.4, `KARAR-GUNLUGU.md`.
+
+**Doğrulama (gerçek, tamamlandı):** Kullanıcı migration'ı SQL Editor'de
+çalıştırdı. RLS testi (anon reddedildi, authenticated başarılı) + 5
+senaryolu uygulama testi (geçerli ~2MB görsel → başarı; gerçek ~10MB
+görsel → net red mesajı; sahte uzantı → red; kötü niyetli dosya adı →
+path'e hiç karışmadı; DB yazma hatası → Storage'da yetim kalmadı) hepsi
+gerçek Supabase Storage'a karşı geçti. Test verileri temizlendi, geçici
+route/script'ler silindi. `npm run build`/`lint` temiz. Detay:
+`KARAR-GUNLUGU.md`.
+
 ## Sıradaki adım
 
-1. Vitest ve Playwright'ı kur (bkz. `TEST-STRATEJISI.md`) — hâlâ yarım
+1. Diğer 5 bucket (`services`/`hero`/`about`/`testimonials`/`team`) için
+   de aynı desenle bucket+RLS+yükleme akışı kurulmalı — şu an bu
+   tablolardaki `*_path` kolonlarına değer girilse bile görsel 404 verir.
+2. Vitest ve Playwright'ı kur (bkz. `TEST-STRATEJISI.md`) — hâlâ yarım
    kalmış bir kurulum, `npm install` adımları henüz çalıştırılmadı.
-2. İletişim formunun **gerçek kaydı**: `contact_messages`'a
+3. İletişim formunun **gerçek kaydı**: `contact_messages`'a
    `sender_email`/`subject` kolonları eklenmeli (şu an sadece
    `sender_name`/`sender_phone`/`message`/`is_read` var), sonra
    `actions.ts`'teki Server Action'a gerçek bir insert + bir e-posta
    bildirimi eklenmeli (bkz. `KARAR-GUNLUGU.md`, 2026-08-11 "Karar 2").
-3. Mesajlar sayfasına "okundu işaretle" aksiyonu eklenmeli — şu an sadece
+4. Mesajlar sayfasına "okundu işaretle" aksiyonu eklenmeli — şu an sadece
    listeleme var, `is_read`'i değiştiren bir buton/Server Action yok.
-4. Site tasarımı ilerledikçe `KURUMSAL-SITE-STANDARTLARI.md`'deki kontrol listesini
+5. Site tasarımı ilerledikçe `KURUMSAL-SITE-STANDARTLARI.md`'deki kontrol listesini
    madde madde işaretle.
-5. Gerçek görsel(ler) Storage'a yüklenince Lighthouse'u tekrar çalıştırıp
+6. Gerçek görsel(ler) Storage'a yüklenince Lighthouse'u tekrar çalıştırıp
    sayfa ağırlığındaki gerçek görsel etkisini ölç (bkz. yukarıdaki not).
-6. Panelden bölüm sırası/görünürlük/varyant + preset seçimi arayüzü (Faz 5) —
+7. Panelden bölüm sırası/görünürlük/varyant + preset seçimi arayüzü (Faz 5) —
    `page_sections` veri modeli hazır, panel kabuğu da hazır (`/panel/tema`
    placeholder'ı bu arayüzün gerçek yeri); sıradaki mantıklı adım bunu
    kodlamak.
-7. Host header'a göre gerçek tenant çözümleyen `proxy.ts` mantığı yazılınca
+8. Host header'a göre gerçek tenant çözümleyen `proxy.ts` mantığı yazılınca
    (a) `getActiveTenantId()`'i sabit domain yerine parametreye çevir, (b)
    aynı `proxy.ts`'e tenant/domain bazlı panel erişim engelini de ekle —
    Next.js proje başına tek proxy dosyasına izin veriyor, ikisi birleşecek

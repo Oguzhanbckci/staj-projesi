@@ -201,6 +201,7 @@ export interface ProjectDetail {
   year: number | null;
   liveUrl: string | null;
   isPublished: boolean;
+  imagePath: string | null;
 }
 
 // getServiceById ile aynı desen.
@@ -212,7 +213,7 @@ export async function getProjectById(id: string): Promise<ProjectDetail | null> 
 
     const { data, error } = await supabase
       .from("projects")
-      .select("id, title, description, category, location, year, live_url, is_published")
+      .select("id, title, description, category, location, year, live_url, is_published, image_path")
       .eq("id", id)
       .eq("tenant_id", tenantId)
       .maybeSingle();
@@ -228,6 +229,7 @@ export async function getProjectById(id: string): Promise<ProjectDetail | null> 
       year: typeof data.year === "number" ? data.year : null,
       liveUrl: typeof data.live_url === "string" ? data.live_url : null,
       isPublished: Boolean(data.is_published),
+      imagePath: typeof data.image_path === "string" ? data.image_path : null,
     };
   } catch (err) {
     console.error("getProjectById sorgu hatası:", err);
@@ -543,6 +545,73 @@ export async function getTeamMemberById(id: string): Promise<TeamMemberDetail | 
   } catch (err) {
     console.error("getTeamMemberById sorgu hatası:", err);
     return null;
+  }
+}
+
+export interface StorageImageObject {
+  path: string;
+  name: string;
+  updatedAt: string | null;
+}
+
+// Medya kütüphanesi (app/panel/(protected)/medya/) için — "projects"
+// bucket'ındaki nesneleri listeler (bkz. supabase/migrations/
+// 20260814120000_create_projects_storage_bucket.sql). Şu an sadece bu
+// tek bucket var, diğer içerik türleri için henüz bucket kurulmadı
+// (bkz. docs/DURUM.md).
+export async function listProjectImages(): Promise<StorageImageObject[]> {
+  try {
+    const supabase = await createServerSupabaseClient();
+    const tenantId = await getActiveTenantId();
+    if (!tenantId) return [];
+
+    const { data, error } = await supabase.storage
+      .from("projects")
+      .list(tenantId, { sortBy: { column: "created_at", order: "desc" } });
+
+    if (error || !data) {
+      throw error ?? new Error("Görseller listelenemedi.");
+    }
+
+    return data
+      .filter((object) => object.id) // klasör yer tutucularını (id yok) ele
+      .map((object) => ({
+        path: `${tenantId}/${object.name}`,
+        name: object.name,
+        updatedAt: object.updated_at ?? null,
+      }));
+  } catch (err) {
+    console.error("listProjectImages sorgu hatası:", err);
+    return [];
+  }
+}
+
+// Her görsel yolunun "kullanıldığı yer"ini (hangi projenin başlığı)
+// gösterebilmek için — path → proje başlığı eşlemesi.
+export async function getProjectImageUsageMap(): Promise<Map<string, string>> {
+  try {
+    const supabase = await createServerSupabaseClient();
+    const tenantId = await getActiveTenantId();
+    if (!tenantId) return new Map();
+
+    const { data, error } = await supabase
+      .from("projects")
+      .select("title, image_path")
+      .eq("tenant_id", tenantId)
+      .not("image_path", "is", null);
+
+    if (error || !data) return new Map();
+
+    const usageMap = new Map<string, string>();
+    for (const row of data) {
+      if (typeof row.image_path === "string") {
+        usageMap.set(row.image_path, String(row.title));
+      }
+    }
+    return usageMap;
+  } catch (err) {
+    console.error("getProjectImageUsageMap sorgu hatası:", err);
+    return new Map();
   }
 }
 

@@ -2213,3 +2213,172 @@ diye şaşırmaması için.
 bir `docs/` dosyası açmadan önce sorulur — burada kullanıcı dosyayı
 açıkça adıyla ve başlıklarıyla istedi, sormaya gerek kalmadı. Karar,
 uygulamadan (dosya yazımından) ÖNCE bu günlüğe işlendi (madde 9.3).
+
+---
+
+## 2026-08-14 (aynı gün, beşinci oturum) — Proje görselleri: Storage bucket + yükleme akışı + medya kütüphanesi
+
+**Bulgu (araştırmayla ortaya çıktı, önceden dokümante edilmemişti):**
+DB'de 6 farklı `*_path` kolonu (`services.image_path`,
+`projects.image_path`, `testimonials.logo_path`,
+`team_members.photo_path`, `hero_sections.background_image_path`,
+`about_sections.image_path`) var ve ziyaretçi sitesindeki 8 görüntüleme
+bileşeni zaten `getPublicImageUrl(bucket, path)`'i 6 AYRI, hard-code
+edilmiş bucket adıyla (`"services"`, `"projects"`, `"testimonials"`,
+`"team"`, `"hero"`, `"about"`) çağırıyordu — **ama Supabase'de bu
+bucket'lardan HİÇBİRİ hiç oluşturulmamıştı** (migration'larda ne
+`storage.buckets` insert'i ne `storage.objects` policy'si var).
+Kullanıcının talebi sadece Projeler'e özeldi ("Proje düzenleme formuna
+görsel alanını bağla"), bu yüzden bu görev **sadece `"projects"`
+bucket'ını** kurdu; diğer 5'i `DURUM.md`'ye açık madde olarak eklendi.
+
+**Kullanıcı onayı (AskUserQuestion ile soruldu):** Büyük dosya UX'i için
+iki seçenek sunuldu — (A) sadece net bir red mesajı (dar kapsam,
+KISITLAR/KABUL KRİTERİ'nin harfiyen istediği), (B) otomatik istemci
+taraflı sıkıştırma + yedek olarak red mesajı (daha iyi gerçek deneyim
+ama yeni karmaşıklık, tarayıcıda test edilemeyeceği için doğrulanamaz).
+**Kullanıcı A'yı seçti** — kapsam KISITLAR'ın harfiyen istediğiyle
+sınırlı tutuldu, yeni bağımlılık/karmaşıklık eklenmedi.
+
+**Karar 1 — Tek bucket: `"projects"`, `public=true`.** Mevcut
+`ProjectCard.tsx`/`ProjectDetailModal.tsx` zaten bu adı bekliyordu.
+Migration: `supabase/migrations/20260814120000_create_projects_storage_bucket.sql`
+— `storage.objects` üzerinde, içerik tablolarındaki YERLEŞİK 5-policy
+deseniyle (anon select + authenticated select-all/insert/update/delete,
+bkz. `20260807130000_add_rls_policies.sql`) birebir aynı, `bucket_id =
+'projects'` filtresiyle. Bucket'ın `public=true` olması sadece anon
+`GET`'i (özel `/object/public/` yolu) etkiliyor — `.upload()`/
+`.remove()` gibi SDK çağrıları bucket ayarından BAĞIMSIZ her zaman
+`storage.objects` RLS'inden geçiyor, bu yüzden yazma politikaları
+"yalnız giriş yapmış kullanıcı" garantisini gerçekten Storage
+katmanında da sağlıyor (sadece uygulama kodunda değil).
+
+**Karar 2 — Server Action, direkt client→Storage upload DEĞİL.** Bu
+projede HİÇBİR yazma işlemi client'tan doğrudan Supabase'e gitmiyor —
+hepsi `requireAdminUser()` + doğrulama + `revalidatePath` desenli bir
+Server Action'dan geçiyor. Görsel yükleme için ikinci bir güvenlik
+modeli açılmadı, mevcut mimariyle tam tutarlı kalındı.
+
+**Karar 3 — `next.config.ts`: `experimental.serverActions.bodySizeLimit:
+"15mb"` — ince ama kritik bir ayrıntı.** Next.js dokümantasyonu
+(`node_modules/next/dist/docs/.../serverActions.md`, doğrudan okundu —
+bkz. `AGENTS.md` uyarısı) doğruladı: Server Action'ların varsayılan ham
+gövde limiti 1MB, aşılırsa istek Next.js TARAFINDAN, bizim kodumuz hiç
+çalışmadan reddediliyor. Bu, KABUL KRİTERİ'nin "kullanıcı ne olduğunu
+her adımda anlasın" maddesini bozardı (kullanıcı bizim Türkçe mesajımızı
+değil framework'ün jenerik hatasını görürdü). Transport limiti bilerek
+UYGULAMA limitinden (5MB) çok daha yüksek tutuldu — 10MB'lık bir test
+dosyası bile rahatça Next.js'i geçip bizim kodumuza ulaşsın, red
+kararını HER ZAMAN bizim kodumuz versin.
+
+**Karar 4 — Tür doğrulaması: sadece gerçek baytlar (magic number).**
+Yeni `lib/supabase/imageValidation.ts` — JPEG (`FF D8 FF`), PNG (`89 50
+4E 47 0D 0A 1A 0A`), WEBP (`RIFF....WEBP`) imzalarını dosyanın ilk 12
+baytından okuyor; uzantı veya tarayıcının bildirdiği `file.type`'a HİÇ
+bakılmıyor (KISITLAR'ın açık isteği). Saf fonksiyon — hem istemcide
+(`ProjectImageUploader.tsx`, anında geri bildirim) hem sunucuda
+(`imageActions.ts`, yetkili/gerçek doğrulama) AYNI kod kullanılıyor.
+
+**Karar 5 — Benzersiz, kullanıcı girdisinden bağımsız dosya adı.**
+`crypto.randomUUID()` (Node yerleşik) + doğrulanan türden üretilen
+uzantı → `${tenantId}/${uuid}.${uzantı}`. Kullanıcının gönderdiği dosya
+adının TEK BİR KARAKTERİ path oluşturmada kullanılmıyor — kötü niyetli
+bir ad (`../../evil.jpg` gibi) gönderilse bile yol değiştirme yapısal
+olarak imkansız (KABUL KRİTERİ'nin birebir istediği garanti).
+
+**Karar 6 — Atomiklik: "yarım kayıt kalmasın".** Sıra: (a) Storage'a
+yükle, (b) başarılıysa DB satırını güncelle. (b) başarısız olursa (a)'da
+yüklenen nesne HEMEN silinir (telafi edici temizlik, `imageActions.ts`
+`uploadProjectImageAction`) — Supabase Storage+Postgres arasında gerçek
+bir dağıtık transaction yok, bu yüzden bu "önce yükle, DB hatasında geri
+sil" deseni en yakın pratik yaklaşım. Görsel değiştiriliyorsa, yeni
+görsel başarıyla kaydedildikten SONRA eski görsel best-effort silinir
+(başarısız olsa da işlemi başarısız SAYMAZ).
+
+**Karar 7 — Silme UI'ı sıfırdan yazılmadı, mevcut `DeleteButton`/
+`ConfirmDeleteDialog` (2026-08-14, üçüncü oturum) AYNEN kullanıldı.**
+`id` prop'una bir DB satırı yerine Storage path'i veriliyor — bileşenler
+generic olduğu için farkı bilmiyor. `deleteProjectImageAction` TEK bir
+eylem, hem `ProjectImageUploader.tsx`'teki "Kaldır" hem Medya
+Kütüphanesi'nin "Sil" butonu tarafından paylaşılıyor (path eşleşmesine
+bakıyor, DB'den `image_path`'i `null`'a çekiyor — kırık referans
+kalmıyor). Plandaki ayrı `medya/actions.ts` dosyası bu yüzden
+AÇILMADI — DRY, tek kaynak.
+
+**Karar 8 — `/panel/medya` placeholder'ı gerçek ekrana dönüştü,
+`ProjectForm.tsx`'e DEĞİL ayrı bir bileşene.** `ProjectImageUploader.tsx`
+`[id]/page.tsx`'te `<ProjectForm>`'un YANINDA, sadece düzenleme modunda
+(yönergenin açık isteği: "Proje düzenleme formuna" — yeni kayıt
+oluştururken henüz bağlanacak bir id yok). Metin alanları kaydetme ile
+görsel yükleme bilinçli olarak AYRI Server Action'lar — mevcut
+`updateProjectAction`'ın "değişiklik yoksa yazma" mantığına (2026-08-14,
+üçüncü oturum) dokunulmadı.
+
+**Karar 9 — Durum göstergesi: mevcut `SubmitButton`/`useFormStatus`
+deseni, gerçek bayt-bazlı ilerleme çubuğu YOK.** Supabase JS Storage
+SDK `fetch` tabanlı, native progress event'i yok; kullanıcı zaten
+"ilerleme VEYA en azından durum göstergesi" diyerek bu seçeneği açıkça
+bırakmıştı.
+
+**Uygulama sırasında düzeltilen bir hata:** İlk taslakta
+`ProjectImageUploader`'ın başarı sonrası temizlik `useEffect`'i
+`setSelectedFile(null)`/`setPreviewUrl(null)` çağırıyordu — bu,
+`react-hooks/set-state-in-effect` kuralını tetikledi (2026-08-14, üçüncü
+oturumdaki `DeleteButton` hatasıyla AYNI kök neden). Çözüm de aynı ilke:
+effect SADECE `formRef.current?.reset()` (DOM ref metodu) çağırıyor,
+React state'i effect içinde DEĞİL sadece kullanıcı olaylarında
+(`onChange`) güncelleniyor.
+
+**Tarih düzeltmesi (kendi hatam):** İlk yazımda bu işi yanlışlıkla
+2026-08-13 olarak tarihledim (migration dosya adı dahil) — sistemin
+"bugün" bilgisi projenin kendi kronolojisinden (son kayıt 2026-08-14)
+GERİYE gidiyordu, bu tutarsızlığı fark edip migration dosyasını
+(`20260814120000_...` olarak) ve tüm docs/kod referanslarını 2026-08-14'e
+düzelttim.
+
+**Doğrulama (gerçek, migration + `npm run dev` + curl + Storage/DB
+kontrolüyle — kod incelemesi değil):** Kullanıcı migration'ı SQL
+Editor'de çalıştırdı. `npm run build`/`lint` temiz.
+
+**RLS testi** (`scripts/_test-storage-rls.mjs`, sonra silindi — 2026-08-07
+tarihli `test-rls.mjs` ile aynı desen): anon key ile yükleme denemesi
+`"new row violates row-level security policy"` ile REDDEDİLDİ (beklenen);
+gerçek admin oturumuyla (giriş yapıp) yükleme BAŞARILI oldu (beklenen).
+Storage RLS'in "yalnız giriş yapmış kullanıcı" garantisini gerçekten
+uyguladığı doğrulandı.
+
+**Uygulama mantığı testi** (geçici `app/api/test-upload-temp/route.ts`
+— `imageActions.ts`'in AYNI doğrulama/atomiklik mantığını curl'le test
+edilebilir kılan bir ayna, 2026-08-14'teki "test-revalidate" öncülüyle
+aynı desen — auth kontrolü bilinçli yok, o RLS testiyle ayrıca
+doğrulandı):
+
+| # | Senaryo | Sonuç |
+|---|---|---|
+| 1 | Gerçek, geçerli ~2MB PNG (Node'un yerleşik `zlib`'iyle üretildi, `deflateSync(..., {level:0})` ile hassas boyut kontrolü) | ✅ Başarı — DB'de `image_path` güncellendi, Storage'da nesne gerçekten var, doğrudan sorgu/liste ile teyit edildi |
+| 2 | Gerçek, geçerli ~10.01MB PNG — **kullanıcının açıkça istediği test** | ✅ **413**, tam istenen net mesaj: `"Dosya boyutu 10.0 MB, izin verilen üst sınır 5.0 MB. Telefonunuzun galeri/paylaşım ekranında 'küçük' veya 'orta boyut' seçeneğini kullanarak tekrar deneyin."` — DB/Storage'a hiçbir yazma olmadığı ayrıca doğrulandı |
+| 3 | `.jpg` uzantılı ama gerçek içeriği düz metin olan dosya | ✅ Red — `"Sadece JPEG, PNG veya WEBP formatında görsel yükleyebilirsiniz."` |
+| 4 | Kötü niyetli orijinal dosya adı (`../../../../etc/evil-passwd.png`) | ✅ Üretilen path SADECE UUID (`test-tenant/<uuid>.png`) — Storage listesinde kötü niyetli adın hiçbir izi yok, doğrudan doğrulandı |
+| 5 | Geçersiz proje id (`"not-a-valid-uuid-at-all"`) — DB yazmasını KASITLI başarısız kılmak için | ✅ DB güncellemesi gerçek bir Postgres hatasıyla (`invalid input syntax for type uuid`) başarısız oldu, Storage'a önceden yüklenen nesne HEMEN silindi (`cleanupError: null`) — yetim dosyanın gerçekten kalmadığı ayrı bir `.download()` denemesiyle (`Object not found`) doğrulandı |
+
+**Test sırasında bulunan ve düzeltilen GERÇEK, önceden fark edilmemiş
+bir hata:** Test 2 ilk denemede `HTTP 500` + boş gövde + sunucu
+loglarında `"Failed to parse body as FormData" / "expected boundary
+after body"` verdi — 10MB'lık dosya bizim güzel mesajımıza hiç
+ulaşamadan bozuluyordu. Kök neden: kök `proxy.ts`'in (panel auth
+koruması, matcher'ı NEREDEYSE TÜM istekleri kapsıyor) kendi, TAMAMEN
+AYRI bir istek gövdesi tamponlama sınırı var —
+`experimental.proxyClientMaxBodySize`, varsayılan **10MB** — bu,
+`serverActions.bodySizeLimit`'i (15mb) yükseltmenin YETERSİZ olduğu,
+araştırma aşamasında okunmuş ama bu projeye (proxy.ts kullanıyor)
+etkisi tam bağlanmamış bir ayardı. `next.config.ts`'e
+`experimental.proxyClientMaxBodySize: "15mb"` eklenerek (aynı 15mb
+değeriyle, iki limit TUTARLI kalsın diye) düzeltildi, dev sunucu
+yeniden başlatılıp Test 2 doğru sonucu verene kadar tekrarlandı. Bu,
+gerçek bir 10MB'lık dosyayla test etmenin (kullanıcının açık isteği)
+neden kod incelemesiyle asla yakalanamayacak bir hatayı bulduğunun somut
+kanıtı.
+
+Test verileri (2 Storage nesnesi, 1 DB satırının `image_path`'i) test
+sonrası orijinal haline geri alındı, geçici route/script'ler silindi.
+`npm run build`/`lint` son bir kez temiz doğrulandı.

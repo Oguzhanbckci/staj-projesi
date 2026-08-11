@@ -6,8 +6,8 @@ yapılacağını" (özellik kapsamı), bu dosya "nasıl yapılacağını" (tekni
 seçimler) tanımlar. Kod içermez. Karar değişirse önce `KARAR-GUNLUGU.md`'ye
 kayıt düşülür, sonra bu dosya güncellenir.
 
-**Son güncelleme:** 2026-08-14 (3. güncelleme — silme onayı/yayınla/sırala
-+ Referanslar/SSS/Ekip panel CRUD eklendi)
+**Son güncelleme:** 2026-08-14 (4. güncelleme — proje görselleri için
+Storage bucket + yükleme akışı + medya kütüphanesi eklendi)
 
 ## 0. Bağlam
 
@@ -402,6 +402,35 @@ doğru yolun seçildiğini hem statik+on-demand ISR mimarisinin
 (`docs/MIMARI.md` madde 6) gerçekten çalıştığını gösterdi. Test verisi
 ve geçici test route'u/script'leri doğrulama sonrası silindi.
 
-## 11. Açık Sorular
+## 11. Görsel Yükleme Deseni *(2026-08-14 eklendi)*
+
+Panelden Storage'a görsel yükleme (şu an sadece Projeler) — güvenlik
+kuralları için tek referans **`docs/GUVENLIK.md` madde 11-12**, burada
+sadece dosya yerleşimi/mimari:
+
+- `lib/supabase/imageValidation.ts` — saf, hem istemci hem sunucuda
+  kullanılan doğrulama (magic-byte tür tespiti + boyut sabiti) —
+  `lib/validation/*.ts`'teki zod şemalarıyla AYNI ilke (tek doğrulama
+  mantığı, iki yerde tekrar edilmez).
+- `app/panel/(protected)/icerikler/projeler/imageActions.ts` —
+  `uploadProjectImageAction`/`deleteProjectImageAction`, madde 10'daki
+  "Sunucu Eylemleri Kuralları"na tabi (auth ilk satır, hata mesajları
+  Türkçe/anlamlı, `revalidatePath("/")`) ama metin alanlarını kaydeden
+  `actions.ts`'ten BİLİNÇLİ olarak ayrı bir dosya — görsel yükleme kendi
+  başına bir yan etki, form kaydetmeyle karışmıyor.
+- `app/panel/(protected)/icerikler/projeler/ProjectImageUploader.tsx` —
+  sadece düzenleme modunda (`[id]/page.tsx`), `ProjectForm`'un YANINDA
+  ayrı bir bileşen.
+- `app/panel/(protected)/medya/` — Medya Kütüphanesi, `/panel`'in eskiden
+  placeholder olan rotası artık gerçek. Silme, `DeleteButton`/
+  `ConfirmDeleteDialog`'u (bkz. madde 9) HİÇ DEĞİŞTİRMEDEN yeniden
+  kullanıyor — `id` prop'una bir DB satırı yerine Storage path'i
+  veriliyor, bileşenler generic olduğu için farkı bilmiyor.
+- **Kapsam:** Sadece `"projects"` bucket'ı kuruldu. `services`/`hero`/
+  `about`/`testimonials`/`team` için görüntüleme kodu zaten bucket adı
+  bekliyor (bkz. `GUVENLIK.md` madde 11) ama bucket'ların kendisi henüz
+  yok — aynı desen ileride tekrarlanabilir.
+
+## 12. Açık Sorular
 
 Şu an aktif açık soru yok.

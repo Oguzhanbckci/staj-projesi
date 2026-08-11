@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { getProjectById } from "@/lib/supabase/panelQueries";
 import { ProjectForm } from "../ProjectForm";
+import { ProjectImageUploader } from "../ProjectImageUploader";
 
 export default async function EditProjectPage({
   params,
@@ -20,6 +21,7 @@ export default async function EditProjectPage({
       <div className="mt-6">
         <ProjectForm project={project} />
       </div>
+      <ProjectImageUploader project={project} />
     </div>
   );
 }

@@ -7,7 +7,7 @@ edilmeyen tek konudur — bu yüzden yazılı ve güncel tutulur. Kararların
 kronolojik gerekçesi için `KARAR-GUNLUGU.md`, teknik mimari için `MIMARI.md`,
 tablo/kolon tasarımı için `VERİ-MODELİ.md` referans alınır.
 
-**Son güncelleme:** 2026-08-12
+**Son güncelleme:** 2026-08-14 (Storage politikaları + dosya yükleme kuralları eklendi)
 
 ## 1. Tehdit Modeli
 
@@ -352,3 +352,104 @@ Bu proje şu an gerçek bir müşteriye canlıya alınmıyor (bkz. `DURUM.md`,
 Bu liste, ilgili adımlar tamamlandıkça güncellenmeli — yeni bir madde
 "tamamlandı" olarak işaretlenmeden önce madde 4'teki gibi gerçek bir testle
 doğrulanmalı, sadece kod yazılmış olması yeterli sayılmamalı.
+
+## 11. Storage Politikaları *(2026-08-14 eklendi)*
+
+Supabase Storage'ın kendi RLS'i vardır — `storage.objects` tablosu
+üzerinde, içerik tablolarıyla (madde 2) AYNI mantıkla ama ayrı bir
+politika seti gerektirir. Bir bucket'ın `public=true` olması SADECE
+kimliksiz (anon) `GET` isteklerinin özel `/storage/v1/object/public/...`
+adresinden çalışmasını sağlar — `.upload()`/`.remove()`/`.list()` gibi
+SDK çağrıları bucket'ın public/private durumundan BAĞIMSIZ olarak HER
+ZAMAN `storage.objects` RLS'inden geçer. Bu yüzden "yazma yalnız giriş
+yapmış kullanıcıya" garantisi bucket ayarına değil, RLS policy'lerine
+dayanır.
+
+**Kurulu tek bucket: `"projects"`, `public=true`.**
+(`supabase/migrations/20260814120000_create_projects_storage_bucket.sql`)
+İçerik tablolarındaki yerleşik 5-policy deseniyle (madde 2) birebir aynı,
+`bucket_id = 'projects'` filtresiyle:
+
+| Politika | Rol | İşlem |
+|---|---|---|
+| `projects_bucket_anon_select` | anon | select |
+| `projects_bucket_authenticated_select` | authenticated | select |
+| `projects_bucket_authenticated_insert` | authenticated | insert |
+| `projects_bucket_authenticated_update` | authenticated | update |
+| `projects_bucket_authenticated_delete` | authenticated | delete |
+
+**Önemli, önceden dokümante edilmemiş bir bulgu (2026-08-14 araştırmasıyla
+ortaya çıktı):** `services.image_path`, `hero_sections.
+background_image_path`, `about_sections.image_path`,
+`testimonials.logo_path`, `team_members.photo_path` kolonları var ve
+ziyaretçi sitesindeki görüntüleme bileşenleri (`ServiceCardImage.tsx`,
+`HeroVariantA/B.tsx`, `AboutSection.tsx`, `TestimonialCard.tsx`,
+`TeamMemberCard.tsx`) zaten sırasıyla `"services"`, `"hero"`, `"about"`,
+`"testimonials"`, `"team"` adında bucket'lar bekliyor — **ama bu 5
+bucket'tan HİÇBİRİ henüz oluşturulmadı.** Bu tabloların `*_path`
+kolonlarına gerçek bir değer girilse bile (panelden değil, elle) görsel
+404 verir. Sadece Projeler için bu görev kapsamında bucket+RLS+yükleme
+akışı kuruldu; diğer 5'i aynı desenle (bkz. madde 12) ileride ele
+alınmalı.
+
+## 12. Dosya Yükleme Kuralları *(2026-08-14 eklendi)*
+
+Panelden görsel yükleme (şu an sadece Projeler,
+`app/panel/(protected)/icerikler/projeler/imageActions.ts`) şu kuralları
+İSTİSNASIZ uygular:
+
+1. **Oturum kontrolü İLK satır** (`requireAdminUser()`, madde 5'teki
+   AYNI ilke) — hem uygulama katmanında hem Storage RLS katmanında
+   (madde 11) yalnız giriş yapmış kullanıcı.
+2. **Tür doğrulaması dosyanın GERÇEK baytlarına (magic number) bakar,
+   uzantıya veya tarayıcının bildirdiği MIME'a asla güvenmez**
+   (`lib/supabase/imageValidation.ts` — JPEG `FF D8 FF`, PNG `89 50 4E
+   47 0D 0A 1A 0A`, WEBP `RIFF....WEBP`). Bu fonksiyon hem istemcide
+   (anında geri bildirim) hem sunucuda (yetkili/gerçek doğrulama) AYNI
+   şekilde çalışır — istemci tarafı asla güvenlik sınırı değildir.
+3. **Boyut sınırı: 5 MB**, aşılırsa somut/aksiyon öneren bir Türkçe
+   mesaj döner (`lib/supabase/imageValidation.ts`
+   `MAX_IMAGE_SIZE_BYTES`).
+4. **İki AYRI transport-katmanı sınırı var, ikisi de uygulama
+   sınırından (madde 3, 5 MB) yüksek tutulmalı — biri unutulursa
+   kullanıcı bizim güzel mesajımızı değil framework'ün ham hatasını
+   görür.** `next.config.ts`:
+   - `experimental.serverActions.bodySizeLimit: "15mb"` — Server
+     Action'ların varsayılan ham gövde limiti 1 MB.
+   - `experimental.proxyClientMaxBodySize: "15mb"` — kök `proxy.ts`'in
+     (panel auth koruması, matcher'ı NEREDEYSE TÜM istekleri kapsıyor)
+     KENDİ, birinciden TAMAMEN BAĞIMSIZ çalışan istek gövdesi tamponlama
+     sınırı, varsayılanı **10 MB**. **Gerçek bir 10 MB'lık test
+     dosyasıyla canlı olarak yakalanan bir hata** (2026-08-14): ilk
+     denemede sadece `serverActions.bodySizeLimit` yükseltilmişti, 10
+     MB'lık dosya bu ikinci (unutulan) sınıra takılıp istek gövdesi
+     bozuldu — `HTTP 500`, "Failed to parse body as FormData". İkisi de
+     aynı değere (15mb) çıkarılınca düzeldi. **Ders:** `proxy.ts`
+     kullanan bir projede büyük istek gövdesi (dosya yükleme vb.)
+     kabul eden HER YENİ rota için bu iki ayarın TUTARLI olduğu
+     kontrol edilmeli — biri yeterli değil.
+5. **Benzersiz, kullanıcı girdisinden tamamen bağımsız dosya adı —
+   path traversal yapısal olarak imkansız.** `crypto.randomUUID()` +
+   madde 2'de doğrulanan türden üretilen uzantı: yol
+   `${tenantId}/${uuid}.${uzantı}`. Kullanıcının gönderdiği dosya adının
+   TEK BİR KARAKTERİ bile bu yola karışmıyor.
+6. **Atomiklik — yarım/yetim kayıt kalmaz.** Sıra: (a) Storage'a yükle,
+   (b) başarılıysa DB satırını güncelle. (b) başarısız olursa (a)'da
+   yüklenen nesne HEMEN silinir (telafi edici temizlik). Görsel
+   değiştiriliyorsa, yeni görsel başarıyla kaydedildikten SONRA eski
+   görsel best-effort silinir (başarısız olsa da işlem başarısız
+   SAYILMAZ, sadece loglanır).
+7. **Silme işlemi de aynı auth/RLS kurallarına tabi** —
+   `deleteProjectImageAction`, hem "Kaldır" (proje düzenleme sayfasında)
+   hem Medya Kütüphanesi'nin "Sil" butonu tarafından paylaşılıyor;
+   silinen görsele işaret eden proje kaydı varsa `image_path` otomatik
+   `null`'a çekilir (kırık görsel referansı sitede kalmaz).
+
+**Doğrulama (gerçek, tamamlandı — 2026-08-14):** Bkz. `docs/KARAR-GUNLUGU.md`
+— RLS testi (anon reddedildi, authenticated başarılı) + 5 senaryolu
+uygulama mantığı testi (geçerli ~2MB görsel, gerçek ~10MB görsel ile
+boyut reddi, sahte uzantı/magic-byte uyuşmazlığı, kötü niyetli dosya
+adıyla path traversal denemesi, DB yazma hatasında Storage temizliği) —
+hepsi gerçek Supabase Storage'a karşı, curl + doğrudan Storage/DB
+sorgularıyla teyit edildi. Test sırasında madde 12.4'teki
+`proxyClientMaxBodySize` hatası da bu testlerle bulunup düzeltildi.

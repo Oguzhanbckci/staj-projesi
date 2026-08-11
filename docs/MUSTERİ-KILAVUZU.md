@@ -50,6 +50,38 @@ e-posta ve şifreyle giriş yapın. Soldaki menüden (mobilde üstteki
 5. Hatalı/eksik bir alan varsa aynı ekleme formundaki gibi üstte özet,
    alanın altında kırmızı açıklama gösterilir.
 
+## Görsel Ekleme *(şu an sadece Projeler için)*
+
+Bir projeyi **düzenleme** sayfasında (yeni proje eklerken değil —
+önce projeyi ekleyip kaydedin, sonra "Düzenle"ye tıklayıp görseli
+ekleyin), formun altında "Proje Görseli" bölümü var:
+
+1. **"Görsel yükle"** (veya bir görsel zaten varsa "Görseli değiştir")
+   alanına tıklayıp bilgisayarınızdan/telefonunuzdan bir fotoğraf seçin.
+2. Seçtiğiniz fotoğraf **hemen ekranda küçük bir önizleme** olarak
+   görünür — henüz yüklenmedi, sadece doğru fotoğrafı seçtiğinizi
+   kontrol edebilmeniz için.
+3. **"Yükle"** butonuna basın. Buton "Yükleniyor…" yazısına döner ve
+   işlem bitene kadar tekrar tıklanamaz — bu normaldir, bekleyin.
+4. Yükleme bitince sayfa güncellenir, fotoğraf artık "Mevcut görsel"
+   olarak görünür.
+
+**Kabul edilen dosyalar:** Sadece JPEG, PNG veya WEBP formatı, en fazla
+**5 MB**. Telefondan çekilmiş çok büyük bir fotoğraf (ör. 8-10 MB)
+seçerseniz, ekranda size boyutu ve sınırı gösteren net bir uyarı
+çıkar — bu durumda telefonunuzun galeri/paylaşım ekranında "küçük" veya
+"orta boyut" seçeneğini kullanarak tekrar deneyin.
+
+**Görseli kaldırma:** "Mevcut görsel"in yanındaki kırmızı **"Sil"**
+butonuna basın — silme akışı, diğer içeriklerdeki silme onayıyla
+(bkz. "Sıralama Değiştirme ve Silme") birebir aynı: kaydın adını
+gösteren bir onay penceresi açılır, geri alınamaz.
+
+**Medya Kütüphanesi:** Sol menüdeki **"Medya"** sayfasında, şimdiye
+kadar yüklediğiniz TÜM proje görsellerini tek listede görebilirsiniz —
+önizleme, dosya adı, hangi projede kullanıldığı (kullanılmıyorsa
+"Kullanılmıyor" yazar) ve buradan da silebilirsiniz.
+
 ## Yayınlama ve Taslak
 
 Her kaydın yanında bir **durum etiketi** vardır:
