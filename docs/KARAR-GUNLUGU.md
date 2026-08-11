@@ -2858,3 +2858,185 @@ script silindi.
 `components/panel/navItems.ts`'teki yorum hâlâ "Tema ve Ayarlar hâlâ
 placeholder" diyordu — Tema bir önceki oturumda gerçek oldu, yorum
 "sadece Ayarlar hâlâ placeholder" olarak düzeltildi.
+
+## 2026-08-16 — Tema önayarları, Varsayılana Dön, SEO Ayarları ekranı
+
+**Rota kararı — yeni nav öğesi AÇILMADI, mevcut boş bir vaat kapatıldı.**
+`app/panel/(protected)/ayarlar/page.tsx`'in placeholder metni 2026-08-06'dan
+beri "Site ayarları (SEO, iletişim bilgileri, sosyal medya linkleri)
+düzenleme arayüzü Faz 5'te eklenecek" diyordu. İletişim/sosyal medya
+kısmı önceki oturumda bilinçli olarak `/panel/tema`'ya yönlendirilmişti;
+SEO kısmı ise HİÇ karşılanmamıştı. SEO ekranı YENİ bir rotaya değil,
+doğrudan `/panel/ayarlar`'a yazıldı — bu, kodun kendi ÖNCEDEN VERDİĞİ
+sözü kapatan, nav'a 8. öğe eklemekten daha tutarlı bir seçim. Önayar
+uygulama + varsayılana dön ise `/panel/tema`'ya eklendi (kavramsal
+olarak marka rengi/radius/font'un parçası).
+
+**Karar 1 — Önayar uygulamak, sadece `theme_preset`'i değiştirmek
+YETMİYOR, 4 override kolonu da temizlenmeli.** `resolveThemeTokens()`
+her zaman `primary_color`/`secondary_color`/`border_radius_scale`/
+`font_family_key` override'larını preset'in üzerine uyguluyor (bkz.
+`lib/theme/resolve.ts`) — bu yüzden bir tenant'ın ZATEN dolu override'ları
+varken sadece `theme_preset`'i değiştirmek görünürde HİÇBİR ŞEYİ
+değiştirmezdi (override'lar tarafından gölgelenirdi). KISITLAR'ın
+"uygulanınca mevcut ayarların değişeceği konusunda kullanıcıyı uyar"
+isteği ancak GERÇEKTEN bir şey değişirse anlamlı olduğu için,
+`applyThemePresetAction` bilerek `{theme_preset: presetKey, primary_color:
+null, secondary_color: null, border_radius_scale: null, font_family_key:
+null}` yazıyor — önayar seçimi artık her zaman GÖRÜNÜR, öngörülebilir
+bir sonuç veriyor.
+
+**Karar 2 — "Varsayılana Dön", YENİ bir sunucu fonksiyonu DEĞİL, AYNI
+`applyThemePresetAction`'ın `DEFAULT_THEME_PRESET` ile çağrılması.**
+İki buton (2 önayar + 1 "Varsayılana Dön") farklı onay metni/buton
+rengiyle (`danger` varyant, "kurtarma" hissi) AYNI mekanik işlemi
+tetikliyor — kod tekrarı yok. Varsayılana dön SADECE Marka alanlarını
+(renk/radius/font) sıfırlıyor, Site Kimliği/İletişim/Sosyal Medya/Logo/
+Favicon'a BİLEREK dokunmuyor — "ayarı bozan" bir müşterinin muhtemelen
+kastettiği şey renk/font denemeleri, özenle girdiği iletişim bilgilerini/
+yüklediği logoyu SİLMEK değil.
+
+**Karar 3 — Yeni genel `components/panel/ConfirmActionDialog.tsx`,
+`ConfirmDeleteDialog`'a DOKUNULMADI.** `ConfirmDeleteDialog` yıkıcı/"Sil"
+diline kilitli (başlık, `danger` varyant sabit, "Evet, Sil" metni sabit)
+— önayar uygulama yıkıcı değil (geri dönüşü var: başka bir önayar/manuel
+değer seçilebilir). `useDialogBehavior`'ı (odak tuzağı/Escape/scroll
+kilidi) paylaşan ama title/description/confirmLabel/confirmVariant
+parametreli genel bir dialog yazıldı — hem burada (3 kullanım: 2 önayar +
+1 reset) hem ileride benzer bir onaylı-eylem ihtiyacında kullanılabilir.
+`ConfirmDeleteDialog` kendi "id" alanına gizli input yazan silme-özel
+deseniyle DEĞİŞMEDEN kaldı.
+
+**Karar 4 — Gerçek bir React tuzağı bulundu ve çözüldü: Server Action
+sonrası `useState`'ler kendiliğinden güncellenmiyor.** `ThemeEditor.tsx`'in
+`useState(initialData.primaryColor ?? "")` gibi satırları SADECE ilk
+mount'ta çalışır — `applyThemePresetAction` + `revalidatePath` sonrası
+React `ThemeEditor`'e YENİ bir `initialData` prop'u geçse bile bu
+`useState`'ler bunu YOK SAYAR (klasik bir React tuzağı — `useState`'in
+başlangıç değeri sadece İLK render'da okunur). Çözüm: action başarılı
+dönünce `window.location.reload()` — tam sayfa yenileme, state
+senkronizasyon karmaşıklığına (ör. `key` prop'uyla zorla remount,
+`useEffect` ile manuel senkron) girmeden. `window.location.reload()` bir
+React state setter DEĞİL — `react-hooks/set-state-in-effect` kuralını
+TETİKLEMİYOR (bu proje bunu `formRef.current?.reset()` ve `useActionState`
+dispatch çağrıları için 2026-08-14/15'te iki kez ampirik doğruladı,
+üçüncü doğrulamaya gerek görülmedi). `state !== initialState` (referans
+eşitliği, DEĞER eşitliği değil) ile korunuyor — aksi halde `initialState`
+ile aynı `{success:true}` şeklini taşıyan başlangıç state'i de "başarılı,
+yenile" sanılıp bileşen her mount olduğunda SONSUZ YENİLEME DÖNGÜSÜNE
+girerdi (ProjectImageUploader.tsx'teki benzer `if (state.success)`
+deseninde bu risk yoktu çünkü tetiklediği `formRef.current?.reset()`
+zaten-boş bir formda görünmez bir no-op'tu — `window.location.reload()`
+için AYNI kalıp kritik bir hataya dönüşürdü, bu yüzden ekstra referans
+kontrolü eklendi).
+
+**Karar 5 — SEO karakter sınırları YUMUŞAK (UI uyarısı), SERT (zod
+hatası) DEĞİL.** KISITLAR "sınır aşılınca uyar" diyor, "engelle" demiyor
+— gerçek SEO pratiğinde 60/160 karakteri aşan bir başlık/açıklama HATA
+değil, sadece arama sonucunda kesilme demek. `lib/validation/seo.ts`'teki
+zod `max()`'ları çok daha yüksek (200/500/300) — kötüye kullanım/DB
+şişmesine karşı SERT bir tavan, gerçek SEO tavsiyesini (60/160) UI'da
+`SeoEditor.tsx`'teki `CharacterCount` bileşeni ayrıca, sadece renk
+değiştirerek gösteriyor.
+
+**Karar 6 — `SearchResultPreview.tsx`'te TASARIM-SISTEMI.md madde 0.1'in
+("renkler token'dır, hardcode edilmez") BİLİNÇLİ tek istisnası.** Google
+arama sonucu linkinin rengi (`#1a0dab`) sabit yazıldı — tenant'ın kendi
+`text-brand`'ını kullansaydık önizleme YANILTICI olurdu (gerçek Google
+sonucu tenant temasından bağımsız, her zaman bu sabit maviyle görünür).
+İstisna dosyada VE kullanım satırında açıkça gerekçelendirildi.
+
+**Test 1 — Ayar ekranları denetimi (bir ajanla, kullanıcının isteğiyle):**
+Tema/Sayfa Düzeni/Ayarlar/Mesajlar ekranlarının TÜM form-alan/action
+eşleşmeleri (eksik alan, kaydedilmeyen değer) satır satır karşılaştırıldı
+— HİÇBİRİNDE sorun bulunamadı (12 tema alanı, 3 SEO alanı, hepsi
+action'ların dirty-check listeleriyle birebir eşleşiyor). 2 gerçek etiket
+tutarsızlığı bulundu, İKİSİ DE düzeltildi:
+1. `ThemeEditor.tsx`'teki "Köşe Yarıçapı"/"Font Ailesi" etiketlerinde,
+   panel genelindeki her opsiyonel alanın taşıdığı "(opsiyonel)" son eki
+   eksikti — eklendi.
+2. `ReadStatusBadge.tsx`'in okunmamış mesaj rozeti "Yeni" diyordu, ama
+   panelin İKİ BAŞKA yerinde (özet ekranı kartı, kenar menü rozeti) AYNI
+   `is_read=false` kavramı "Okunmamış" olarak etiketleniyordu — rozet de
+   "Okunmamış" yapıldı (daha isabetli de: "Okundu"/"Okunmamış" gerçek bir
+   zıt çift, "Okundu"/"Yeni" değil — bir mesaj hem eski hem okunmamış
+   olabilir). `docs/MUSTERİ-KILAVUZU.md`'deki alıntı da eşlenik güncellendi.
+
+**Test 2 — "Yeni müşteri" uçtan uca dogfood testi (gerçek dev sunucusuna
+karşı, servis-rolü script + `fetch`):**
+
+*Aşama 1 — `applyThemePresetAction`'ın gerçek mantığı:* "Modern Koyu"
+uygulandı (`theme_preset="modern-koyu"` + 4 override null). `<html
+style>` doğrulandı: `--color-brand:#166966`, `--radius-sm:0.375rem`,
+`--font-sans:var(--font-manrope)` — preset'in KENDİ değerleri, hiçbir
+eski override sızıntısı yok.
+
+*Aşama 2 — Modern Koyu üzerine tamamen özel bir marka:* `primary_color=
+#c1502e` (terrakota), `secondary_color=#2d6a4f` (orman yeşili),
+`border_radius_scale=keskin`, `font_family_key=poppins`, yeni slogan;
+bölüm sırası köklü şekilde değiştirildi (Referanslar hero'dan hemen
+sonraya taşındı, İstatistikler gizlendi); 5 varyantlı bölümün (hero/
+services/projects/testimonials/faq) HEPSİ alternatif varyantına
+çevrildi; yeni SEO başlık/açıklama/anahtar kelime yazıldı. **15/15
+doğrulama noktası geçti** — `/`, `/ekip`, `/iletisim` hepsi 200, her
+token/metin/gizleme doğru yansıdı.
+
+*Bağımsız kontrast doğrulaması:* `#c1502e` için siyah/beyaz oranları
+elle de hesaplandı — beyaz 4.71:1, siyah 4.45:1 — AA eşiğine (4.5:1)
+ÇOK yakın ama beyazın GEÇTİĞİ bir sınır durumu; `<html style>`'daki
+gerçek `--color-brand-on:#ffffff` çıktısıyla birebir örtüştü. Bu, sınır
+durumlarında bile `pickReadableTextColor()`'ın doğru karar verdiğinin
+somut kanıtı.
+
+*Temizlik:* Test öncesi durum (kullanıcının panelden kendi denediği
+GERÇEK ara durum — hero="b", services="image", faq="two-column" —
+sabit eski seed DEĞİL, script başında CANLI okunmuştu) birebir geri
+yüklendi.
+
+**Dürüst değerlendirme ("sonucumuz ikna edici mi"):** Bu ortamda
+tarayıcı `localhost`'a erişemiyor ve headless ekran görüntüsü alacak bir
+araç (Playwright vb.) kurulu değil — bu yüzden gerçek pikselleri GÖREREK
+bir değerlendirme yapılamadı, bu açıkça kullanıcıya bildirildi. Bunun
+yerine ölçülebilir/gerekçeli kriterlere dayalı bir değerlendirme
+sunuldu: (1) Terrakota+orman yeşili çifti sıcak/soğuk dengeli, inşaat
+sektörüne uygun bir palet, ikisi de WCAG AA geçiyor (terrakota sınıra
+çok yakın olsa da). (2) "Keskin" (minimal yuvarlama) radius + Poppins
+(belirgin yuvarlak harf karakterleri olan bir font) kombinasyonu küçük
+bir estetik gerilim taşıyabilir — kusurlu değil ama en uyumlu eşleşme
+olmayabilir, dürüstçe not edildi. (3) Hero(tam ekran)+Referanslar(öne
+çıkan)+Projeler(mozaik) sırası görsel olarak hareketli/modern bir akış
+oluşturuyor. Nihai, pikselleri gören kararı kullanıcının kendisi
+vermeli — `npm run dev` ile bakması önerildi.
+
+**Sonradan bulunan gerçek bir hata (kullanıcı raporu): iç içe `<form>`,
+Tema Önayarları/Varsayılana Dön hiç çalışmıyordu.** Kullanıcı gerçek
+tarayıcıda "Uygula"/"Varsayılana Dön" butonlarına tıklayınca hiçbir
+değişiklik olmadığını bildirdi. Kök neden: `ThemePresetPicker.tsx`,
+`ThemeEditor.tsx`'in ANA `<form action={formAction}>`'ının İÇİNE
+yerleştirilmişti; onay penceresi açıldığında `ConfirmActionDialog`'un
+KENDİ `<form>`'u da DOM'da bu dış formun içinde render oluyordu — bir
+`<form>` başka bir `<form>`'un içinde (geçersiz HTML, tarayıcının hangi
+formu göndereceği belirsizleşir). Dialog GÖRSEL olarak doğru açılıyordu
+(`position: fixed` DOM yerleşiminden bağımsız çalışır) ama "Evet, Uygula"
+tıklaması hiçbir Server Action'ı güvenilir şekilde tetiklemiyordu — tam
+olarak kullanıcının tarif ettiği belirti.
+
+**Bu hatanın ÖNCEKİ 15/15 doğrulamayı GEÇMESİNİN nedeni — önemli bir
+metodoloji notu:** Bu oturumdaki TÜM "uçtan uca test"ler servis-rolü
+script'iyle DB'ye doğrudan yazıp `curl`/`fetch` ile OKUMA tarafını
+doğruluyordu (bu ortamda tarayıcı `localhost`'a erişemediği için, bkz.
+önceki oturumlar) — GERÇEK BİR TARAYICI FORM GÖNDERİMİNİ hiçbir zaman
+alıştırmadı. İç içe `<form>` gibi salt DOM/tarayıcı-semantiği hataları
+bu yüzden yapısal olarak YAKALANAMAZDI, ne kadar titiz DB-seviyeli
+doğrulama yapılırsa yapılsın. Ders: yeni bir dialog/form BİR MEVCUT
+formun içine yerleştirilecekse (ki panelin başka hiçbir yerinde bu desen
+yok — `DeleteButton`/`ConfirmDeleteDialog` her zaman kasıtlı olarak
+içerik formunun DIŞINDA, kardeş bir öğe olarak render ediliyor, bkz.
+`ProjectImageUploader.tsx`/`BrandImageUploader.tsx`) bu özellikle
+kontrol edilmeli.
+
+**Düzeltme:** `ThemeEditor.tsx`'te `<ThemePresetPicker>` ana `<form>`'un
+DIŞINA, onu saran `<div>`'in içine, formla KARDEŞ olacak şekilde
+taşındı. Artık `ConfirmActionDialog`'un formu hiçbir zaman başka bir
+formun içinde değil. `npm run lint`/`tsc`/`build` temiz; gerçek tarayıcı
+testi bu ortamda yapılamadığı için kullanıcıdan tekrar denemesi istendi.

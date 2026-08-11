@@ -263,12 +263,13 @@ mevcut).
   font yüklemeye izin vermiyor, font seçimi build zamanında sabitleniyor.
   Lighthouse Performance ≥90 hedefi (`TEST-STRATEJISI.md`) için henüz
   yeniden ölçülmedi — bu bir açık madde.
-- **Panelden preset (`theme_preset`) SEÇİMİ arayüzü hâlâ yok** —
-  `site_settings.theme_preset` hâlâ sadece seed/migration değeriyle var
-  (bkz. `VERİ-MODELİ.md`). 2026-08-15'te eklenen köşe yarıçapı/font
-  ayarları preset'ten BAĞIMSIZ birer override (madde 5) — preset'in
-  kendisini (marka rengi ışık/koyu varyantı + radius/font varsayılanı)
-  değiştiren bir arayüz hâlâ yok, bu ayrı bir Faz 5 maddesi olarak duruyor.
+- ~~Panelden preset (`theme_preset`) SEÇİMİ arayüzü yok~~ — **2026-08-16'da
+  kapandı.** `/panel/tema`'daki `ThemePresetPicker.tsx`, "Kurumsal Mavi"/
+  "Modern Koyu" için onaylı bir "Uygula" butonu sunuyor (`theme_preset`'i
+  değiştirip 4 override kolonunu — primary_color/secondary_color/
+  border_radius_scale/font_family_key — null'a çekiyor, aksi halde
+  override'lar preset seçimini gölgelerdi) + ayrı bir "Varsayılana Dön"
+  (kurtarma) butonu. Detay: `KARAR-GUNLUGU.md`, 2026-08-16.
 - **Yerel derleme cache'i bayat veri gösterebilir.** `theme_preset`
   migration'ı uygulanıp platform tenant satırı eklendikten sonra
   `npm run build` ilk seferde hâlâ eski (bulunamadı → fallback) sonucu

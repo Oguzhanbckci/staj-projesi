@@ -515,6 +515,7 @@ export interface SiteSettingsData {
   slogan: string | null;
   seoTitle: string | null;
   seoDescription: string | null;
+  seoKeywords: string | null;
   ctaTitle: string | null;
   ctaDescription: string | null;
   ctaButtonText: string | null;
@@ -524,6 +525,7 @@ export interface SiteSettingsData {
   linkedinUrl: string | null;
   logoPath: string | null;
   faviconPath: string | null;
+  ogImagePath: string | null;
 }
 
 /**
@@ -543,7 +545,7 @@ export const getSiteSettings = cache(async (): Promise<SiteSettingsData | null> 
     const { data, error } = await supabase
       .from("tenants")
       .select(
-        "name, site_settings(slogan, seo_title, seo_description, cta_title, cta_description, cta_button_text, cta_button_link, facebook_url, instagram_url, linkedin_url, logo_path, favicon_path)"
+        "name, site_settings(slogan, seo_title, seo_description, seo_keywords, cta_title, cta_description, cta_button_text, cta_button_link, facebook_url, instagram_url, linkedin_url, logo_path, favicon_path, og_image_path)"
       )
       .eq("id", tenantId)
       .maybeSingle();
@@ -560,6 +562,8 @@ export const getSiteSettings = cache(async (): Promise<SiteSettingsData | null> 
       seoTitle: typeof settingsRow?.seo_title === "string" ? settingsRow.seo_title : null,
       seoDescription:
         typeof settingsRow?.seo_description === "string" ? settingsRow.seo_description : null,
+      seoKeywords:
+        typeof settingsRow?.seo_keywords === "string" ? settingsRow.seo_keywords : null,
       ctaTitle: typeof settingsRow?.cta_title === "string" ? settingsRow.cta_title : null,
       ctaDescription:
         typeof settingsRow?.cta_description === "string" ? settingsRow.cta_description : null,
@@ -576,6 +580,8 @@ export const getSiteSettings = cache(async (): Promise<SiteSettingsData | null> 
       logoPath: typeof settingsRow?.logo_path === "string" ? settingsRow.logo_path : null,
       faviconPath:
         typeof settingsRow?.favicon_path === "string" ? settingsRow.favicon_path : null,
+      ogImagePath:
+        typeof settingsRow?.og_image_path === "string" ? settingsRow.og_image_path : null,
     };
   } catch (err) {
     console.error("getSiteSettings sorgu hatası:", err);

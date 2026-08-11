@@ -196,6 +196,7 @@ kaydedildi." mesajını görürsünüz.
 
 Formdaki bölümler:
 
+- **Tema Önayarları:** Formun en üstünde — aşağıda ayrıca anlatılıyor.
 - **Marka:** Marka Rengi ve İkincil Renk (renk kutusuna tıklayıp seçin
   ya da hex kodunu elle yazın — kutunun altında seçtiğiniz rengin
   yeterince okunaklı olup olmadığını gösteren bir kontrast bilgisi
@@ -213,6 +214,66 @@ firma adı yazılı kalır, favicon yüklemezseniz tarayıcının kendi
 varsayılan simgesi görünür — her iki durumda da site normal
 çalışmaya devam eder.
 
+## Tema Önayarları
+
+Renkleri/köşe yarıçapını/fontu tek tek seçmek yerine, hazır bir "paket"
+uygulayarak hızlıca başlamak isterseniz Tema sayfasının en üstündeki
+**"Tema Önayarları"** bölümünü kullanın. İki hazır seçenek vardır —
+her birinin yanında küçük iki renk noktası (açık ve koyu tema için
+marka rengi) görünür:
+
+- **Kurumsal Mavi** — ölçülü köşeler, klasik/güvenilir bir görünüm.
+- **Modern Koyu** — daha yuvarlak köşeler, farklı bir marka rengi.
+
+Bir önayarın altındaki **"Uygula"** butonuna bastığınızda bir onay
+penceresi açılır: *"Mevcut marka rengi, ikincil renk, köşe yarıçapı ve
+font seçimleriniz silinip bu önayarın varsayılan görünümü
+uygulanacak."* Bu uyarıyı okuyup **"Evet, Uygula"**'ya bastığınızda
+sayfa kendiliğinden yenilenir ve değişiklik hemen etkili olur — ayrıca
+"Değişiklikleri Kaydet"e basmanıza gerek yoktur, önayar uygulama tek
+başına yeterlidir.
+
+**Not:** Bir önayar uyguladıktan sonra Marka bölümündeki alanlardan
+kendi rengi/köşe yarıçapı/fontunuzu tekrar seçebilirsiniz — önayar
+sadece bir başlangıç noktasıdır, üzerine istediğiniz kadar
+özelleştirme yapabilirsiniz.
+
+## Varsayılana Dönme
+
+Ayarlarla denemeler yapıp beğenmediğiniz bir sonuca ulaştıysanız,
+Tema sayfasındaki kırmızı çerçeveli **"Varsayılana Dön"** butonuyla
+en baştaki, hiç dokunulmamış görünüme dönebilirsiniz. Bu da bir onay
+penceresi açar: *"Marka rengi, ikincil renk, köşe yarıçapı ve font
+ailesi için yaptığınız TÜM özelleştirmeler silinip fabrika ayarına
+dönülecek. Bu işlem geri alınamaz."*
+
+**Dikkat:** Bu, sadece Marka bölümündeki (renk/köşe yarıçapı/font)
+ayarları sıfırlar — Site Kimliği, İletişim Bilgileri, Sosyal Medya,
+Logo/Favicon alanlarınıza dokunmaz, onlar olduğu gibi kalır.
+
+## SEO Ayarları
+
+Soldaki menüden **"Ayarlar"**'a girerek sitenizin arama motorlarında
+(Google vb.) ve sosyal medyada nasıl göründüğünü yönetebilirsiniz.
+Bu ekranın davranışı Tema ile aynı: değişiklikler otomatik kaydedilmez,
+formun altındaki **"Değişiklikleri Kaydet"** butonuna basmanız gerekir.
+
+- **Sayfa Başlığı ve Açıklama:** Yazdıkça altlarında bir karakter
+  sayacı belirir (ör. "42 / 60 karakter"). Önerilen sınırı aşarsanız
+  sayaç renk değiştirip sizi uyarır — bu bir HATA değildir, sadece
+  arama sonucunda metninizin bir kısmının kesilebileceği anlamına
+  gelir, yine de kaydedebilirsiniz.
+- **Canlı önizleme:** Sağ tarafta, sitenizin Google arama sonucunda
+  tam olarak nasıl görüneceğini gösteren bir örnek kart vardır — başlık
+  ve açıklamayı yazdıkça anında güncellenir.
+- **Anahtar Kelimeler:** Virgülle ayırarak birkaç kelime girebilirsiniz.
+  Not: Modern arama motorlarının çoğu bu alanı artık dikkate almasa da
+  alan yine de saklanır.
+- **Paylaşım Görseli:** Formun altında, sitenizi Facebook/LinkedIn gibi
+  platformlarda birisi paylaştığında görünecek görseli
+  yükleyebilirsiniz (yükleme akışı diğer görsel alanlarıyla aynı).
+  Önerilen boyut 1200×630 pikseldir.
+
 ## Gelen Mesajları Yönetme
 
 Sitenizdeki iletişim formunu dolduran ziyaretçilerin mesajları
@@ -223,7 +284,7 @@ otomatik olarak panele düşer.
    gösteren küçük bir sayı görürsünüz — panele her girdiğinizde,
    hangi sayfada olursanız olun bu sayıyı görebilirsiniz.
 2. Mesaj listesinde her satırda gönderenin adı/e-postası, konusu,
-   tarihi ve durumu (**"Yeni"** veya **"Okundu"**) görünür. **Yeni
+   tarihi ve durumu (**"Okunmamış"** veya **"Okundu"**) görünür. **Yeni
    mesajlar her zaman en üstte** listelenir.
 3. Bir mesajın tam metnini okumak için satırdaki **"Görüntüle"**
    bağlantısına tıklayın.

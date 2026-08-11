@@ -6,6 +6,7 @@ import { requireAdminUser, type ActionResult } from "@/lib/panel/actionResult";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { getActiveTenantId } from "@/lib/supabase/queries";
 import { getThemeSettings } from "@/lib/supabase/panelQueries";
+import { THEME_PRESET_KEYS, type ThemePresetKey } from "@/lib/theme/presets";
 
 // updateProjectAction ile aynı iskelet (bkz. icerikler/projeler/actions.ts)
 // — ama 3 AYRI tabloya yazıyor (tenants.name, site_settings.*,
@@ -158,5 +159,60 @@ export async function updateThemeSettingsAction(
   // diğer sayfaları bayat bırakırdı.
   revalidatePath("/", "layout");
 
+  return { success: true };
+}
+
+export interface PresetActionState {
+  success: boolean;
+  formError?: string;
+}
+
+// "Kurumsal Mavi"/"Modern Koyu" önayarlarını uygulamak İÇİN de,
+// "Varsayılana Dön" butonu İÇİN de kullanılan TEK eylem — ikisi mekanik
+// olarak aynı işlemi yapıyor (theme_preset'i seçilen anahtara çevirip 4
+// override kolonunu temizlemek), sadece ThemePresetPicker.tsx'te FARKLI
+// onay metni/buton rengiyle sunuluyor (bkz. docs/KARAR-GUNLUGU.md,
+// 2026-08-16). Override'lar BİLEREK sıfırlanıyor — aksi halde önayar
+// seçimi, hâlâ dolu olan primary_color/secondary_color/... tarafından
+// gölgelenip görünürde hiçbir şey değişmemiş gibi görünürdü (KISITLAR:
+// "uygulanınca mevcut ayarların değişeceği konusunda kullanıcıyı uyar" —
+// bu uyarı ancak GERÇEKTEN değişirse anlamlı).
+export async function applyThemePresetAction(
+  presetKey: ThemePresetKey,
+  _prevState: PresetActionState,
+  _formData: FormData
+): Promise<PresetActionState> {
+  const authCheck = await requireAdminUser();
+  if (!authCheck.ok) {
+    return { success: false, formError: authCheck.formError };
+  }
+
+  if (!THEME_PRESET_KEYS.includes(presetKey)) {
+    return { success: false, formError: "Geçersiz önayar." };
+  }
+
+  const tenantId = await getActiveTenantId();
+  if (!tenantId) {
+    return { success: false, formError: "Aktif site bulunamadı, lütfen daha sonra tekrar deneyin." };
+  }
+
+  const supabase = await createServerSupabaseClient();
+  const { error } = await supabase
+    .from("site_settings")
+    .update({
+      theme_preset: presetKey,
+      primary_color: null,
+      secondary_color: null,
+      border_radius_scale: null,
+      font_family_key: null,
+    })
+    .eq("tenant_id", tenantId);
+
+  if (error) {
+    console.error("applyThemePresetAction hata:", error);
+    return { success: false, formError: "Önayar uygulanırken bir sorun oluştu. Lütfen tekrar deneyin." };
+  }
+
+  revalidatePath("/", "layout");
   return { success: true };
 }

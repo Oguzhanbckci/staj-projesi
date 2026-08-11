@@ -11,15 +11,23 @@ import { buildSectionNavLinks } from "@/lib/sections/config";
 // favicon_path varsa tenant'ın kendi favicon'u, yoksa Next.js'in statik
 // app/favicon.ico'suna düşer (icons hiç set edilmezse Next bunu otomatik
 // kullanıyor) — KISITLAR: "logosu/faviconu olmayan kurulumda düzgün bir
-// yedek görünüm olsun".
+// yedek görünüm olsun". `keywords`/`openGraph.images` 2026-08-16'da
+// eklendi (SEO Ayarları ekranı) — ikisi de boşsa hiç eklenmiyor,
+// Next.js'in kendi varsayılanına (hiçbiri) düşüyor.
 export async function generateMetadata(): Promise<Metadata> {
   const settings = await getSiteSettings();
+  const ogImageUrl = settings?.ogImagePath
+    ? getPublicImageUrl("branding", settings.ogImagePath)
+    : null;
+
   return {
     title: settings?.seoTitle ?? settings?.tenantName ?? "Kurumsal Web Sitesi",
     description: settings?.seoDescription ?? undefined,
+    keywords: settings?.seoKeywords ?? undefined,
     icons: settings?.faviconPath
       ? { icon: getPublicImageUrl("branding", settings.faviconPath) }
       : undefined,
+    openGraph: ogImageUrl ? { images: [ogImageUrl] } : undefined,
   };
 }
 

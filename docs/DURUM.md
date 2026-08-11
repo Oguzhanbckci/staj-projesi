@@ -909,6 +909,70 @@ Varyantları"/"Tema Ayarları" başlıkları eklendi (sonuncusu: önceki
 oturumda kodlanan Tema ekranı hiç dokümante edilmemişti, bu görev o
 eksiği de kapattı).
 
+**Tema önayarları + Varsayılana Dön + SEO Ayarları ekranı (2026-08-16,
+aynı gün, yeni oturum):** Faz 5'in son açık maddesi (preset SEÇİMİ
+arayüzü) kapandı, artık `/panel/tema`'da:
+
+- **Tema Önayarları:** "Kurumsal Mavi"/"Modern Koyu" için birer "Uygula"
+  butonu (küçük renk örneği önizlemeli) — onay penceresi ("mevcut
+  ayarlarınız silinecek" uyarısıyla) sonrası `applyThemePresetAction`
+  `theme_preset`'i değiştirip 4 override kolonunu (primary_color,
+  secondary_color, border_radius_scale, font_family_key) null'a çekiyor
+  — override'lar temizlenmezse önayar seçimi görünürde hiçbir şey
+  değiştirmezdi (hâlâ dolu override'lar tarafından gölgelenirdi).
+- **Varsayılana Dön:** Aynı eylemi `kurumsal-mavi` (`DEFAULT_THEME_PRESET`)
+  ile çağıran, "kurtarma" çerçeveli ayrı bir buton — sadece Marka
+  alanlarını sıfırlıyor, Site Kimliği/İletişim/Sosyal Medya/Logo/Favicon'a
+  dokunmuyor.
+- Yeni genel `components/panel/ConfirmActionDialog.tsx` —
+  `ConfirmDeleteDialog`'un "Sil" diline kilitli OLMAYAN, genel onaylı-eylem
+  hâli (title/description/confirmLabel/confirmVariant).
+- **Gerçek bir React tuzağı çözüldü:** `ThemeEditor.tsx`'in renk/radius/
+  font `useState`'leri sadece ilk mount'ta okunuyor, bir Server Action
+  sonrası kendiliğinden güncellenmiyor — önayar/varsayılan uygulanınca
+  `window.location.reload()` ile tam sayfa yenileme yapılıyor (state
+  senkronizasyon karmaşıklığı yerine, nadir/kasıtlı bir eylem için kabul
+  edilebilir bir basitlik).
+
+**SEO Ayarları — `/panel/ayarlar`'ın eski placeholder'ı artık gerçek**
+(placeholder metni zaten "SEO... Faz 5'te" diyordu, bu görev o sözü
+kapattı — yeni bir rota AÇILMADI):
+
+- Sayfa başlığı/açıklama alanlarında canlı karakter sayacı (60/160 —
+  Google'ın fiili kesme noktalarına yakın, SERT bir engelleme değil,
+  sadece görsel uyarı — KISITLAR "uyar" dedi "engelle" demedi).
+- Canlı Google arama sonucu önizlemesi.
+- Anahtar kelimeler (dürüst bir notla: modern arama motorları büyük
+  ölçüde yok sayıyor, yine de saklanıyor).
+- Paylaşım görseli (Open Graph) — mevcut `BrandImageUploader.tsx`
+  (logo/favicon'la aynı, `"branding"` bucket'ı) yeniden kullanıldı.
+- Yeni migration: `20260816120000_add_seo_keywords_and_og_image.sql` —
+  `site_settings.seo_keywords`/`og_image_path`.
+
+**Test 1 (ayar ekranları denetimi):** Bir ajanla Tema/Sayfa Düzeni/
+Ayarlar/Mesajlar ekranları taratıldı — eksik alan/kaydedilmeyen değer
+bulunamadı, 2 gerçek etiket tutarsızlığı bulunup düzeltildi (Köşe
+Yarıçapı/Font Ailesi'nde eksik "(opsiyonel)" eklendi; mesaj listesindeki
+"Yeni" rozeti panelin geri kalanıyla ["Okunmamış Mesaj" özet kartı,
+menü rozeti] tutarlı olsun diye "Okunmamış" yapıldı).
+
+**Test 2 ("yeni müşteri" dogfood testi):** Gerçek dev sunucusuna karşı,
+2 aşamalı: (1) `applyThemePresetAction`'ın gerçek mantığıyla "Modern
+Koyu" uygulandı, `<html style>` doğrulandı; (2) üzerine tamamen farklı
+bir marka (terrakota `#c1502e` + orman yeşili `#2d6a4f`, "keskin" radius,
+Poppins font), yeni bölüm sırası (Referanslar hero'dan hemen sonra),
+5 varyantlı bölümün hepsi alternatif varyantında, İstatistikler gizli,
+yeni SEO başlık/açıklama/anahtar kelime uygulandı — **15/15 doğrulama
+noktası geçti**, `/ekip`/`/iletisim` dahil. Bağımsız kontrast hesabı
+`#c1502e`'nin AA eşiğine ÇOK yakın (4.71:1, sınır 4.5:1) ama geçtiğini
+doğruladı — `<html style>`'daki gerçek çıktıyla birebir örtüştü. Test
+verisi (kullanıcının panelden kendi denediği GERÇEK ara durum dahil)
+orijinaline tam olarak geri alındı.
+
+`npm run lint`/`npx tsc --noEmit`/`npm run build` hepsi temiz.
+`docs/MUSTERİ-KILAVUZU.md`'ye "Tema Önayarları"/"Varsayılana Dönme"/
+"SEO Ayarları" başlıkları eklendi.
+
 ## Sıradaki adım
 
 1. Diğer 5 bucket (`services`/`hero`/`about`/`testimonials`/`team`) için
@@ -927,19 +991,13 @@ eksiği de kapattı).
    sayfa ağırlığındaki gerçek görsel etkisini ölç — artık **5 font**
    build-time yüklendiği için (2026-08-15) bu ölçüm eskisinden daha da
    önemli.
-6. Panelden `theme_preset` SEÇİMİ arayüzü (Faz 5'in son parçası) —
-   `/panel/sayfa-duzeni` (bölüm sırası/görünürlük/varyant) ve `/panel/tema`
-   (marka rengi/radius/font/kimlik) artık ikisi de gerçek (2026-08-15), ama
-   preset'in KENDİSİNİ (ışık/koyu marka rengi + radius/font varsayılanı,
-   ör. "Kurumsal Mavi" ↔ "Modern Koyu" arası seçim) değiştiren bir arayüz
-   hâlâ yok — bkz. `TEMA-MIMARISI.md` madde 9.
-7. Host header'a göre gerçek tenant çözümleyen `proxy.ts` mantığı yazılınca
+6. Host header'a göre gerçek tenant çözümleyen `proxy.ts` mantığı yazılınca
    (a) `getActiveTenantId()`'i sabit domain yerine parametreye çevir, (b)
    aynı `proxy.ts`'e tenant/domain bazlı panel erişim engelini de ekle —
    Next.js proje başına tek proxy dosyasına izin veriyor, ikisi birleşecek
    (bkz.
    `MIMARI.md` madde 7).
-8. Mentör değerlendirmesindeki küçük-orta bulgular (`ActionResult<T>`
+7. Mentör değerlendirmesindeki küçük-orta bulgular (`ActionResult<T>`
    tutarsızlığı, `panelQueries.ts` bölünmesi) — kullanıcı isterse ele
    alınacak, şu an açık karar bekliyor.
 

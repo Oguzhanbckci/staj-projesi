@@ -384,9 +384,11 @@ export type Database = {
           instagram_url: string | null
           linkedin_url: string | null
           logo_path: string | null
+          og_image_path: string | null
           primary_color: string | null
           secondary_color: string | null
           seo_description: string | null
+          seo_keywords: string | null
           seo_title: string | null
           slogan: string | null
           tenant_id: string
@@ -406,9 +408,11 @@ export type Database = {
           instagram_url?: string | null
           linkedin_url?: string | null
           logo_path?: string | null
+          og_image_path?: string | null
           primary_color?: string | null
           secondary_color?: string | null
           seo_description?: string | null
+          seo_keywords?: string | null
           seo_title?: string | null
           slogan?: string | null
           tenant_id: string
@@ -428,9 +432,11 @@ export type Database = {
           instagram_url?: string | null
           linkedin_url?: string | null
           logo_path?: string | null
+          og_image_path?: string | null
           primary_color?: string | null
           secondary_color?: string | null
           seo_description?: string | null
+          seo_keywords?: string | null
           seo_title?: string | null
           slogan?: string | null
           tenant_id?: string

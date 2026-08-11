@@ -9,7 +9,7 @@ export function ReadStatusBadge({ isRead }: { isRead: boolean }) {
         isRead ? "border-neutral-300 text-text-muted" : "border-brand text-brand"
       }`}
     >
-      {isRead ? "Okundu" : "Yeni"}
+      {isRead ? "Okundu" : "Okunmamış"}
     </span>
   );
 }

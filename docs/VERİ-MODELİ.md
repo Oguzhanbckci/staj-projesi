@@ -147,6 +147,8 @@ yapıldı:
 | `favicon_path` | text, nullable | *(2026-08-15 eklendi)* Storage (`"branding"` bucket) yolu — boşsa statik `app/favicon.ico` |
 | `border_radius_scale` | text, nullable, check | *(2026-08-15 eklendi)* `keskin`\|`dengeli`\|`yuvarlak` — `theme_preset`'ten BAĞIMSIZ köşe yarıçapı override'ı, boşsa preset'in kendi değeri (bkz. `TEMA-MIMARISI.md` madde 5, `lib/theme/radiusScales.ts`) |
 | `font_family_key` | text, nullable, check | *(2026-08-15 eklendi)* `geist-sans`\|`manrope`\|`inter`\|`poppins`\|`work-sans` — `theme_preset`'ten BAĞIMSIZ font override'ı, boşsa preset'in kendi değeri (bkz. `TEMA-MIMARISI.md` madde 5, `lib/theme/fonts.ts`) |
+| `seo_keywords` | text, nullable | *(2026-08-16 eklendi)* virgülle ayrılmış anahtar kelimeler, `<meta name="keywords">` için — modern arama motorları büyük ölçüde yok sayar, yine de saklanır |
+| `og_image_path` | text, nullable | *(2026-08-16 eklendi)* Storage (`"branding"` bucket) yolu — sosyal medya paylaşım görseli (Open Graph), boşsa paylaşımlarda görsel gösterilmez |
 
 ### `hero_sections` — Hero (Tekil)
 
@@ -312,7 +314,7 @@ bölümden iki kaydı olamaz.
 
 ## SQL Migration
 
-On yedi migration dosyası var, sırayla:
+On sekiz migration dosyası var, sırayla:
 
 1. `20260806120000_create_content_tables.sql` — ilk 8 tablo (`tenants`,
    `site_settings`, `hero_sections`, `about_sections`, `services`,
@@ -362,11 +364,12 @@ On yedi migration dosyası var, sırayla:
     ikisi check constraint'li) eklendi, kullanılmayan `contact_email`/
     `contact_phone` düşürüldü, `"branding"` Storage bucket'ı (RLS dahil)
     kuruldu.
+18. `20260816120000_add_seo_keywords_and_og_image.sql` — `site_settings`e
+    `seo_keywords`/`og_image_path` (ikisi de nullable) eklendi.
 
-Migration 1-16 gerçek Supabase projesine uygulandı (16 —
-`contact_messages.sender_email`/`subject` — 2026-08-14'te uygulandı).
-**17 henüz uygulanmadı** (kullanıcı SQL Editor'de çalıştıracak, bkz.
-`DURUM.md`).
+Migration 1-18 gerçek Supabase projesine uygulandı (18 —
+`seo_keywords`/`og_image_path` — 2026-08-16'da uygulandı). Şu an
+uygulanmayı bekleyen migration yok.
 Her migration'da `create table`/`alter table`, `check`/`unique`
 kısıtlamaları, `default` değerleri, `comment on table`/`comment on
 column` ve (ilgili olanlarda) `enable row level security` + politikalar

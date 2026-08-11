@@ -15,9 +15,9 @@ export interface PanelNavItem {
   icon: LucideIcon;
 }
 
-// Panelin kenar menüsü — özet ekranına dönmek için "Özet" + 6 gerçek bölüm.
-// Sadece Ayarlar hâlâ placeholder (bkz. app/panel/(protected)/ayarlar),
-// gerçek arayüzü Faz 5'te gelecek (bkz. docs/DURUM.md).
+// Panelin kenar menüsü — özet ekranına dönmek için "Özet" + 6 gerçek
+// bölüm. 2026-08-16 itibarıyla hiçbiri placeholder değil (Ayarlar da
+// artık gerçek bir SEO ekranı, bkz. docs/DURUM.md).
 export const PANEL_NAV_ITEMS: PanelNavItem[] = [
   { label: "Özet", href: "/panel", icon: LayoutDashboard },
   { label: "İçerikler", href: "/panel/icerikler", icon: FileText },

@@ -2,6 +2,7 @@ import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { isBorderRadiusScaleKey, type BorderRadiusScaleKey } from "@/lib/theme/radiusScales";
 import { isFontFamilyKey, type FontFamilyKey } from "@/lib/theme/fonts";
 import { isSectionKey, type SectionKey } from "@/lib/sections/config";
+import { DEFAULT_THEME_PRESET, THEME_PRESET_KEYS, type ThemePresetKey } from "@/lib/theme/presets";
 
 // Bu dosyadaki sorgular sadece `app/panel/(protected)/` altından çağrılır
 // — çağıran taraf zaten oturumu doğrulamış olmalı (bkz. o layout'taki
@@ -705,6 +706,7 @@ export async function getContactMessageById(id: string): Promise<ContactMessageR
 
 export interface ThemeSettingsData {
   companyName: string;
+  themePreset: ThemePresetKey;
   slogan: string | null;
   primaryColor: string | null;
   secondaryColor: string | null;
@@ -734,7 +736,7 @@ export async function getThemeSettings(): Promise<ThemeSettingsData | null> {
     const { data, error } = await supabase
       .from("tenants")
       .select(
-        "name, site_settings(primary_color, secondary_color, border_radius_scale, font_family_key, slogan, logo_path, favicon_path, facebook_url, instagram_url, linkedin_url), contact_sections(address, phone, email)"
+        "name, site_settings(theme_preset, primary_color, secondary_color, border_radius_scale, font_family_key, slogan, logo_path, favicon_path, facebook_url, instagram_url, linkedin_url), contact_sections(address, phone, email)"
       )
       .eq("id", tenantId)
       .maybeSingle();
@@ -750,6 +752,9 @@ export async function getThemeSettings(): Promise<ThemeSettingsData | null> {
 
     return {
       companyName: String(data.name),
+      themePreset: THEME_PRESET_KEYS.includes(settings?.theme_preset as ThemePresetKey)
+        ? (settings!.theme_preset as ThemePresetKey)
+        : DEFAULT_THEME_PRESET,
       slogan: typeof settings?.slogan === "string" ? settings.slogan : null,
       primaryColor: typeof settings?.primary_color === "string" ? settings.primary_color : null,
       secondaryColor:
@@ -815,5 +820,48 @@ export async function getPanelPageSections(): Promise<PanelPageSectionRow[]> {
   } catch (err) {
     console.error("getPanelPageSections sorgu hatası:", err);
     return [];
+  }
+}
+
+export interface SeoSettingsData {
+  domain: string;
+  seoTitle: string | null;
+  seoDescription: string | null;
+  seoKeywords: string | null;
+  ogImagePath: string | null;
+}
+
+// SEO Ayarları ekranı (app/panel/(protected)/ayarlar/) için — tenants.domain
+// (arama sonucu önizlemesinde gösterilecek URL) + site_settings'in SEO
+// alanları TEK sorguda. getThemeSettings ile aynı null-safe desen.
+export async function getSeoSettings(): Promise<SeoSettingsData | null> {
+  try {
+    const supabase = await createServerSupabaseClient();
+    const tenantId = await getActiveTenantId();
+    if (!tenantId) return null;
+
+    const { data, error } = await supabase
+      .from("tenants")
+      .select("domain, site_settings(seo_title, seo_description, seo_keywords, og_image_path)")
+      .eq("id", tenantId)
+      .maybeSingle();
+
+    if (error || !data) return null;
+
+    const settings = Array.isArray(data.site_settings)
+      ? data.site_settings[0]
+      : data.site_settings;
+
+    return {
+      domain: String(data.domain),
+      seoTitle: typeof settings?.seo_title === "string" ? settings.seo_title : null,
+      seoDescription:
+        typeof settings?.seo_description === "string" ? settings.seo_description : null,
+      seoKeywords: typeof settings?.seo_keywords === "string" ? settings.seo_keywords : null,
+      ogImagePath: typeof settings?.og_image_path === "string" ? settings.og_image_path : null,
+    };
+  } catch (err) {
+    console.error("getSeoSettings sorgu hatası:", err);
+    return null;
   }
 }
