@@ -8,17 +8,18 @@ Kod içermez — gerçek çalışır SQL
 değişirse önce `KARAR-GUNLUGU.md`'ye tarihli bir kayıt düşülür, sonra hem bu
 dosya hem migration güncellenir.
 
-**Son güncelleme:** 2026-08-11
+**Son güncelleme:** 2026-08-17
 
 **Durum:** Tablolar + kolonlar + kısıtlamalar tasarlandı ve SQL'e döküldü.
 2026-08-06'da dışarıdan gelen bir yönergeyle (BAĞLAM/İSTEK/KISITLAR/KABUL
 KRİTERİ formatında) karşılaştırılıp üç noktada revize edildi (aşağıda
 "Yönergeyle Karşılaştırma" bölümünde). **RLS her tabloda açık VE
 okuma/yazma politikaları da yazılıp gerçek veriyle test edildi** (bkz.
-`GUVENLIK.md`, `KARAR-GUNLUGU.md` 2026-08-07). Toplam **13 tablo**, 12'si
+`GUVENLIK.md`, `KARAR-GUNLUGU.md` 2026-08-07). Toplam **13 tablo**, hepsi
 gerçek Supabase projesine uygulandı; en son kolon eklemesi
-(`contact_sections.working_hours`) **henüz uygulanmadı** — bkz. madde
-"SQL Migration".
+(`contact_sections`'a `weekday_opens`/`weekday_closes`/`weekend_opens`/
+`weekend_closes`/`service_areas`, 2026-08-17 — JSON-LD yapısal veri
+için, bkz. `SEO-PERFORMANS.md`) uygulandı ve tipler yenilendi.
 Bu dosyanın en güncel/otoriter kaynak olduğu unutulmamalı — bazı kolonlar
 (bkz. her tablonun altındaki "2026-08-08 eklendi" notları) tasarım
 aşamasından SONRA, gerçek bileşen/sayfa yazımı sırasında ortaya çıkan
@@ -214,6 +215,9 @@ Platform sahibi bu tabloyu kullanmaz (anonim kalma kuralı, bkz. `PRD.md`).
 | `phone` | text, nullable | WhatsApp butonu da bu alandan üretilir |
 | `email` | text, nullable | |
 | `working_hours` | text, nullable | *(2026-08-11 eklendi)* serbest metin çalışma saatleri, İletişim bölümünde form yanında gösteriliyor |
+| `weekday_opens` / `weekday_closes` | text, nullable, check `HH:MM` (24 saat) | *(2026-08-17 eklendi)* hafta içi (Pzt-Cuma) yapısal açılış/kapanış — `working_hours`'un YERİNE değil, YANINA: serbest metin görüntüleme için kalıyor, bu ikisi `LocalBusiness` JSON-LD'sinin `openingHoursSpecification`'ı için (serbest metni ayrıştırmak riskli, bkz. `KARAR-GUNLUGU.md`) |
+| `weekend_opens` / `weekend_closes` | text, nullable, check `HH:MM` | *(2026-08-17 eklendi)* hafta sonu için TEK çift — Cumartesi ve Pazar aynı saatleri paylaşır (bilinçli basitleştirme, bkz. `SEO-PERFORMANS.md`) |
+| `service_areas` | text, nullable | *(2026-08-17 eklendi)* hizmet verilen iller, virgülle ayrılmış serbest metin (ör. "İstanbul, Kocaeli") — JSON-LD `areaServed` için |
 
 **Not — form verisi burada değil:** Bu tablo sadece *statik gösterim*
 bilgisini tutar. Ziyaretçinin doldurduğu form `contact_messages`'ta.
@@ -366,10 +370,15 @@ On sekiz migration dosyası var, sırayla:
     kuruldu.
 18. `20260816120000_add_seo_keywords_and_og_image.sql` — `site_settings`e
     `seo_keywords`/`og_image_path` (ikisi de nullable) eklendi.
+19. `20260817120000_add_working_hours_structured_and_service_areas.sql` —
+    `contact_sections`e `weekday_opens`/`weekday_closes`/`weekend_opens`/
+    `weekend_closes` (hepsi `HH:MM` check constraint'li) +
+    `service_areas` eklendi — `LocalBusiness` JSON-LD'si için, bkz.
+    `SEO-PERFORMANS.md`.
 
-Migration 1-18 gerçek Supabase projesine uygulandı (18 —
-`seo_keywords`/`og_image_path` — 2026-08-16'da uygulandı). Şu an
-uygulanmayı bekleyen migration yok.
+Migration 1-19 gerçek Supabase projesine uygulandı (19 —
+weekday/weekend saatleri + service_areas — 2026-08-17'de uygulandı). Şu
+an uygulanmayı bekleyen migration yok.
 Her migration'da `create table`/`alter table`, `check`/`unique`
 kısıtlamaları, `default` değerleri, `comment on table`/`comment on
 column` ve (ilgili olanlarda) `enable row level security` + politikalar

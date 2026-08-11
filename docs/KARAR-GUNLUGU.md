@@ -3040,3 +3040,136 @@ DIŞINA, onu saran `<div>`'in içine, formla KARDEŞ olacak şekilde
 taşındı. Artık `ConfirmActionDialog`'un formu hiçbir zaman başka bir
 formun içinde değil. `npm run lint`/`tsc`/`build` temiz; gerçek tarayıcı
 testi bu ortamda yapılamadığı için kullanıcıdan tekrar denemesi istendi.
+**Kullanıcı gerçek tarayıcıda tekrar denedi, düzeltme doğrulandı**
+("tamam oldu").
+
+---
+
+## 2026-08-17 — JSON-LD yapısal veri (LocalBusiness), site haritası/robots, paylaşım görseli garantisi, `SEO-PERFORMANS.md`
+
+Dışarıdan gelen bir yönergeyle (BAĞLAM/İSTEK/YÖNERGELER/KISITLAR/KABUL
+KRİTERİ/DÖKÜMAN formatında): dinamik meta veri (zaten vardı, doğrulandı),
+`sitemap.xml`/`robots.txt`, paylaşım görseli garantisi, ve asıl istek —
+Google'ın zengin sonuç gösterebilmesi için `LocalBusiness` JSON-LD'si.
+Kullanıcının kendi, tekrarlanan talimatı: *"bu promptu çalıştırırken
+yapamadığın yada benden fikir alman gereken yerlerde sor kesinlikle"* —
+bu nedenle kodlamaya başlamadan önce 2 net mimari soru `AskUserQuestion`
+ile soruldu (aşağıda Karar 2-3).
+
+**Karar 1 — schema.org tipi: `GeneralContractor`.** Hiyerarşi: `Thing` →
+`Organization` → `LocalBusiness` → `HomeAndConstructionBusiness` →
+`GeneralContractor`. Gerekçe: platform SADECE inşaat firmalarına satılan
+bir hizmet (`DURUM.md`, "Proje bağlamı") — Google'ın kendi rehberi
+"mümkün olan en spesifik tipi kullanın" diyor, generic `LocalBusiness`
+yerine bu seçildi. Detay ve test sonucu: `docs/SEO-PERFORMANS.md`.
+
+**Karar 2 — Çalışma saatleri: mevcut serbest metnin YANINA yapısal
+alanlar eklendi (kullanıcıya soruldu).** `contact_sections.working_hours`
+serbest metin JSON-LD'nin `openingHoursSpecification`'ı için
+kullanılamaz (ayrıştırmak riskli/kırılgan). İki seçenek sunuldu: (a)
+yapısal alan ekle, (b) serbest metni ayrıştırmayı dene. **Kullanıcı (a)
+"Yapısal alan ekle (Önerilen)"yi seçti** — `working_hours` DEĞİŞMEDEN
+kalıyor (İletişim sayfasında görüntüleme için), yanına 4 yeni yapısal
+saat kolonu eklendi.
+
+**Karar 3 — Hizmet verilen iller: basit virgüllü metin kutusu (kullanıcıya
+soruldu).** Hiç var olmayan bir veri için iki seçenek sunuldu: (a) basit
+virgüllü metin kutusu, (b) 81 illik çoklu-seçim arayüzü. **Kullanıcı (a)
+"Basit virgüllü metin kutusu (Önerilen)"yi seçti.**
+
+**Karar 4 — Adres bölünmedi, `addressCountry` sabit `"TR"`.** Mevcut tek
+"Adres" alanının tamamı `streetAddress`'e yazılıyor, il/ilçe/posta kodu
+ayrı alanlara BÖLÜNMEDİ — platform sadece Türkiye'de faaliyet gösteren
+firmalar için olduğundan `addressCountry` sabit yazmak "sabit veri"
+ilkesini ihlal etmiyor (KISITLAR'ın kendisi zaten Türkiye adres biçimini
+istiyor). Bilinçli sınır — Google testinde `postalCode`/
+`addressLocality` için "isteğe bağlı alan eksik" notuna yol açıyor, hata
+değil.
+
+**Karar 5 — Hafta sonu TEK çift (Cumartesi=Pazar, ayrı ayrı değil).**
+Karar 2'nin kapsamı netleştirilirken alınan tamamlayıcı bir
+basitleştirme — Cumartesi/Pazar farklı çalışma saatleri olan bir kullanım
+senaryosu şu an desteklenmiyor, ihtiyaç çıkarsa ayrı bir görev olarak ele
+alınabilir.
+
+**Karar 6 — OG görsel için Next.js'in `opengraph-image.tsx` DOSYA KURALI
+KULLANILMADI, özel bir Route Handler (`app/api/og/route.tsx`) yazıldı.**
+Next.js dokümantasyonu doğrulandı: "File-based metadata has the higher
+priority and will override the metadata object" — yani bir
+`opengraph-image.tsx` eklenseydi, panelden GERÇEK bir paylaşım görseli
+yüklenmiş olsa BİLE dosya her zaman kazanırdı (istenenin tam tersi:
+"varsa gerçek görsel, YOKSA otomatik üret"). `generateMetadata()`
+bunun yerine şartlı olarak gerçek görsel ya da `/api/og`'u seçiyor.
+Üretilen görsel gerçek marka rengini ve `lib/theme/contrast.ts`'teki
+(zaten yazılmış, WCAG-doğru) `pickReadableTextColor()`'ı yeniden
+kullanıyor.
+
+**Karar 7 — `sitemap.ts`/`robots.ts` konumu ve domain kaynağı.**
+Next.js'in dosya kuralı bu ikisinin `app/` KÖKÜNDE olmasını gerektiriyor
+(`(site)` route group'unun içinde değil). Domain için yeni, küçük
+`getActiveTenantDomain()` (`lib/supabase/queries.ts`) — DB'ye gitmeden,
+`getActiveTenantId()`'nin zaten kullandığı sabit domain sabitini döner
+(gerçek Host-bazlı tenant çözümlemesi gelene kadar geçici). Sitemap
+sadece GERÇEK sayfaları listeliyor (`/`, `/ekip`, `/iletisim`) — bölüm
+çapaları (`/#hizmetler`) bilinçli olarak dışarıda.
+
+**Karar 8 — `priceRange` hiç eklenmedi.** Veri modelinde fiyat aralığı
+kavramı yok, inşaat firmaları genelde özel teklif/keşif usulü çalışıyor
+— sabit bir aralık uydurmak yanıltıcı olurdu. Google testinde "isteğe
+bağlı alan eksik" notuna yol açıyor, hata değil.
+
+**Küçük bulgu — gereksiz `eslint-disable` yorumu.** İlk yazımda
+`LocalBusinessJsonLd.tsx`'teki `dangerouslySetInnerHTML` satırına
+`// eslint-disable-next-line react/no-danger` eklenmişti (proje genelinde
+bu bileşenin `dangerouslySetInnerHTML` kullanan İLK yeri olduğu için
+temkinli davranıldı) — `npm run lint` "Unused eslint-disable directive"
+uyarısı verdi, yani proje ESLint config'inde bu kural zaten aktif değil.
+Gereksiz yorum kaldırıldı, `npm run lint` 0 uyarıyla temiz.
+
+**Doğrulama (gerçek, tamamlandı):**
+
+1. *Statik rotalar:* `npm run dev`'e karşı gerçek `curl` ile
+   `/robots.txt` (doğru `Disallow`/`Sitemap`), `/sitemap.xml` (3 doğru
+   URL/öncelik), `/api/og` (gerçek ~24 KB PNG, doğru marka rengi/metin,
+   görsel olarak da doğrulandı) test edildi.
+2. *JSON-LD — 3 DB senaryosu (servis-rolü script'iyle, önce/sonra durumu
+   yakalanıp geri yüklenerek):* (a) tüm yeni alanlar boş — ilgili JSON-LD
+   alanları TAMAMEN yok (boş dizi/string değil); (b) tüm alanlar dolu —
+   2 doğru `OpeningHoursSpecification` + 3 elemanlı `areaServed`; (c)
+   sadece hafta içi dolu — sadece 1 `OpeningHoursSpecification`, hafta
+   sonu ve `areaServed` yok. Üçü de KISITLAR'daki "eksik alan hiç
+   eklenmesin" kuralına birebir uydu.
+3. *DB CHECK constraint:* Geçersiz bir saat (`"25:99"`) yazılmaya
+   çalışıldı, Postgres reddetti — zod'un (uygulama katmanı) ARKASINDA
+   gerçek bir ikinci engel doğrulandı.
+4. *Google Zengin Sonuçlar Testi* (search.google.com/test/rich-results,
+   "Kod" sekmesi — tarayıcı `localhost`'a erişemediği için üretilen
+   JSON-LD bir HTML kabuğuna sarılıp yapıştırıldı): **0 hata**, 2 geçerli
+   öğe, toplam 3 "kritik olmayan sorun" (`priceRange`/`postalCode`/
+   `addressLocality`, hepsi Karar 4 ve 8'in doğrudan/beklenen sonucu).
+   **KABUL KRİTERİ karşılandı.**
+5. Test verisi orijinaline (tümü `null`) geri yüklendiği ayrıca script'le
+   teyit edildi; geçici test script'i silindi.
+
+**Geçici untyped client deseni yine kullanıldı, migration onayından
+sonra kaldırıldı.** Migration (`20260817120000_...`) kullanıcı
+tarafından SQL Editor'de çalıştırılana kadar `lib/supabase/server.ts`'e
+`createUntypedServiceRoleClient()`/`createUntypedServerSupabaseClient()`
+geçici olarak eklendi (bu oturumda daha önce de birkaç kez uygulanan
+aynı desen); onay + `npm run types:generate` sonrası TÜM kullanım
+yerleri (`queries.ts`, `panelQueries.ts`, `tema/actions.ts`) tipli
+client'a geri taşındı, geçici fonksiyonlar tamamen kaldırıldı.
+
+**Dokümantasyon:** Yeni `docs/SEO-PERFORMANS.md` (4 başlık: Meta Veri
+Stratejisi, Site Haritası ve Robots, Yapısal Veri, Yayın Sonrası SEO
+Kontrol Listesi — sonuncusu, bu ortamda YAPILAMAYAN/deploy sonrasına
+kalan adımları dürüstçe ayırıyor). `VERİ-MODELİ.md` (yeni 5 kolon + 19.
+migration), `GUVENLIK.md` (yeni madde 13 — herkese açık SEO rotalarının
+neden güvenlik sınırı OLMADIĞI), `MUSTERİ-KILAVUZU.md` (Tema Ayarları →
+İletişim Bilgileri bölümü yeni 6 alanla genişletildi), `CLAUDE.md`
+(okuma sırasına 10. madde olarak `SEO-PERFORMANS.md` eklendi)
+güncellendi.
+
+`npm run lint`/`npx tsc --noEmit`/`npm run build` üçü de temiz (build
+çıktısında `/sitemap.xml`/`/robots.txt` statik (○), `/api/og` dinamik
+(ƒ) — beklenen).

@@ -13,8 +13,8 @@ kontrast doğrulaması, bileşen envanteri/API kuralları) ve `TEMA-MIMARISI.md`
 önlemi), gerekirse `KARAR-GUNLUGU.md`'yi (tarihli, hiç silinmeyen karar
 geçmişi) oku.
 
-**Son güncelleme:** 2026-08-14 (5. güncelleme aynı gün — proje
-görselleri için Storage bucket + yükleme akışı, uçtan uca doğrulandı)
+**Son güncelleme:** 2026-08-17 — JSON-LD yapısal veri (LocalBusiness),
+site haritası/robots, paylaşım görseli garantisi, `docs/SEO-PERFORMANS.md`
 
 ## Proje bağlamı
 
@@ -973,6 +973,45 @@ orijinaline tam olarak geri alındı.
 `docs/MUSTERİ-KILAVUZU.md`'ye "Tema Önayarları"/"Varsayılana Dönme"/
 "SEO Ayarları" başlıkları eklendi.
 
+**JSON-LD yapısal veri, site haritası/robots, paylaşım görseli garantisi
+(2026-08-17):** Dışarıdan gelen bir yönergeyle, SEO'nun üç eksik temeli
+tamamlandı:
+
+- **`LocalBusiness` (`GeneralContractor`) JSON-LD'si** — her sayfada
+  render edilen yeni `components/site/LocalBusinessJsonLd.tsx`, saf
+  `lib/seo/localBusiness.ts`'teki `buildLocalBusinessJsonLd()`'den
+  besleniyor. Eksik alanlar (telefon/adres/çalışma saati/hizmet ili/
+  sosyal medya) JSON-LD'den TAMAMEN çıkarılıyor, boş string olarak
+  kalmıyor. Telefon `lib/seo/formatPhone.ts` ile uluslararası (`+90...`)
+  biçime normalize ediliyor.
+- **Panelde yeni yapısal alanlar** — `/panel/tema`'nın İletişim
+  Bilgileri bölümüne Çalışma Saatleri (serbest metin, artık İLK KEZ
+  panelden düzenlenebiliyor), 4 yapısal saat kutusu (hafta içi/hafta
+  sonu açılış-kapanış) ve Hizmet Verilen İller eklendi — yeni migration
+  `20260817120000_add_working_hours_structured_and_service_areas.sql`
+  (`contact_sections`'a 5 kolon, saat kolonları `HH:MM` CHECK
+  constraint'li).
+- **`app/sitemap.ts`/`app/robots.ts`** — sadece gerçek sayfalar (`/`,
+  `/ekip`, `/iletisim`), `/panel` tamamen Disallow.
+- **`app/api/og/route.tsx`** — panelden paylaşım görseli yüklenmemişse
+  devreye giren, gerçek marka rengini/WCAG-doğru metin rengini kullanan
+  otomatik görsel üretimi (`next/og` `ImageResponse`) — dosya kuralı
+  (`opengraph-image.tsx`) BİLEREK kullanılmadı (Next.js'te dosya-tabanlı
+  metadata her zaman `generateMetadata()`'yı ezdiği için gerçek bir
+  görsel varken bile onu gölgelerdi).
+
+**Doğrulama (gerçek):** Gerçek `curl` ile 4 rota (`/robots.txt`,
+`/sitemap.xml`, `/api/og`, ana sayfanın JSON-LD'si) test edildi; JSON-LD
+için 3 DB senaryosu (boş/dolu/kısmi) servis-rolü script'iyle doğrulandı;
+DB'nin geçersiz saat formatını CHECK constraint'iyle reddettiği
+doğrulandı; **Google Zengin Sonuçlar Testi'nde 0 hata** ile geçti (3
+isteğe bağlı alan notu — `priceRange`/`postalCode`/`addressLocality` —
+hepsi bilinçli kapsam kararlarının beklenen sonucu). `npm run lint`/
+`npx tsc --noEmit`/`npm run build` hepsi temiz. Yeni
+`docs/SEO-PERFORMANS.md` (4 başlık) + `VERİ-MODELİ.md`/`GUVENLIK.md`/
+`MUSTERİ-KILAVUZU.md`/`CLAUDE.md` güncellemeleri. Detay:
+`KARAR-GUNLUGU.md`, 2026-08-17.
+
 ## Sıradaki adım
 
 1. Diğer 5 bucket (`services`/`hero`/`about`/`testimonials`/`team`) için
@@ -1000,6 +1039,10 @@ orijinaline tam olarak geri alındı.
 7. Mentör değerlendirmesindeki küçük-orta bulgular (`ActionResult<T>`
    tutarsızlığı, `panelQueries.ts` bölünmesi) — kullanıcı isterse ele
    alınacak, şu an açık karar bekliyor.
+8. Gerçek domain'e deploy sonrası SEO doğrulama adımları — Google Search
+   Console'a sitemap gönderimi, gerçek URL ile Zengin Sonuçlar Testi
+   tekrarı, WhatsApp/LinkedIn paylaşım önizlemesi. Tam liste:
+   `docs/SEO-PERFORMANS.md`, "Yayın Sonrası SEO Kontrol Listesi".
 
 ## Açık sorular
 

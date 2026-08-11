@@ -203,7 +203,19 @@ Formdaki bölümler:
   belirir), Köşe Yarıçapı ve Font Ailesi (açılır listeden seçim).
 - **Site Kimliği:** Firma Adı ve Slogan (slogan, sitenizin alt
   bilgisinde firma adının hemen altında gösterilir).
-- **İletişim Bilgileri:** Adres, Telefon, E-posta.
+- **İletişim Bilgileri:** Adres, Telefon, E-posta, Çalışma Saatleri (bu,
+  İletişim sayfanızda görünen serbest metindir — ör. "Hafta içi 08:00 -
+  18:00"). Altında ayrıca **Açılış-Kapanış Saatleri** başlığıyla 4 ayrı
+  saat kutusu vardır (Hafta İçi Açılış/Kapanış, Hafta Sonu Açılış/
+  Kapanış — hafta sonu için Cumartesi ve Pazar aynı saatleri kullanır).
+  Bunları doldurursanız Google arama sonuçlarında işletmenizin o an açık
+  mı kapalı mı olduğu gösterilebilir; bir saati doldurup çiftini (açılış/
+  kapanış) boş bırakırsanız kaydetmeye çalıştığınızda uyarı alırsınız.
+  En altta **Hizmet Verilen İller** kutusu vardır — illeri virgülle
+  ayırarak yazın (ör. "İstanbul, Kocaeli, Bursa"); bu da Google'a
+  hizmet bölgenizi bildirmek için kullanılır. Hepsi opsiyoneldir, hiçbiri
+  doldurulmazsa sitenizde/arama sonuçlarında eksik bir alan olarak
+  GÖRÜNMEZ, sadece o bilgi hiç eklenmez.
 - **Sosyal Medya:** Facebook, Instagram, LinkedIn bağlantıları.
 
 Formun altında **Logo** ve **Favicon** (tarayıcı sekmesinde görünen

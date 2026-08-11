@@ -110,7 +110,12 @@ export type Database = {
           id: string
           is_published: boolean
           phone: string | null
+          service_areas: string | null
           tenant_id: string
+          weekday_closes: string | null
+          weekday_opens: string | null
+          weekend_closes: string | null
+          weekend_opens: string | null
           working_hours: string | null
         }
         Insert: {
@@ -120,7 +125,12 @@ export type Database = {
           id?: string
           is_published?: boolean
           phone?: string | null
+          service_areas?: string | null
           tenant_id: string
+          weekday_closes?: string | null
+          weekday_opens?: string | null
+          weekend_closes?: string | null
+          weekend_opens?: string | null
           working_hours?: string | null
         }
         Update: {
@@ -130,7 +140,12 @@ export type Database = {
           id?: string
           is_published?: boolean
           phone?: string | null
+          service_areas?: string | null
           tenant_id?: string
+          weekday_closes?: string | null
+          weekday_opens?: string | null
+          weekend_closes?: string | null
+          weekend_opens?: string | null
           working_hours?: string | null
         }
         Relationships: [

@@ -47,6 +47,16 @@ export const getActiveTenantId = cache(async (): Promise<string | null> => {
   }
 });
 
+// sitemap.ts/robots.ts/getLocalBusinessData() için — DB'ye hiç gitmeden
+// (sitemap/robots gibi herkese açık, sık istenen dosyalar için bir DB
+// bağımlılığı eklememek daha sağlam) aynı sabit domain'i döner. `async`
+// olarak tanımlı — Host header'a göre gerçek tenant çözümlemesi
+// yazıldığında (bkz. docs/DURUM.md açık madde) bu imza DEĞİŞMEDEN
+// gerçek bir header okumasına dönüşebilir.
+export async function getActiveTenantDomain(): Promise<string> {
+  return ACTIVE_TENANT_DOMAIN;
+}
+
 /**
  * Sadece `is_published = true` kayıtlar, `order_index` sırasıyla — ikisi de
  * DB sorgusunda (`.eq`/`.order`), JS'te değil. Hata olursa (Supabase
@@ -506,6 +516,81 @@ export const getContactSection = cache(async (): Promise<ContactSectionData | nu
     };
   } catch (err) {
     console.error("getContactSection sorgu hatası:", err);
+    return null;
+  }
+});
+
+export interface LocalBusinessData {
+  name: string;
+  domain: string;
+  description: string | null;
+  logoPath: string | null;
+  address: string | null;
+  phone: string | null;
+  email: string | null;
+  weekdayOpens: string | null;
+  weekdayCloses: string | null;
+  weekendOpens: string | null;
+  weekendCloses: string | null;
+  serviceAreas: string | null;
+  facebookUrl: string | null;
+  instagramUrl: string | null;
+  linkedinUrl: string | null;
+}
+
+/**
+ * `LocalBusiness` (GeneralContractor) JSON-LD'si için ham veri — TEK
+ * sorguda tenants+site_settings+contact_sections (getThemeSettings'teki
+ * çift-embed deseniyle aynı). BİLEREK `getContactSection()`'dan AYRI:
+ * o sadece `is_published=true` + ziyaretçiye GÖSTERİLECEK alanları
+ * döner, bu TÜM yapısal-veri alanlarını (weekday_opens vb.) çeker ve
+ * `is_published` filtresi UYGULAMAZ — yapısal veri "bu bölüm sitede
+ * görünür mü" sorusundan bağımsız, firma her zaman aynı firma (bkz.
+ * docs/KARAR-GUNLUGU.md, 2026-08-17). Ham veri çekme (bu fonksiyon) ile
+ * JSON-LD nesnesini KURMA (lib/seo/localBusiness.ts) bilerek ayrı —
+ * biri Supabase'e bağımlı, diğeri saf/test edilebilir.
+ */
+export const getLocalBusinessData = cache(async (): Promise<LocalBusinessData | null> => {
+  try {
+    const supabase = createServiceRoleClient();
+    const tenantId = await getActiveTenantId();
+    const domain = await getActiveTenantDomain();
+    if (!tenantId) return null;
+
+    const { data, error } = await supabase
+      .from("tenants")
+      .select(
+        "name, site_settings(seo_description, logo_path, facebook_url, instagram_url, linkedin_url), contact_sections(address, phone, email, weekday_opens, weekday_closes, weekend_opens, weekend_closes, service_areas)"
+      )
+      .eq("id", tenantId)
+      .maybeSingle();
+
+    if (error || !data) return null;
+
+    const settings = Array.isArray(data.site_settings) ? data.site_settings[0] : data.site_settings;
+    const contact = Array.isArray(data.contact_sections)
+      ? data.contact_sections[0]
+      : data.contact_sections;
+
+    return {
+      name: String(data.name),
+      domain,
+      description: typeof settings?.seo_description === "string" ? settings.seo_description : null,
+      logoPath: typeof settings?.logo_path === "string" ? settings.logo_path : null,
+      address: typeof contact?.address === "string" ? contact.address : null,
+      phone: typeof contact?.phone === "string" ? contact.phone : null,
+      email: typeof contact?.email === "string" ? contact.email : null,
+      weekdayOpens: typeof contact?.weekday_opens === "string" ? contact.weekday_opens : null,
+      weekdayCloses: typeof contact?.weekday_closes === "string" ? contact.weekday_closes : null,
+      weekendOpens: typeof contact?.weekend_opens === "string" ? contact.weekend_opens : null,
+      weekendCloses: typeof contact?.weekend_closes === "string" ? contact.weekend_closes : null,
+      serviceAreas: typeof contact?.service_areas === "string" ? contact.service_areas : null,
+      facebookUrl: typeof settings?.facebook_url === "string" ? settings.facebook_url : null,
+      instagramUrl: typeof settings?.instagram_url === "string" ? settings.instagram_url : null,
+      linkedinUrl: typeof settings?.linkedin_url === "string" ? settings.linkedin_url : null,
+    };
+  } catch (err) {
+    console.error("getLocalBusinessData sorgu hatası:", err);
     return null;
   }
 });

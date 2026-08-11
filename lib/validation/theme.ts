@@ -27,34 +27,85 @@ const socialUrlField = z
   .optional()
   .or(z.literal(""));
 
-export const themeSettingsFormSchema = z.object({
-  companyName: z
-    .string({ error: "Firma adı zorunludur." })
-    .trim()
-    .min(2, { error: "Firma adı en az 2 karakter olmalıdır." })
-    .max(120, { error: "Firma adı en fazla 120 karakter olabilir." }),
+// Native <input type="time"> zaten HH:MM (24 saat) üretir — bu regex
+// sadece savunma amaçlı (elle form gönderimi gibi senaryolara karşı).
+// JSON-LD openingHoursSpecification için gereken TAM biçim (bkz.
+// lib/seo/localBusiness.ts).
+const timeField = z
+  .string()
+  .trim()
+  .regex(/^([01]\d|2[0-3]):[0-5]\d$/, { error: "Geçerli bir saat girin (ör. 09:00)." })
+  .optional()
+  .or(z.literal(""));
 
-  slogan: z.string().trim().max(160, { error: "Slogan en fazla 160 karakter olabilir." }).optional().or(z.literal("")),
+export const themeSettingsFormSchema = z
+  .object({
+    companyName: z
+      .string({ error: "Firma adı zorunludur." })
+      .trim()
+      .min(2, { error: "Firma adı en az 2 karakter olmalıdır." })
+      .max(120, { error: "Firma adı en fazla 120 karakter olabilir." }),
 
-  primaryColor: hexColorField,
-  secondaryColor: hexColorField,
+    slogan: z
+      .string()
+      .trim()
+      .max(160, { error: "Slogan en fazla 160 karakter olabilir." })
+      .optional()
+      .or(z.literal("")),
 
-  borderRadiusScale: z.enum(BORDER_RADIUS_SCALE_KEYS).optional().or(z.literal("")),
-  fontFamilyKey: z.enum(FONT_FAMILY_KEYS).optional().or(z.literal("")),
+    primaryColor: hexColorField,
+    secondaryColor: hexColorField,
 
-  address: z.string().trim().max(200, { error: "Adres en fazla 200 karakter olabilir." }).optional().or(z.literal("")),
-  phone: phoneField,
-  email: z
-    .string()
-    .trim()
-    .pipe(z.email({ error: "Geçerli bir e-posta adresi girin (ör. ad@ornek.com)." }))
-    .optional()
-    .or(z.literal("")),
+    borderRadiusScale: z.enum(BORDER_RADIUS_SCALE_KEYS).optional().or(z.literal("")),
+    fontFamilyKey: z.enum(FONT_FAMILY_KEYS).optional().or(z.literal("")),
 
-  facebookUrl: socialUrlField,
-  instagramUrl: socialUrlField,
-  linkedinUrl: socialUrlField,
-});
+    address: z
+      .string()
+      .trim()
+      .max(200, { error: "Adres en fazla 200 karakter olabilir." })
+      .optional()
+      .or(z.literal("")),
+    phone: phoneField,
+    email: z
+      .string()
+      .trim()
+      .pipe(z.email({ error: "Geçerli bir e-posta adresi girin (ör. ad@ornek.com)." }))
+      .optional()
+      .or(z.literal("")),
+    workingHours: z
+      .string()
+      .trim()
+      .max(200, { error: "Çalışma saatleri en fazla 200 karakter olabilir." })
+      .optional()
+      .or(z.literal("")),
+    weekdayOpens: timeField,
+    weekdayCloses: timeField,
+    weekendOpens: timeField,
+    weekendCloses: timeField,
+    serviceAreas: z
+      .string()
+      .trim()
+      .max(300, { error: "Hizmet verilen iller en fazla 300 karakter olabilir." })
+      .optional()
+      .or(z.literal("")),
+
+    facebookUrl: socialUrlField,
+    instagramUrl: socialUrlField,
+    linkedinUrl: socialUrlField,
+  })
+  // Yarım bırakılmış bir saat çifti (ör. açılış girilmiş, kapanış boş)
+  // JSON-LD'de kullanılamaz — lib/seo/localBusiness.ts zaten ikisi
+  // birden dolu değilse çifti hiç eklemiyor, ama panelde bunu SESSİZCE
+  // yapmak yerine kullanıcıyı burada uyarmak daha doğru (KABUL KRİTERİ:
+  // "çalışma saatleri doğru formatta olsun").
+  .refine((data) => !!data.weekdayOpens === !!data.weekdayCloses, {
+    error: "Hafta içi açılış ve kapanış saatlerinin ikisi de girilmeli veya ikisi de boş bırakılmalı.",
+    path: ["weekdayCloses"],
+  })
+  .refine((data) => !!data.weekendOpens === !!data.weekendCloses, {
+    error: "Hafta sonu açılış ve kapanış saatlerinin ikisi de girilmeli veya ikisi de boş bırakılmalı.",
+    path: ["weekendCloses"],
+  });
 
 export type ThemeSettingsFormValues = z.infer<typeof themeSettingsFormSchema>;
 
@@ -68,6 +119,12 @@ export const THEME_FIELD_LABELS: Record<keyof ThemeSettingsFormValues, string> =
   address: "Adres",
   phone: "Telefon",
   email: "E-posta",
+  workingHours: "Çalışma Saatleri",
+  weekdayOpens: "Hafta İçi Açılış",
+  weekdayCloses: "Hafta İçi Kapanış",
+  weekendOpens: "Hafta Sonu Açılış",
+  weekendCloses: "Hafta Sonu Kapanış",
+  serviceAreas: "Hizmet Verilen İller",
   facebookUrl: "Facebook",
   instagramUrl: "Instagram",
   linkedinUrl: "LinkedIn",

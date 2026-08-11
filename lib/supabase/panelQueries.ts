@@ -720,6 +720,12 @@ export interface ThemeSettingsData {
   address: string | null;
   phone: string | null;
   email: string | null;
+  workingHours: string | null;
+  weekdayOpens: string | null;
+  weekdayCloses: string | null;
+  weekendOpens: string | null;
+  weekendCloses: string | null;
+  serviceAreas: string | null;
 }
 
 // Tema Ayarları ekranı için — tenants (firma adı) + site_settings (renkler/
@@ -736,7 +742,7 @@ export async function getThemeSettings(): Promise<ThemeSettingsData | null> {
     const { data, error } = await supabase
       .from("tenants")
       .select(
-        "name, site_settings(theme_preset, primary_color, secondary_color, border_radius_scale, font_family_key, slogan, logo_path, favicon_path, facebook_url, instagram_url, linkedin_url), contact_sections(address, phone, email)"
+        "name, site_settings(theme_preset, primary_color, secondary_color, border_radius_scale, font_family_key, slogan, logo_path, favicon_path, facebook_url, instagram_url, linkedin_url), contact_sections(address, phone, email, working_hours, weekday_opens, weekday_closes, weekend_opens, weekend_closes, service_areas)"
       )
       .eq("id", tenantId)
       .maybeSingle();
@@ -771,6 +777,12 @@ export async function getThemeSettings(): Promise<ThemeSettingsData | null> {
       address: typeof contact?.address === "string" ? contact.address : null,
       phone: typeof contact?.phone === "string" ? contact.phone : null,
       email: typeof contact?.email === "string" ? contact.email : null,
+      workingHours: typeof contact?.working_hours === "string" ? contact.working_hours : null,
+      weekdayOpens: typeof contact?.weekday_opens === "string" ? contact.weekday_opens : null,
+      weekdayCloses: typeof contact?.weekday_closes === "string" ? contact.weekday_closes : null,
+      weekendOpens: typeof contact?.weekend_opens === "string" ? contact.weekend_opens : null,
+      weekendCloses: typeof contact?.weekend_closes === "string" ? contact.weekend_closes : null,
+      serviceAreas: typeof contact?.service_areas === "string" ? contact.service_areas : null,
     };
   } catch (err) {
     console.error("getThemeSettings sorgu hatası:", err);

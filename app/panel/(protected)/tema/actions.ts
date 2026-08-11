@@ -38,6 +38,12 @@ export async function updateThemeSettingsAction(
     address: String(formData.get("address") ?? ""),
     phone: String(formData.get("phone") ?? ""),
     email: String(formData.get("email") ?? ""),
+    workingHours: String(formData.get("workingHours") ?? ""),
+    weekdayOpens: String(formData.get("weekdayOpens") ?? ""),
+    weekdayCloses: String(formData.get("weekdayCloses") ?? ""),
+    weekendOpens: String(formData.get("weekendOpens") ?? ""),
+    weekendCloses: String(formData.get("weekendCloses") ?? ""),
+    serviceAreas: String(formData.get("serviceAreas") ?? ""),
     facebookUrl: String(formData.get("facebookUrl") ?? ""),
     instagramUrl: String(formData.get("instagramUrl") ?? ""),
     linkedinUrl: String(formData.get("linkedinUrl") ?? ""),
@@ -79,6 +85,12 @@ export async function updateThemeSettingsAction(
   const nextAddress = data.address || null;
   const nextPhone = data.phone || null;
   const nextEmail = data.email || null;
+  const nextWorkingHours = data.workingHours || null;
+  const nextWeekdayOpens = data.weekdayOpens || null;
+  const nextWeekdayCloses = data.weekdayCloses || null;
+  const nextWeekendOpens = data.weekendOpens || null;
+  const nextWeekendCloses = data.weekendCloses || null;
+  const nextServiceAreas = data.serviceAreas || null;
 
   const tenantChanged = current.companyName !== data.companyName;
   const settingsChanged =
@@ -91,7 +103,15 @@ export async function updateThemeSettingsAction(
     current.instagramUrl !== nextInstagramUrl ||
     current.linkedinUrl !== nextLinkedinUrl;
   const contactChanged =
-    current.address !== nextAddress || current.phone !== nextPhone || current.email !== nextEmail;
+    current.address !== nextAddress ||
+    current.phone !== nextPhone ||
+    current.email !== nextEmail ||
+    current.workingHours !== nextWorkingHours ||
+    current.weekdayOpens !== nextWeekdayOpens ||
+    current.weekdayCloses !== nextWeekdayCloses ||
+    current.weekendOpens !== nextWeekendOpens ||
+    current.weekendCloses !== nextWeekendCloses ||
+    current.serviceAreas !== nextServiceAreas;
 
   if (!tenantChanged && !settingsChanged && !contactChanged) {
     return { success: true };
@@ -141,7 +161,17 @@ export async function updateThemeSettingsAction(
   if (contactChanged) {
     const { error } = await supabase
       .from("contact_sections")
-      .update({ address: nextAddress, phone: nextPhone, email: nextEmail })
+      .update({
+        address: nextAddress,
+        phone: nextPhone,
+        email: nextEmail,
+        working_hours: nextWorkingHours,
+        weekday_opens: nextWeekdayOpens,
+        weekday_closes: nextWeekdayCloses,
+        weekend_opens: nextWeekendOpens,
+        weekend_closes: nextWeekendCloses,
+        service_areas: nextServiceAreas,
+      })
       .eq("tenant_id", tenantId);
     if (error) {
       console.error("updateThemeSettingsAction contact_sections güncelleme hatası:", error);

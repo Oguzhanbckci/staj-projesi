@@ -18,3 +18,5 @@ bir oturuma başlarken şu sırayla oku:
    kontrast doğrulama sonuçları, tema (açık/koyu) ilkeleri.
 9. `docs/TEMA-MIMARISI.md` — tema değerlerinin veritabanından `<html>`'e
    akış mimarisi, tema ön ayarları (preset), FOUC önlemi.
+10. `docs/SEO-PERFORMANS.md` — meta veri stratejisi, site haritası/robots,
+    JSON-LD yapısal veri, yayın sonrası SEO kontrol listesi.

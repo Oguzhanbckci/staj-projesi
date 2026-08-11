@@ -472,3 +472,41 @@ adıyla path traversal denemesi, DB yazma hatasında Storage temizliği) —
 hepsi gerçek Supabase Storage'a karşı, curl + doğrudan Storage/DB
 sorgularıyla teyit edildi. Test sırasında madde 12.4'teki
 `proxyClientMaxBodySize` hatası da bu testlerle bulunup düzeltildi.
+
+## 13. Herkese Açık SEO Rotaları: Sitemap, Robots, JSON-LD, OG Görsel *(2026-08-17 eklendi)*
+
+`app/sitemap.ts`, `app/robots.ts`, `app/api/og/route.tsx` ve her sayfada
+render edilen `LocalBusinessJsonLd` **kasıtlı olarak tamamen herkese
+açık, oturumsuz** — arama motoru botları/paylaşım kartı önizleyicileri
+(WhatsApp, LinkedIn vb.) hiçbir zaman giriş yapmaz, bu dosyaların auth
+arkasında olması SEO'yu tamamen işlevsiz kılardı. Bu, madde 1-2'deki
+"anon sadece `is_published=true` okur" ilkesiyle ÇELİŞMİYOR — hepsi zaten
+`createServiceRoleClient()`/sabit domain üzerinden, herkese açık/
+yayındaki bilgiyi (firma adı, adres, telefon, çalışma saatleri — zaten
+`/iletisim` sayfasında da görünen aynı veri) döndürüyor, hiçbir taslak/
+yayınlanmamış içerik ya da iç sistem bilgisi sızdırmıyor.
+
+**`robots.txt`, `/panel`'i Disallow ediyor — bu bir GÜVENLİK sınırı
+DEĞİL, ek bir katman.** Panelin gerçek erişim koruması hâlâ ve sadece
+`proxy.ts` + `requireAdminUser()` (madde 5-8) — `Disallow` sadece uyumlu
+botları paneli TARAMAKTAN/dizinlemekten caydırır, kötü niyetli/uyumsuz
+bir istemciyi ENGELLEMEZ (robots.txt bir centilmenlik anlaşmasıdır, erişim
+kontrolü değil). Panel zaten dizine hiç eklenmemesi gereken bir alan
+olduğu için bu ek katman sadece "arama sonuçlarında yanlışlıkla
+görünme" riskini azaltıyor.
+
+**`/api/og` görsel üretimi DB'den okuyor ama yazmıyor, girdi almıyor** —
+sorgu parametresi/kullanıcı girdisi kabul etmiyor (sabit, parametresiz
+`GET`), bu yüzden görsel enjeksiyonu/parametre kötüye kullanımı yüzeyi
+yok. `LocalBusinessJsonLd`'deki `dangerouslySetInnerHTML` madde 12.2'deki
+"kullanıcı girdisine asla güvenme" ilkesiyle ÇELİŞMİYOR gibi görünse de
+gerekçesi FARKLI: buradaki veri ziyaretçi girdisi değil, panelden
+(`requireAdminUser()` arkasında) admin tarafından girilmiş veri +
+`JSON.stringify` — script injection yüzeyi yok (bkz. bileşenin kendi
+yorum satırı).
+
+**Doğrulama (gerçek, tamamlandı — 2026-08-17):** `npm run dev`'e karşı
+gerçek `curl` ile `/robots.txt`/`/sitemap.xml`/`/api/og` doğrulandı;
+Google'ın Zengin Sonuçlar Testi'ne (search.google.com/test/rich-results,
+"Kod" sekmesi) gerçek üretilen JSON-LD yapıştırılıp **0 hata** ile
+doğrulandı. Detay: `docs/SEO-PERFORMANS.md`.

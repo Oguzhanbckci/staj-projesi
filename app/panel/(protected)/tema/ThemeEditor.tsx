@@ -225,6 +225,69 @@ export function ThemeEditor({ initialData }: { initialData: ThemeSettingsData })
               defaultValue={initialData.email ?? undefined}
               error={fieldErrors.email}
             />
+            <TextField
+              id={`${FIELD_ID_PREFIX}-workingHours`}
+              label="Çalışma Saatleri (opsiyonel)"
+              name="workingHours"
+              defaultValue={initialData.workingHours ?? undefined}
+              error={fieldErrors.workingHours}
+              helpText="İletişim sayfasında görünür (ör. Hafta içi 08:00 - 18:00)."
+            />
+
+            <div>
+              <p className="text-caption font-semibold text-text">
+                Açılış-Kapanış Saatleri (opsiyonel)
+              </p>
+              <p className="mt-1 text-caption text-text-muted">
+                Doldurursanız Google arama sonuçlarında işletmenizin açık/kapalı
+                olduğu gösterilebilir. Hafta sonu için Cumartesi ve Pazar aynı
+                saatleri kullanır. Bir saat girerseniz çifti (açılış+kapanış)
+                tamamlamanız gerekir.
+              </p>
+              <div className="mt-3 grid gap-4 sm:grid-cols-2">
+                <TextField
+                  id={`${FIELD_ID_PREFIX}-weekdayOpens`}
+                  label="Hafta İçi Açılış"
+                  name="weekdayOpens"
+                  type="time"
+                  defaultValue={initialData.weekdayOpens ?? undefined}
+                  error={fieldErrors.weekdayOpens}
+                />
+                <TextField
+                  id={`${FIELD_ID_PREFIX}-weekdayCloses`}
+                  label="Hafta İçi Kapanış"
+                  name="weekdayCloses"
+                  type="time"
+                  defaultValue={initialData.weekdayCloses ?? undefined}
+                  error={fieldErrors.weekdayCloses}
+                />
+                <TextField
+                  id={`${FIELD_ID_PREFIX}-weekendOpens`}
+                  label="Hafta Sonu Açılış"
+                  name="weekendOpens"
+                  type="time"
+                  defaultValue={initialData.weekendOpens ?? undefined}
+                  error={fieldErrors.weekendOpens}
+                />
+                <TextField
+                  id={`${FIELD_ID_PREFIX}-weekendCloses`}
+                  label="Hafta Sonu Kapanış"
+                  name="weekendCloses"
+                  type="time"
+                  defaultValue={initialData.weekendCloses ?? undefined}
+                  error={fieldErrors.weekendCloses}
+                />
+              </div>
+            </div>
+
+            <TextField
+              id={`${FIELD_ID_PREFIX}-serviceAreas`}
+              label="Hizmet Verilen İller (opsiyonel)"
+              name="serviceAreas"
+              defaultValue={initialData.serviceAreas ?? undefined}
+              error={fieldErrors.serviceAreas}
+              helpText="Virgülle ayırarak yazın (ör. İstanbul, Kocaeli, Bursa). Google arama sonuçlarında hizmet bölgesi olarak kullanılabilir."
+            />
           </fieldset>
 
           <fieldset className="space-y-4">
