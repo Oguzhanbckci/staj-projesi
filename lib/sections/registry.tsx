@@ -10,17 +10,19 @@ import { FaqsSection } from "@/components/site/faqs/FaqsSection";
 import { TeamSection } from "@/components/site/team/TeamSection";
 import { CtaSection } from "@/components/site/cta/CtaSection";
 import { ContactSection } from "@/components/site/contact/ContactSection";
-import type { TestimonialsVariant } from "@/components/site/testimonials/types";
 import type { FaqVariant } from "@/components/site/faqs/types";
 
 // Hero/Hizmetler/Projeler/Referanslar/SSS registry'leriyle aynı ilke, tek
 // katman yukarıda: page_sections.section_key -> doğru Section bileşeni.
 // Bir switch (Record<SectionKey, ComponentType> değil) tercih edildi çünkü
 // bu bölümlerin bazıları kendi (dar) varyant birleşim tipini kullanıyor
-// (TestimonialsVariant, FaqVariant) — burada JSX olarak doğrudan
-// çağrıldıkları için (bkz. ServicesSection/TestimonialsSection'ın halihazırda
-// projede doğrudan JSX etiketi olarak kullanıldığı yerler) React'in async
-// Server Component JSX desteğiyle sorunsuz çalışıyor.
+// (FaqVariant) — burada JSX olarak doğrudan çağrıldıkları için React'in
+// async Server Component JSX desteğiyle sorunsuz çalışıyor. Hero/Services/
+// Projects/Testimonials kendi ham `variant` string'ini KENDİ İÇİNDE
+// doğruluyor (bkz. ilgili Section bileşenindeki isXVariant); Faq'ın
+// kullanımı (bir eşitlik ternary'si) geçersiz değerde zaten güvenli
+// düştüğü için burada hâlâ tip cast'i var, ek bir doğrulayıcıya gerek
+// duymadı (bkz. docs/KARAR-GUNLUGU.md, 2026-08-15).
 //
 // Yeni bir bölüm eklemek 3 adım: (1) lib/supabase/queries.ts'e getXSection()
 // sorgu fonksiyonunu yaz, (2) components/site/x/ altında kendi verisini
@@ -38,7 +40,7 @@ export function renderSection(sectionKey: SectionKey, variant: string | undefine
     case "projects":
       return <ProjectsSection variant={variant} />;
     case "testimonials":
-      return <TestimonialsSection variant={variant as TestimonialsVariant | undefined} />;
+      return <TestimonialsSection variant={variant} />;
     case "stats":
       return <StatsSection />;
     case "faq":

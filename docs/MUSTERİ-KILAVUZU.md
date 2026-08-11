@@ -133,6 +133,86 @@ siteden kaldırmak (ama silmemek, ileride tekrar kullanmak) istiyorsanız
   yazılmadan geri gelmez. İleride tekrar kullanma ihtimali varsa
   silmek yerine **"Taslağa Al"**'ı tercih edin.
 
+## Sayfa Düzeni Değiştirme
+
+Ana sayfanızdaki bölümlerin (Hero, Hakkımızda, Hizmetler, Projeler,
+Referanslar, İstatistikler, SSS, Eylem Çağrısı — sitenizde hangileri
+aktifse) sırasını ve görünürlüğünü buradan yönetirsiniz.
+
+1. Soldaki menüden **"Sayfa Düzeni"**'ne tıklayın.
+2. Her bölüm kendi kartında, sırayla listelenir. En üstte ve en altta
+   **"Navbar"** ve **"Footer"** yazan, gri/kesikli çizgili iki kart daha
+   görürsünüz — bunlar her sitede zorunlu olan üst menü ve alt bilgi
+   alanıdır, **kaldırılamaz ve gizlenemez** (butonları tıklanamaz
+   görünür, altlarında nedeni açıklayan bir cümle vardır).
+3. **Sıralama:** Her kartın solundaki ▲/▼ oklarına tıklayarak bölümü
+   bir sıra yukarı/aşağı taşıyabilirsiniz — tıpkı diğer listelerdeki
+   sıralama gibi, sürükleme yoktur.
+4. **Görünürlük:** Her kartın sağında **"Görünür"**/**"Gizli"** yazısı
+   ve yanında **"Gizle"**/**"Göster"** butonu vardır. Butona tıklamak
+   bölümü sitede anında gizler veya tekrar gösterir — içerik silinmez,
+   sadece o an sitede görünüp görünmeyeceği değişir.
+5. Her değişiklik **anında kaydedilir**, ayrı bir "Kaydet" adımı
+   yoktur.
+6. Sayfanın üst kısmındaki **"Siteyi Önizle"** butonu, ziyaretçi
+   sitenizi yeni bir sekmede açar — bir değişiklik yaptıktan hemen
+   sonra sonucu gerçek sitede görmek için kullanın.
+
+## Bölüm Varyantları
+
+Bazı bölümlerin (Hero, Hizmetler, Projeler, Referanslar, SSS) birden
+fazla görünüm biçimi (varyantı) vardır — aynı içerik, farklı bir
+düzende gösterilebilir. Diğer bölümlerin (Hakkımızda, İstatistikler,
+Eylem Çağrısı gibi) tek bir sabit görünümü vardır, bu bölümlerin
+kartında **"Bu bölümün tek bir görünümü var."** yazar, herhangi bir
+seçim yapmanız gerekmez.
+
+Birden fazla görünümü olan bir bölümün kartında, **"Görünüm"**
+başlığının altında küçük kutucuklar görürsünüz — her kutucukta o
+görünümün nasıl göründüğünü anlatan **küçük bir şema/çizim**, adı (ör.
+"Tam Ekran Görsel", "İki Kolonlu") ve kısa bir açıklama vardır. Kör
+seçim yapmanıza gerek yok — şemaya bakarak hangisinin sitenize daha
+uygun olduğuna karar verebilirsiniz.
+
+- Şu an seçili olan görünümün kutucuğu **mavi çerçeveli** görünür ve
+  adının yanında bir onay işareti (✓) vardır.
+- Başka bir kutucuğa tıklamak, o görünümü **anında** uygular — ayrı bir
+  "Kaydet" adımı yoktur.
+- Aynı anda sadece bir görünüm seçili olabilir; zaten seçili olan
+  kutucuğa tekrar tıklayamazsınız.
+
+## Tema Ayarları
+
+Soldaki menüden **"Tema"**'ya girerek firmanızın marka rengini, yazı
+tipini, logosunu ve iletişim/kimlik bilgilerini düzenleyebilirsiniz.
+
+**Önemli fark:** Sayfa Düzeni ekranının aksine, Tema ekranındaki
+değişiklikler **otomatik kaydedilmez**. Alanları değiştirdikçe sağdaki
+**canlı önizleme** kutusunda sonucu anında görürsünüz (henüz hiçbir şey
+siteye yansımamıştır), değişiklikleri gerçekten uygulamak için formun
+altındaki **"Değişiklikleri Kaydet"** butonuna basmanız gerekir. Buton
+kısaca "Kaydediliyor…" yazısına döner, ardından "Değişiklikler
+kaydedildi." mesajını görürsünüz.
+
+Formdaki bölümler:
+
+- **Marka:** Marka Rengi ve İkincil Renk (renk kutusuna tıklayıp seçin
+  ya da hex kodunu elle yazın — kutunun altında seçtiğiniz rengin
+  yeterince okunaklı olup olmadığını gösteren bir kontrast bilgisi
+  belirir), Köşe Yarıçapı ve Font Ailesi (açılır listeden seçim).
+- **Site Kimliği:** Firma Adı ve Slogan (slogan, sitenizin alt
+  bilgisinde firma adının hemen altında gösterilir).
+- **İletişim Bilgileri:** Adres, Telefon, E-posta.
+- **Sosyal Medya:** Facebook, Instagram, LinkedIn bağlantıları.
+
+Formun altında **Logo** ve **Favicon** (tarayıcı sekmesinde görünen
+küçük simge) için ayrı ayrı yükleme alanları vardır — yükleme akışı
+yukarıda anlatılan "Görsel Ekleme" ile birebir aynıdır (dosya seç →
+önizle → "Yükle"). Logo yüklemezseniz sitenizin üst menüsünde sadece
+firma adı yazılı kalır, favicon yüklemezseniz tarayıcının kendi
+varsayılan simgesi görünür — her iki durumda da site normal
+çalışmaya devam eder.
+
 ## Gelen Mesajları Yönetme
 
 Sitenizdeki iletişim formunu dolduran ziyaretçilerin mesajları

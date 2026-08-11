@@ -1,6 +1,7 @@
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { isBorderRadiusScaleKey, type BorderRadiusScaleKey } from "@/lib/theme/radiusScales";
 import { isFontFamilyKey, type FontFamilyKey } from "@/lib/theme/fonts";
+import { isSectionKey, type SectionKey } from "@/lib/sections/config";
 
 // Bu dosyadaki sorgular sadece `app/panel/(protected)/` altından çağrılır
 // — çağıran taraf zaten oturumu doğrulamış olmalı (bkz. o layout'taki
@@ -272,7 +273,7 @@ export async function getNextOrderIndex(
 // — tek-admin/düşük-eşzamanlılık bağlamında kabul edilebilir bir
 // basitleştirme (bkz. docs/TEST-STRATEJISI.md, "pragmatik yaklaşım").
 export async function swapOrderIndex(
-  table: "services" | "projects" | "testimonials" | "faqs" | "team_members",
+  table: "services" | "projects" | "testimonials" | "faqs" | "team_members" | "page_sections",
   id: string,
   direction: "up" | "down",
   tenantId: string
@@ -769,5 +770,50 @@ export async function getThemeSettings(): Promise<ThemeSettingsData | null> {
   } catch (err) {
     console.error("getThemeSettings sorgu hatası:", err);
     return null;
+  }
+}
+
+export interface PanelPageSectionRow {
+  id: string;
+  sectionKey: SectionKey;
+  orderIndex: number;
+  isVisible: boolean;
+  variant: string | null;
+}
+
+// "Sayfa Düzeni" ekranı için — getAllServices/getAllTestimonials ile aynı
+// iskelet. BİLEREK lib/supabase/queries.ts'teki (ziyaretçi tarafı)
+// getPageSections()'tan AYRI: o sadece is_visible=true satırları döner
+// (anon RLS), bu TÜMÜNÜ döner (authenticated select_all RLS) — panelde
+// gizli bölümleri de görüp tekrar açabilmek gerekiyor. Bilinmeyen bir
+// section_key (elle DB düzenlemesi) sessizce elenir, sayfa çökmez.
+export async function getPanelPageSections(): Promise<PanelPageSectionRow[]> {
+  try {
+    const supabase = await createServerSupabaseClient();
+    const tenantId = await getActiveTenantId();
+    if (!tenantId) return [];
+
+    const { data, error } = await supabase
+      .from("page_sections")
+      .select("id, section_key, order_index, is_visible, variant")
+      .eq("tenant_id", tenantId)
+      .order("order_index");
+
+    if (error || !data) {
+      throw error ?? new Error("Bölümler alınamadı.");
+    }
+
+    return data
+      .filter((row) => isSectionKey(row.section_key))
+      .map((row) => ({
+        id: String(row.id),
+        sectionKey: row.section_key as SectionKey,
+        orderIndex: Number(row.order_index),
+        isVisible: Boolean(row.is_visible),
+        variant: typeof row.variant === "string" ? row.variant : null,
+      }));
+  } catch (err) {
+    console.error("getPanelPageSections sorgu hatası:", err);
+    return [];
   }
 }

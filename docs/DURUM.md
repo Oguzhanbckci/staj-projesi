@@ -869,6 +869,46 @@ orijinaline geri alındı. Detay: `KARAR-GUNLUGU.md`.
 
 `npm run lint`/`npx tsc --noEmit`/`npm run build` hepsi temiz.
 
+**Bölüm Yönetimi ("Sayfa Düzeni") ekranı (2026-08-15, aynı gün, yeni
+oturum):** `/panel/sayfa-duzeni` (yeni rota — `/panel/tema` zaten marka
+rengi/radius/font ekranı olduğu için bu, Faz 5'in "bölüm sırası/görünürlük/
+varyant" kısmına AYRI bir yeni rota) artık `page_sections`'ı gerçekten
+yönetiyor:
+
+- Her bölüm kendi kartında: yukarı/aşağı sıralama (`ReorderButtons`, hiç
+  değişmeden yeniden kullanıldı), "Gizle"/"Göster" görünürlük butonu
+  (yeni `SectionVisibilityToggleButton`), ve (varsa) varyant seçimi.
+- **Varyant seçimi:** Sadece 5/10 bölümün (hero/services/projects/
+  testimonials/faq) gerçekten birden fazla görünümü olduğu KOD OKUNARAK
+  doğrulandı (seed verisine güvenilmedi — 3 bölümün "gizli" ikinci
+  varyantı vardı: projects="mosaic", testimonials="featured",
+  faq="two-column", hiçbiri seed'de kullanılmıyordu). Her seçenek küçük
+  bir inline SVG şema + müşteri dilinde etiket (ör. "Tam Ekran Görsel")
+  ile gösteriliyor, tıklanınca anında kaydediliyor.
+- **Navbar/Footer** gerçek `page_sections` satırı DEĞİL (PRD.md'nin
+  bilinçli kararı — chrome, bölüm kütüphanesinin parçası değil) — ekranda
+  sadece görsel/statik, devre dışı butonlu iki "sözde satır" olarak
+  gösteriliyor, şemaya hiç dokunulmadı.
+- **"Siteyi Önizle"** linki, yeni sekmede ziyaretçi sitesini açıyor.
+- **Gerçek bir bug bulundu ve düzeltildi:** `testimonials` varyantı DB'den
+  hiç doğrulanmadan (`lib/sections/registry.tsx`'te ham cast) kullanılıyordu
+  — hero'nun aksine, geçersiz bir değer (elle DB düzenlemesi) anasayfayı
+  çökertebilirdi (registry lookup `undefined` component döner). Yeni
+  `isTestimonialsVariant()` eklendi (hero'daki desenle aynı).
+- **5 kombinasyon testi** (gerçek dev sunucusu + `fetch`, servis-rolü
+  script'iyle): orijinal seed, tüm varyantlar alternatifte, yarısı gizli +
+  sıra tersine, tüm varyantlar `null`, ve **whitelist-dışı bir varyant
+  değeri (`"legacy-carousel"`) doğrudan DB'ye yazılıp** — 5/5 senaryoda
+  `/` (ve bir senaryoda `/ekip`/`/iletisim`) 200 döndü, son senaryo bug
+  fix'ini gerçek bir HTTP isteğiyle kanıtladı. Test verisi orijinaline
+  geri alındı.
+
+`npm run lint`/`npx tsc --noEmit`/`npm run build` hepsi temiz.
+`docs/MUSTERİ-KILAVUZU.md`'ye "Sayfa Düzeni Değiştirme"/"Bölüm
+Varyantları"/"Tema Ayarları" başlıkları eklendi (sonuncusu: önceki
+oturumda kodlanan Tema ekranı hiç dokümante edilmemişti, bu görev o
+eksiği de kapattı).
+
 ## Sıradaki adım
 
 1. Diğer 5 bucket (`services`/`hero`/`about`/`testimonials`/`team`) için
@@ -887,11 +927,12 @@ orijinaline geri alındı. Detay: `KARAR-GUNLUGU.md`.
    sayfa ağırlığındaki gerçek görsel etkisini ölç — artık **5 font**
    build-time yüklendiği için (2026-08-15) bu ölçüm eskisinden daha da
    önemli.
-6. Panelden bölüm sırası/görünürlük/varyant + preset (`theme_preset`)
-   SEÇİMİ arayüzü (Faz 5) — `page_sections` veri modeli hazır, `/panel/tema`
-   artık marka rengi/radius/font/kimlik için gerçek (2026-08-15), ama
-   preset'in KENDİSİNİ (ışık/koyu marka rengi + radius/font varsayılanı)
-   değiştiren bir seçim arayüzü hâlâ yok — bkz. `TEMA-MIMARISI.md` madde 9.
+6. Panelden `theme_preset` SEÇİMİ arayüzü (Faz 5'in son parçası) —
+   `/panel/sayfa-duzeni` (bölüm sırası/görünürlük/varyant) ve `/panel/tema`
+   (marka rengi/radius/font/kimlik) artık ikisi de gerçek (2026-08-15), ama
+   preset'in KENDİSİNİ (ışık/koyu marka rengi + radius/font varsayılanı,
+   ör. "Kurumsal Mavi" ↔ "Modern Koyu" arası seçim) değiştiren bir arayüz
+   hâlâ yok — bkz. `TEMA-MIMARISI.md` madde 9.
 7. Host header'a göre gerçek tenant çözümleyen `proxy.ts` mantığı yazılınca
    (a) `getActiveTenantId()`'i sabit domain yerine parametreye çevir, (b)
    aynı `proxy.ts`'e tenant/domain bazlı panel erişim engelini de ekle —

@@ -2747,3 +2747,114 @@ yenile ve tüm değişimi doğrula" isteğinin tam karşılığı — panel
 formunun kendisi (auth arkasında, bu ortamda tarayıcıyla erişilemiyor)
 yerine DB'ye giden AYNI yazma + siteyi render eden AYNI okuma yolu uçtan
 uca test edildi.
+
+## 2026-08-15 (aynı gün, yeni oturum) — Bölüm Yönetimi ("Sayfa Düzeni") ekranı
+
+**Rota kararı:** `docs/DURUM.md`'nin eski notu `/panel/tema`'yı bu işin
+("Faz 5: bölüm sırası/görünürlük/varyant") yeri olarak gösteriyordu, ama
+bu oturumdan hemen önceki oturumda `/panel/tema` zaten marka rengi/
+radius/font/logo ekranı oldu (appearance, ayrı bir konu). Bu yüzden YENİ
+bir rota açıldı: `/panel/sayfa-duzeni` — nav etiketi "Sayfa Düzeni",
+`docs/MUSTERİ-KILAVUZU.md`'deki başlıkla birebir terim tutarlılığı için.
+
+**Varyant matrisi — seed verisine güvenilmeden, kod okunarak doğrulandı.**
+Araştırmada 10 bölümden sadece 5'inin (hero/services/projects/
+testimonials/faq) gerçekten birden fazla varyantı olduğu, 3'ünün (projects
+"mosaic", testimonials "featured", faq "two-column") seed verisinde HİÇ
+kullanılmayan "gizli" bir ikinci varyantı olduğu ortaya çıktı — panel
+ekranı bu yüzden sadece seed'e değil, doğrudan her Section bileşeninin
+kodundaki gerçek varyant birleşim tipine (`HeroVariant`, `ServiceCardVariant`,
+`GalleryVariant`, `TestimonialsVariant`, `FaqVariant`) dayanıyor
+(`lib/sections/variantOptions.ts`, `satisfies` ile derleme-zamanı
+denetimli).
+
+**Hero'nun özel durumu — iki ayrı `variant` kaynağı, çakışma YOK.**
+`hero_sections` tablosunun (2026-08-08'den, page_sections'tan ÖNCE) kendi
+bir `variant` kolonu var. Ama `HeroSection.tsx`'in kendi yorumu açıkça
+doğruluyor: "`variant`, page_sections'tan gelen bir override — verilmezse
+hero_sections.variant kullanılır." page_sections.variant HER ZAMAN
+kazanıyor; panelden zaten hero_sections.variant'a giden bir yol da yok —
+bu ekranın SADECE page_sections'a yazması yeterli ve doğru.
+
+**Gerçek bir bug bulundu ve düzeltildi: `isTestimonialsVariant` eksikliği.**
+`lib/sections/registry.tsx:41`, DB'den gelen ham `variant` string'ini
+`variant as TestimonialsVariant | undefined` diye HİÇ doğrulamadan cast
+ediyordu. `hero`'da aynı riske karşı `isHeroVariant()` (iki kopya: 
+`HeroSection.tsx` + `queries.ts`) var; `services`/`projects`/`faq`
+tarafında ise kullanım biçimi (bir EŞİTLİK ternary'si, `variant ===
+"mosaic" ? ... : ...`) geçersiz bir değerde zaten güvenli düşüyor.
+`testimonials`'ın kullanımı farklı — `TESTIMONIALS_VARIANTS[variant]` bir
+REGISTRY LOOKUP, bilinmeyen bir key `undefined` bir component döner ve
+JSX'te kullanılınca çöker. Bu, panelin yazacağı değerler zaten sabit bir
+whitelist'ten geldiği için panel tarafından tetiklenemez, ama elle bir DB
+düzenlemesi (ya da ileride başka bir yazma yolu) anasayfayı çökertebilirdi.
+Düzeltme: `components/site/testimonials/TestimonialsSection.tsx`'e
+`isHeroVariant`'la AYNI desende `isTestimonialsVariant()` eklendi,
+`registry.tsx`'teki ham cast kaldırıldı (artık services/projects gibi düz
+`variant={variant}`). `faq`'a bilerek dokunulmadı — zaten güvenli.
+
+**Navbar/Footer — şemaya dokunulmadı, sadece görsel "sözde satır".**
+`docs/PRD.md` açıkça "Footer... bölüm kütüphanesinin parçası değil, sayfa
+düzeninin sabit bir parçası (chrome), Navbar gibi" diyor — `page_sections`'ta
+hiçbir zaman satırları olmadı. Kullanıcının KISITLAR'ı "kapatılamasın,
+butonları devre dışı, nedeni yazılsın" istiyordu — bu, DB'ye yeni satır
+eklemeden (mevcut mimari kararı bozmadan), ekranda SADECE statik, native
+`disabled` butonlu iki kart (`RequiredSectionRow.tsx`) ile karşılandı —
+gerçek sıralanabilir listenin DIŞINDA, üstünde/altında sabit.
+
+**Autosave + çift-tıklama güvenliği — varyant seçimi için tek form/çoklu
+submit-butonu deseni.** Sıralama/görünürlük zaten mevcut `ReorderButtons`/
+yeni `SectionVisibilityToggleButton` ile native `disabled`+`useFormStatus`
+pending deseni kullanıyor. Varyant seçimi için İLK taslak (Plan agent'ın
+önerisi) her seçeneği KENDİ formuna/action'ına bağlıyordu — bu, bir seçime
+tıklanırken DİĞER seçeneğin pending state'ini bilmemesi anlamına gelirdi
+(iki farklı varyanta hızlıca art arda tıklanırsa iki eşzamanlı istek,
+sıra garantisi yok). Bunun yerine TEK `<form>` içinde birden fazla
+`<button type="submit" name="variant" value="...">` kullanıldı — native
+HTML'in "hangi butona tıklanırsa o value gönderilir" davranışı. Tek
+`useActionState`/`useFormStatus` = `pending` TÜM seçeneklere birden
+yayılıyor, bir seçime tıklanınca diğerleri de anında `disabled` oluyor —
+KABUL KRİTERİ'nin "çift tıklama sorun çıkarmasın" isteğini kökten
+karşılıyor. Buton markup'ı (diyagram+etiket+açıklama, üç satır) `Button`/
+`SubmitButton`'ın sabit `h-10` yükseklik sınıflarına uymadığı için
+bilerek bunlar kullanılmadı — bespoke bir `<button>`, ama SubmitButton.tsx'te
+2026-08-14/15'te düzeltilen AYNI ilkeyle (pending iken `aria-label`
+bastırılıp sr-only "Kaydediliyor" metniyle değiştiriliyor).
+
+**Varyant önizleme şeması:** Gerçek görsel dosyası/yeni bağımlılık
+eklenmedi — `VariantDiagram.tsx`, 10 küçük inline SVG (`<rect>`/`<path>`,
+mevcut nötr Tailwind token'larıyla), `aria-hidden` (yanındaki etiket
+metni zaten anlamı taşıyor).
+
+**Reuse — yeni sıralama mantığı yazılmadı.** `swapOrderIndex()`
+(panelQueries.ts) gövdesi tamamen generic (`.from(table)` dinamik); tek
+değişiklik `table` parametresinin tip union'ına `"page_sections"`
+eklenmesi oldu. `ReorderButtons.tsx` hiç değişmeden kullanıldı (action
+imzası zaten uyumlu). `revalidatePath("/", "layout")` kullanıldı, düz
+`"/"` değil — `updateThemeSettingsAction`'daki AYNI gerekçe (page_sections
+değişikliği Navbar/Footer üzerinden `/`, `/ekip`, `/iletisim` hepsini
+etkiliyor).
+
+**Doğrulama (gerçek, dev sunucusuna karşı):** `npm run lint`/`npx tsc
+--noEmit`/`npm run build` temiz. **5 kombinasyon testi**
+(servis-rolü script + `fetch`, `scripts/test-rls.mjs`'nin yerleşik
+deseniyle aynı, iş bitince silindi):
+
+| # | Senaryo | Sonuç |
+|---|---|---|
+| 1 | Orijinal seed (sanity check) | ✅ `/` → 200 |
+| 2 | Tüm varyantlı bölümler alternatif varyantta (hero=b, services=image, projects=mosaic, testimonials=featured, faq=two-column) | ✅ `/` → 200 |
+| 3 | Yarısı gizli (about/stats/cta) + sıra tersine çevrilmiş | ✅ `/`, `/ekip`, `/iletisim` → 200 |
+| 4 | Tüm varyantlı bölümlerde `variant=null` (iç varsayılana düşüş) | ✅ `/` → 200 |
+| 5 | **`testimonials.variant="legacy-carousel"`** (whitelist-dışı, panelin asla üretemeyeceği bir değer, doğrudan DB'ye yazıldı) | ✅ `/` → 200 — düzeltmeden ÖNCE bu senaryo 500 verirdi, düzeltmeden SONRA testimonials sessizce "grid"e düşüyor |
+
+Test verisi (8 `page_sections` satırının orijinal `order_index`/
+`is_visible`/`variant` değerleri — Akme'de `team`/`contact` 2026-08-13'te
+ayrı sayfalara taşındığı için page_sections'ta artık 10 DEĞİL 8 satır
+olduğu bu testte ayrıca doğrulandı) test sonunda geri yüklendi, geçici
+script silindi.
+
+**Ek bulgu (belge hijyeni, aynı dosyayı değiştirirken düzeltildi):**
+`components/panel/navItems.ts`'teki yorum hâlâ "Tema ve Ayarlar hâlâ
+placeholder" diyordu — Tema bir önceki oturumda gerçek oldu, yorum
+"sadece Ayarlar hâlâ placeholder" olarak düzeltildi.

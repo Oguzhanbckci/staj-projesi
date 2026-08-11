@@ -53,6 +53,22 @@ export const SECTION_NAV_LABELS: Partial<Record<SectionKey, string>> = {
   faq: "SSS",
 };
 
+// Panelin "Sayfa Düzeni" ekranındaki satır başlıkları — SECTION_NAV_LABELS'tan
+// FARKLI amaç: o sadece gezinme linki üretilen 5 bölümü kapsıyor (Partial),
+// bu TAM 10 bölümü kapsıyor (Record) çünkü panelde her bölüm bir satır.
+export const SECTION_DISPLAY_LABELS: Record<SectionKey, string> = {
+  hero: "Ana Görsel (Hero)",
+  about: "Hakkımızda",
+  services: "Hizmetler",
+  projects: "Projeler",
+  testimonials: "Referanslar",
+  stats: "İstatistikler",
+  faq: "SSS",
+  team: "Ekip",
+  cta: "Eylem Çağrısı",
+  contact: "İletişim",
+};
+
 export interface PageSectionRow {
   id: string;
   sectionKey: SectionKey;
