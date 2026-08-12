@@ -8,6 +8,16 @@ import path from "node:path";
 // yüklemek gerekiyor, aksi halde process.env'de hiç görünmezler.
 dotenv.config({ path: path.resolve(__dirname, ".env.local") });
 
+// Canlıya (prod) karşı test etmek için: PLAYWRIGHT_BASE_URL="https://..."
+// ortam değişkeniyle çalıştırın (ör. `PLAYWRIGHT_BASE_URL=https://
+// musteri-sitesi.vercel.app npm run test:e2e`). Tanımlıysa yerel
+// `webServer` (dev sunucusu) HİÇ başlatılmaz — gerçek canlı adrese
+// istek atılır. ⚠️ Admin akışı testi (e2e/admin-service-flow.spec.ts)
+// canlıda çalıştırılırsa, GERÇEK/herkese açık siteye birkaç saniyeliğine
+// görünür bir "E2E Test Hizmeti ..." kaydı ekleyip siler — bunu bilerek
+// yapın (bkz. docs/KURULUM.md).
+const LIVE_BASE_URL = process.env.PLAYWRIGHT_BASE_URL;
+
 export default defineConfig({
   testDir: "./e2e",
   // KABUL KRİTERİ: "test 60 saniyeden uzun sürmesin" — tek bir test
@@ -21,7 +31,7 @@ export default defineConfig({
   fullyParallel: true,
   reporter: [["list"]],
   use: {
-    baseURL: "http://localhost:3000",
+    baseURL: LIVE_BASE_URL ?? "http://localhost:3000",
     // Bir adım başarısız olduğunda NEREDE takıldığını anlamak için
     // (KABUL KRİTERİ) — trace/screenshot sadece hata durumunda üretilir.
     trace: "retain-on-failure",
@@ -31,10 +41,14 @@ export default defineConfig({
   // Tek komutla çalışsın diye (KURULUM KISITI) — `npm run test:e2e`
   // dev sunucusunu kendisi başlatır; zaten `npm run dev` açıksa (yerel
   // geliştirme sırasında sık senaryo) onu YENİDEN başlatmaz, olanı kullanır.
-  webServer: {
-    command: "npm run dev",
-    url: "http://localhost:3000",
-    reuseExistingServer: !process.env.CI,
-    timeout: 120_000,
-  },
+  // Canlı adrese karşı çalıştırılırken (LIVE_BASE_URL dolu) webServer
+  // TAMAMEN atlanır — Playwright'a "sunucuyu kurma, zaten dışarıda çalışıyor" denir.
+  webServer: LIVE_BASE_URL
+    ? undefined
+    : {
+        command: "npm run dev",
+        url: "http://localhost:3000",
+        reuseExistingServer: !process.env.CI,
+        timeout: 120_000,
+      },
 });

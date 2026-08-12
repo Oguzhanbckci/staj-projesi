@@ -1,36 +1,95 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# staj-projesi — Kurumsal Web Sitesi Hizmeti
 
-## Getting Started
+İnşaat firmaları gibi işletmelere satılabilen, tam yönetilen bir
+kurumsal web sitesi ürünü: 11 bölümlü bir ziyaretçi sitesi + tema
+düzenleyicili, medya yönetimli, SEO ayarlı bir yönetim paneli.
+Mimari/iş modeli detayı için `docs/PRD.md`, satış/teslim odaklı özet
+için `docs/TESLIM-PAKETI.md`.
 
-First, run the development server:
+## Proje Nedir
+
+Her müşteri kendi Supabase (veritabanı) + Vercel (barındırma) kurulumunu
+alır ("tek müşteri = tek kurulum" modeli, bkz. `docs/PRD.md`). Platform
+sahibi, müşterinin sitesini gizli bir `/panel` adresinden yönetir —
+içerik ekleme/düzenleme/yayınlama, bölüm sırası/görünürlüğü, marka
+rengi/font/logo, SEO ayarları, gelen iletişim mesajları hep buradan.
+Müşterinin kendi sitesinde hiçbir panel/login yoktur, sadece herkese
+açık site vardır.
+
+## Teknolojiler
+
+| Katman | Teknoloji |
+|---|---|
+| Framework | [Next.js 16](https://nextjs.org) (App Router, Turbopack) |
+| Dil | TypeScript (strict mode, `any` yok) |
+| Stil | Tailwind CSS v4 (`@theme`, config dosyası yok) |
+| Backend | [Supabase](https://supabase.com) (Postgres + Auth + Storage), Row Level Security ile |
+| Barındırma | [Vercel](https://vercel.com) (Hobby plan yeterli — statik üretim + on-demand ISR) |
+| Test | [Vitest](https://vitest.dev) (birim) + [Playwright](https://playwright.dev) (uçtan uca) |
+| Doğrulama | [zod](https://zod.dev) |
+| İkonlar | [lucide-react](https://lucide.dev) |
+
+Mimari kararların tam gerekçesi: `docs/MIMARI.md`. Bu Next.js
+kurulumu, standart `create-next-app` çıktısından **farklı** olabilir —
+kod yazmadan önce `node_modules/next/dist/docs/` altındaki gerçek
+sürüm dokümanlarına bakılmalı (bkz. `AGENTS.md`).
+
+## Hızlı Başlangıç
+
+**Bu proje üzerinde geliştirme yapacaksanız** (yeni bir müşteri
+kurulumu için değil — o senaryo için `docs/KURULUM.md`'ye bakın):
 
 ```bash
+npm install
+cp .env.local.example .env.local
+# .env.local'i gerçek Supabase proje bilgilerinizle doldurun
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+`http://localhost:3000` — ziyaretçi sitesi. `http://localhost:3000/panel/giris`
+— yönetim paneli (giriş bilgisi gerekir, Supabase Dashboard →
+Authentication → Users'dan oluşturulur).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+**Yeni bir müşteri için sıfırdan kurulum** (veritabanı + içerik +
+Vercel yayını dahil, ~28 dakika): `docs/KURULUM.md`.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Dokümantasyon Haritası
 
-## Learn More
+Proje kararları/kuralları kod içermeyen, `docs/` klasöründeki dosyalarda
+tutulur — yeni bir konuya başlarken önce buraya bakılır:
 
-To learn more about Next.js, take a look at the following resources:
+| Dosya | Ne zaman bakılır |
+|---|---|
+| `docs/DURUM.md` | Projede şu an ne durumda olduğumuzu, en son ne yapıldığını öğrenmek için — **her yeni oturumda ilk okunacak dosya** |
+| `docs/PRD.md` | Bir özelliğin kapsamda olup olmadığına hızlıca karar vermek için |
+| `docs/MIMARI.md` | Teknik mimari (framework, backend, hosting, render stratejisi) |
+| `docs/VERİ-MODELİ.md` | Supabase tablo/kolon tasarımı ve gerekçeleri |
+| `docs/TEST-STRATEJISI.md` | Test yaklaşımı, hangi testin nasıl/ne zaman çalıştırılacağı |
+| `docs/GUVENLIK.md` | Tehdit modeli, erişim kuralları, anahtar yönetimi, güvenlik kontrol listesi |
+| `docs/TASARIM-SISTEMI.md` | Renk/tipografi/boşluk/bileşen kuralları |
+| `docs/TEMA-MIMARISI.md` | Tema değerlerinin veritabanından sayfaya akış mimarisi |
+| `docs/SEO-PERFORMANS.md` | Meta veri, site haritası, yapısal veri stratejisi |
+| `docs/KARAR-GUNLUGU.md` | Tarihli, hiç silinmeyen karar geçmişi — "bu neden böyle yapıldı" sorusunun cevabı |
+| `docs/AI-KURALLARI.md` | Kod standartları, güvenlik kuralları, AI ile çalışma ilkeleri |
+| `docs/KURULUM.md` | **Yeni bir müşteri** için sıfırdan kurulum (geliştirici içindir) |
+| `docs/MUSTERİ-KILAVUZU.md` | Panelin günlük kullanımı (**teknik olmayan** okuyucu içindir) |
+| `docs/TESLIM-PAKETI.md` | Satış/teslim özeti — kapsam, fiyatlandırma önerisi (**müşteri/karar verici** içindir) |
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Testleri Çalıştırma
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```bash
+npm run test:unit          # Birim testler (Vitest) — hızlı, sunucu gerekmez
+npm run test:e2e           # Uçtan uca testler (Playwright) — dev sunucusunu kendisi başlatır
+npm test                   # İkisi birden — main'e push'lamadan önce çalıştırılması gereken komut
+```
 
-## Deploy on Vercel
+E2E testlerden "admin kritik akışı" (`e2e/admin-service-flow.spec.ts`),
+`.env.local`'de `E2E_ADMIN_EMAIL`/`E2E_ADMIN_PASSWORD` tanımlı değilse
+otomatik atlanır (skip) — gerçek bir panel hesabı gerektirir. İlk
+kurulumda (`npx playwright install chromium`) tarayıcı binary'si
+indirilmelidir. Detay ve kapsanan/kapsanmayan alanlar:
+`docs/TEST-STRATEJISI.md`.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Lisans / Sahiplik
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Bu, ticari olarak satılan bir üründür — açık kaynak lisansı yoktur.

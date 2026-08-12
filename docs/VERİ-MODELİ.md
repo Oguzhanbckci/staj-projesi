@@ -8,7 +8,8 @@ Kod içermez — gerçek çalışır SQL
 değişirse önce `KARAR-GUNLUGU.md`'ye tarihli bir kayıt düşülür, sonra hem bu
 dosya hem migration güncellenir.
 
-**Son güncelleme:** 2026-08-17
+**Son güncelleme:** 2026-08-17 (2. güncelleme aynı gün — `sender_ip`
+kolonu, migration sayısı 20'ye çıktı, yeni müşteri kurulum şablonu notu)
 
 **Durum:** Tablolar + kolonlar + kısıtlamalar tasarlandı ve SQL'e döküldü.
 2026-08-06'da dışarıdan gelen bir yönergeyle (BAĞLAM/İSTEK/KISITLAR/KABUL
@@ -234,13 +235,16 @@ bilgisini tutar. Ziyaretçinin doldurduğu form `contact_messages`'ta.
 | `subject` | text, **nullable**, CHECK yok | *(2026-08-14 eklendi)* `lib/validation/contact.ts` `CONTACT_SUBJECTS` sabit listesinden biri — DB'de kısıtlanmadı, tek doğruluk kaynağı kod |
 | `message` | text, not null | |
 | `is_read` | boolean, not null, default false | *(2026-08-12 eklendi)* panelde okundu işaretlendi mi — panel menüsü/özet ekranındaki "okunmamış mesaj" sayısı bu alandan |
+| `sender_ip` | inet, nullable | *(2026-08-17 eklendi)* gönderenin IP'si — SADECE sunucu tarafı hız sınırı/spam tespiti için (bkz. `GUVENLIK.md` madde 14), panelde gösterilmiyor, anon'a hiç açılmıyor. IP okunamazsa (ör. yerel geliştirme) `null` — hız sınırı o istekte atlanır |
 
 **Gerçek kayıt artık çalışıyor** *(2026-08-14)* — `components/site/contact/actions.ts`'teki
 `submitContactForm`, doğrulama sonrası `contact_messages`'a gerçekten
 insert yapıyor (`createServiceRoleClient()` — anon'un bu tabloya HİÇ RLS
 izni olmadığı için bilinçli, dokümante edilmiş bir istisna, bkz.
 `GUVENLIK.md` madde 2). E-posta bildirimi (SMTP/üçüncü taraf servis) hâlâ
-yok — sadece DB kaydı.
+yok — sadece DB kaydı. **Spam koruması** *(2026-08-17)* — gizli tuzak
+alanı + `sender_ip` bazlı sunucu tarafı hız sınırı, bkz. `GUVENLIK.md`
+madde 14.
 
 ### `testimonials` — Referanslar (Liste)
 
@@ -318,7 +322,7 @@ bölümden iki kaydı olamaz.
 
 ## SQL Migration
 
-On sekiz migration dosyası var, sırayla:
+Yirmi migration dosyası var, sırayla:
 
 1. `20260806120000_create_content_tables.sql` — ilk 8 tablo (`tenants`,
    `site_settings`, `hero_sections`, `about_sections`, `services`,
@@ -375,10 +379,14 @@ On sekiz migration dosyası var, sırayla:
     `weekend_closes` (hepsi `HH:MM` check constraint'li) +
     `service_areas` eklendi — `LocalBusiness` JSON-LD'si için, bkz.
     `SEO-PERFORMANS.md`.
+20. `20260817130000_add_contact_message_sender_ip.sql` —
+    `contact_messages.sender_ip` (inet, nullable) + sorgu indeksi
+    (`tenant_id, sender_ip, created_at`) — sunucu tarafı iletişim formu
+    hız sınırı için, bkz. `GUVENLIK.md` madde 14.
 
-Migration 1-19 gerçek Supabase projesine uygulandı (19 —
-weekday/weekend saatleri + service_areas — 2026-08-17'de uygulandı). Şu
-an uygulanmayı bekleyen migration yok.
+Migration 1-20 gerçek Supabase projesine uygulandı (20 —
+`sender_ip` — 2026-08-17'de uygulandı). Şu an uygulanmayı bekleyen
+migration yok.
 Her migration'da `create table`/`alter table`, `check`/`unique`
 kısıtlamaları, `default` değerleri, `comment on table`/`comment on
 column` ve (ilgili olanlarda) `enable row level security` + politikalar
@@ -407,6 +415,17 @@ demo-icerik.md` — team_members kısmı artık bu dosyayla birebir örtüşmüy
 güncel içerik için migration 9'a bakılmalı) —
 `order_index` 10'ar artıyor, her tabloda yaklaşık yarısı
 `is_published = true` yarısı `false`.
+
+**Yeni müşteri kurulumu için AYRI bir şablon var** *(2026-08-17
+eklendi):* `supabase/setup/seed-template.sql` — yukarıdaki `seed.sql`
+ile KARIŞTIRILMAMALI. `seed.sql` bu geliştirme/demo Supabase
+projesine özel (Akme İnşaat markalı, sabit UUID'ler); `seed-template.sql`
+ise her yeni müşteri kurulumunda `scripts/setup-new-customer.sh`
+tarafından `sed` ile doldurulup çalıştırılan, jenerik/markasız,
+`on conflict do nothing` ile tekrar-çalıştırılabilir bir şablondur —
+`page_sections` seed'ini de (madde 9'daki migration'ın aksine) İÇERİR,
+çünkü yeni bir tenant için bu tablo ayrı bir migration'a değil, kurulum
+akışının kendisine ait. Detay: `docs/KURULUM.md`.
 
 ## Açık Sorular
 

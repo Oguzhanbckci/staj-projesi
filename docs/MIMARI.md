@@ -6,8 +6,9 @@ yapılacağını" (özellik kapsamı), bu dosya "nasıl yapılacağını" (tekni
 seçimler) tanımlar. Kod içermez. Karar değişirse önce `KARAR-GUNLUGU.md`'ye
 kayıt düşülür, sonra bu dosya güncellenir.
 
-**Son güncelleme:** 2026-08-14 (5. güncelleme — iletişim formu gerçek
-kayda bağlandı, mesajlar ekranı (detay/okundu/sayaç) tamamlandı)
+**Son güncelleme:** 2026-08-17 — `ACTIVE_TENANT_DOMAIN` kaynak koddan
+ortam değişkenine taşındı (madde 7), yeni müşteri kurulum kılavuzu için
+(bkz. `KURULUM.md`)
 
 ## 0. Bağlam
 
@@ -173,16 +174,23 @@ Karar ve gerekçe: `KARAR-GUNLUGU.md`, 2026-08-06 ("Domain stratejisi: her
 tenant kendi alan adını kullanır", "Panel mimarisi düzeltildi",
 "Platform sahibi tenants tablosunda birleştirildi").
 
-**Geçici (2026-08-10):** Tenant çözümleyen proxy mantığı henüz yazılmadığı
-için `lib/supabase/queries.ts`'teki `getActiveTenantId()`, Host header
-yerine sabit bir domain'e (`akmeinsaat.com.tr`) göre tek bir tenant
-hedefliyor — tüm sorgu fonksiyonları (`getServices`, `getHeroSection`,
+**Geçici (2026-08-10, 2026-08-17'de env değişkenine taşındı):** Tenant
+çözümleyen proxy mantığı henüz yazılmadığı için `lib/supabase/queries.ts`'teki
+`getActiveTenantId()`, Host header yerine sabit bir domain'e göre tek bir
+tenant hedefliyor — tüm sorgu fonksiyonları (`getServices`, `getHeroSection`,
 `getPageSections` vb.) ve tema çözümlemesi (`getSiteThemeSettings`) bu tek
-fonksiyona bağlı. Bu mantık yazıldığında `getActiveTenantId()` bir
-`tenantDomain` parametresi alacak şekilde genişletilmeli (Host header →
-proxy → sayfa/layout → bu fonksiyona parametre olarak akmalı) — kök
-`proxy.ts` zaten var (panel auth için, bkz. `GUVENLIK.md` madde 5), tenant
-çözümleme AYNI dosyaya eklenmeli (Next.js proje başına tek proxy dosyasına
+fonksiyona bağlı. Bu domain artık kaynak kodda sabit DEĞİL,
+`process.env.ACTIVE_TENANT_DOMAIN`'den okunuyor (yoksa `akmeinsaat.com.tr`'ye
+düşer) — "tek müşteri = tek kurulum" modelinde (bkz. `PRD.md`,
+`docs/KURULUM.md`) her müşterinin kendi Vercel projesinde bu değişkeni
+kendi alan adına ayarlaması yeterli, kaynak kodda satır değiştirip
+yeniden deploy etmeye gerek kalmıyor. Host header'a göre GERÇEK/otomatik
+çözümleme (çok kiracılı TEK deploy senaryosu için) hâlâ yazılmadı — bu
+mantık yazıldığında `getActiveTenantId()` bir `tenantDomain` parametresi
+alacak şekilde genişletilmeli (Host header → proxy → sayfa/layout → bu
+fonksiyona parametre olarak akmalı) — kök `proxy.ts` zaten var (panel auth
+için, bkz. `GUVENLIK.md` madde 5), tenant çözümleme AYNI dosyaya
+eklenmeli (Next.js proje başına tek proxy dosyasına
 izin veriyor). Detay ve gerekçe (neden platform sahibinin satırı değil):
 `KARAR-GUNLUGU.md`, 2026-08-10.
 

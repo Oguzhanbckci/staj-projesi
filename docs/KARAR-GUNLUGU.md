@@ -3173,3 +3173,251 @@ güncellendi.
 `npm run lint`/`npx tsc --noEmit`/`npm run build` üçü de temiz (build
 çıktısında `/sitemap.xml`/`/robots.txt` statik (○), `/api/og` dinamik
 (ƒ) — beklenen).
+
+## 2026-08-17 (aynı gün, ikinci oturum) — Lighthouse performans denetimi: gereksiz font preload'ları kaldırıldı
+
+Kullanıcı gerçek bir Lighthouse ölçümü paylaştı (mobil Performance 88,
+masaüstü 99, diğer 3 kategori zaten ≥90) — rapor detayları (Opportunities/
+metrikler) olmadığı için, kod tabanı statik olarak (görsel/font/istemci
+JS/CLS için) incelendi.
+
+**Karar:** `app/layout.tsx`'te root layout'ta çağrılan HER font
+(next/font'un resmi "Preloading" davranışı gereği, doğrulandı:
+`node_modules/next/dist/docs/.../font.md`) TÜM rotalarda otomatik
+preload ediliyordu — 6 font ailesi (Geist Sans/Mono, Manrope, Inter,
+Poppins×4 ağırlık, Work Sans), ama `resolveThemeTokens()` aynı anda
+sadece TEK `--font-sans` kullanıyor. Geist Mono (kodda `font-mono`
+class'ı hiç kullanılmıyor, grep ile doğrulandı) komple kaldırıldı;
+`manrope`/`inter`/`poppins`/`workSans`'a `preload: false` eklendi
+(Geist Sans — `kurumsal-mavi` varsayılan preset'in fontu — `preload:
+true` kaldı). `app/globals.css`'teki boşta kalan `--font-mono` token'ı
+silindi.
+
+**Görsel boyutlandırma/priority, font `display` (next/font varsayılanı
+zaten `swap`), CLS** kod incelemesinde zaten sorunsuz bulundu — ekstra
+iş yapılmadı, uydurma bulgu eklenmedi. Projeler galerisinin
+client-boundary'si (`ProjectsExplorer.tsx`) düşük kazanç/yüksek efor
+gerekçesiyle bilinçli olarak ertelendi.
+
+**Doğrulama (gerçek, kullanıcı tarafından):** `npm run build` + `npm
+run start` sonrası Chrome DevTools Lighthouse tekrar çalıştırıldı:
+mobil Performance **88 → 96**, masaüstü **99 → 100**, diğer kategoriler
+değişmedi (beklenen). Detay: `TEST-STRATEJISI.md` madde 4, `DURUM.md`.
+
+## 2026-08-17 (aynı gün, üçüncü oturum) — Erişilebilirlik denetimi: atlama bağlantısı + gereksiz canlı bölge düzeltmesi
+
+Site+panel için erişilebilirlik denetimi istendi. Bu ortamda tarayıcı
+aracı `localhost`'a erişemediği için otomatik tarama/klavye turu/ekran
+okuyucu dinlemesi AI tarafından gerçek zamanlı yapılamadı — hedefli bir
+kod incelemesi yapıldı, kapsam 2026-08-14'teki son kapsamlı panel
+taramasından SONRA eklenen yüzeylere (Tema Ayarları, Sayfa Düzeni, SEO
+Ayarları, marka görseli yükleme) daraltıldı.
+
+**Bulgu 1 (Kritik) — düzeltildi:** Ne sitede ne panelde atlama
+bağlantısı ("skip link") yoktu. Yeni `components/ui/SkipLink.tsx` —
+`app/(site)/layout.tsx` ve `components/panel/PanelShell.tsx`'e eklendi,
+hedef `<main>`'ler `id`+`tabIndex={-1}` aldı.
+
+**Bulgu 2 (Yüksek) — düzeltildi:** `SeoEditor.tsx`'teki karakter
+sayacı ve `ThemeEditor.tsx`'teki kontrast geri bildirimi `role="status"`
+taşıyordu — her tuş vuruşunda/renk değişiminde ekran okuyucuyu
+kesiyordu. `role="status"` kaldırıldı (form gönderim sonrası tek
+seferlik "Değişiklikler kaydedildi" mesajlarına dokunulmadı — onlar
+doğru kullanım).
+
+**Bulgu 3 (Düşük) — not edildi, düzeltilmedi:** `BrandImageUploader`'daki
+seçili-dosya önizlemesinin `alt` metni jenerik, dosya adını içermiyor.
+
+**Yanlış pozitif olarak elendi:** `ColorPickerField`'daki native renk
+seçici + metin kutusu ikilisi — incelemede ikisinin de doğru
+isimlendirildiği görüldü.
+
+**Doğrulama (gerçek, kullanıcı tarafından):** Klavye turu (site+panel)
+ve Windows Narrator ile ekran okuyucu denemesi gerçek tarayıcıda elle
+yapıldı — hiçbir yeni sorun bulunmadı. Detay: `TEST-STRATEJISI.md`
+madde 9.
+
+## 2026-08-17 (aynı gün, dördüncü oturum) — Vitest + Playwright kuruldu, 3 birim + 3 uçtan uca kritik akış testi yazıldı
+
+Projenin en yüksek öncelikli sistemik eksiği (mentör değerlendirmesinde
+de işaretlenmişti, bkz. `DURUM.md` 2026-08-14) kapatıldı.
+
+**Kurulum:** `vitest` + `@vitejs/plugin-react` + `vite-tsconfig-paths` +
+`jsdom` + `@testing-library/react`/`jest-dom` + `@playwright/test` +
+`dotenv`. `package.json`'a `test:unit`/`test:unit:watch`/`test:e2e`/
+`test` script'leri eklendi (`npm test` = ikisi birden —
+`AI-KURALLARI.md` madde 8.4'ün beklediği komut).
+
+**Birim testler (3 dosya, saf fonksiyonlar):** `lib/theme/contrast.ts`
+(WCAG kontrast hesabı — 2026-08-15'teki gerçek #808080 hatasının
+regresyon testi dahil), `lib/validation/contact.ts`, `lib/seo/
+formatPhone.ts`.
+
+**E2E testler (3 kritik akış, KISITLAR'ın hepsi uygulandı):**
+ziyaretçi (ana sayfa → proje filtresi → iletişim formu), admin (giriş →
+hizmet ekle/yayınla → sitede doğrula → sil), yetkisiz erişim
+(girişsiz `/panel` → `/panel/giris` yönlendirmesi, 2026-08-12'deki
+`curl` testinin otomatikleştirilmiş hâli). Seçiciler `getByRole`/
+`getByLabel`; her test `Date.now()` ile kendi verisini üretip
+`test.afterEach`'te service-role client'la siler; sabit `sleep` yok;
+admin girişi `E2E_ADMIN_EMAIL`/`PASSWORD` ortam değişkenlerinden.
+`playwright.config.ts`: `retries: 0` (bilinçli — idempotency framework
+retry'ıyla maskelenmiyor), `timeout: 60_000`.
+
+**Doğrulama (gerçek, kullanıcı tarafından, art arda 3 kez):** `npm
+test` üç kez çalıştırıldı, üçünde de 26/26 birim + 3/3 e2e yeşil (en
+uzun tekil test 11.5s). Yol boyunca gerçek bir yapılandırma hatası
+bulunup düzeltildi: `.env.local`'de admin test hesabı zaten
+`TEST_AUTH_EMAIL`/`PASSWORD` adıyla (ayrı bir eski script,
+`scripts/test-rls.mjs`, için) duruyordu — `E2E_ADMIN_EMAIL`/
+`E2E_ADMIN_PASSWORD` adıyla AYRICA eklenmesi gerekti, isimler kasıtlı
+olarak birleştirilmedi. Detay: `TEST-STRATEJISI.md` madde 10-12.
+
+## 2026-08-17 (aynı gün, beşinci oturum) — Spam koruması, hata sayfaları, güvenlik başlıkları, sır taraması, RLS/Storage denetimi
+
+**Spam koruması — kullanıcıya soruldu, 2 gerçek mimari/gizlilik kararı:**
+Hız sınırı (1) hangi anahtara göre saysın (e-posta mı IP mi) ve (2)
+sayaç nerede tutulsun (bellek içi mi DB mi) — kullanıcı **IP + Supabase**
+seçti. Sonuç: honeypot (`lib/security/contactHoneypot.ts`, gizli
+`website` alanı — `aria-hidden`+`tabIndex=-1`+ekran dışı, erişilebilirlik
+bozulmadı) + sunucu tarafı IP hız sınırı (`lib/security/
+contactRateLimit.ts`, aynı tenant+IP için 15 dakikada en fazla 3 mesaj,
+`contact_messages`'ın kendisi sorgulanarak — bellek-içi sayaç
+BİLİNÇLİ OLARAK reddedildi, Vercel serverless'te güvenilmez olurdu).
+Yeni `contact_messages.sender_ip` kolonu (migration
+`20260817130000_...`, KVKK notuyla). Yanlış pozitifte (hız sınırına
+takılan gerçek kullanıcı) mesaj sessizce kaybolmuyor — dürüst bir hata
++ alternatif iletişim kanalı gösteriliyor. CAPTCHA'ya geçiş için net
+bir eşik tanımlandı (haftada 10+ spam, dağıtık IP'li koordineli
+saldırı, honeypot'un sistematik atlatıldığı tespit edilirse) —
+Cloudflare Turnstile önerisiyle, henüz kod olarak eklenmedi (KISITLAR:
+"CAPTCHA son çare").
+
+**Gerçek bir build hatası bulunup düzeltildi:** Honeypot (istemci-güvenli)
+ve hız sınırı (`next/headers` kullanır, sunucuya özel) başta TEK
+dosyada (`contactSpamGuard.ts`) yazılmıştı — `ContactForm.tsx`'in
+(Client Component) onu import etmesi `next/headers`'ı tarayıcı
+paketine sürüklemeye çalışıp `npm run build`'u durdurdu. Dosya ikiye
+bölünerek çözüldü (`contactHoneypot.ts`/`contactRateLimit.ts`) — aynı
+istemci/sunucu ayrım ilkesi `lib/supabase/client.ts`/`server.ts`
+bölünmesiyle tutarlı.
+
+**Hata sayfaları:** `app/not-found.tsx`/`error.tsx`/`global-error.tsx` —
+teknik detay göstermiyor. Bu Next.js sürümünde hata sınırı prop adının
+`retry` olduğu (eski `reset` DEĞİL) next/dist/docs'tan doğrulanarak
+yazıldı.
+
+**Güvenlik başlıkları:** `next.config.ts`'e CSP + X-Frame-Options +
+X-Content-Type-Options + Referrer-Policy + Permissions-Policy + HSTS +
+`poweredByHeader: false` (curl doğrulamasında fark edilen ek bulgu).
+**Karar:** nonce tabanlı strict CSP BİLİNÇLİ OLARAK reddedildi — Next'in
+kendi dokümanı nonce'ın TÜM sayfaları dinamik render'a zorladığını
+söylüyor, bu projenin statik+ISR mimarisini (`MIMARI.md`) bozardı;
+sabit CSP seçildi, tek gerekli gevşetme `style-src 'unsafe-inline'`
+(tenant tema enjeksiyonu için). HSTS `preload` bilinçli olarak
+eklenmedi (geri alınması zor bir taahhüt, proje henüz canlı değil).
+
+**Sır taraması:** repo + TÜM git geçmişi (`git log --all`, pickaxe
+arama) + gerçek prod client bundle'ı tarandı — **sızıntı bulunmadı**.
+
+**RLS/Storage denetimi:** 11 tablo + 2 kurulu bucket'ın migration SQL'i
+tek tek okunup "anon ne yapabilir" tablosu çıkarıldı — mevcut
+dokümantasyonla tutarlı, tutarsızlık bulunmadı.
+
+**Doğrulama (gerçek, kullanıcı tarafından):** Migration uygulandı, tipler
+yenilendi, `npm run build`/`lint` temiz, iletişim formu + 404 sayfası
+denendi, `curl.exe -I` ile 6/6 güvenlik başlığı doğru geldi, `npm audit`
+**0 açık** verdi. `GUVENLIK.md` madde 10 (yayın öncesi kontrol listesi)
+güncellendi — **hâlâ tam işaretli değil, doküman açıkça "canlıya
+çıkılmamalı" diyor** (tenant/domain panel ayrımı, e-posta bildirimi,
+spam korumasının canlı bot testi gibi maddeler bilinçli olarak açık).
+Detay: `GUVENLIK.md` madde 14-17.
+
+## 2026-08-17 (aynı gün, altıncı oturum) — Yeni müşteri kurulum kılavuzu ve betiği
+
+Ürünün "tek müşteri = tek kurulum" satış modeli (bkz. `PRD.md`) için
+gerçek bir sıfırdan-kuruluma-yayına kılavuzu ve onu destekleyen kod
+yazıldı.
+
+**Gerçek bir mimari karar:** `lib/supabase/queries.ts`'teki
+`ACTIVE_TENANT_DOMAIN` sabiti kaynak koddan `process.env.
+ACTIVE_TENANT_DOMAIN`'e taşındı (yoksa mevcut `"akmeinsaat.com.tr"`ye
+düşer — bu oturumun `.env.local`'i etkilenmedi). Gerekçe: eskisi gibi
+her müşteri için kaynak kodda satır değiştirip yeniden deploy etmek
+yerine, sadece Vercel ortam değişkeni ayarlamak yeterli olsun.
+
+**Yeni `docs/KURULUM.md`** — Ön Koşullar, Müşteriden Alınacak Bilgiler,
+9 adımlık Adım Adım Kurulum (her adımda süre + "doğru yaptığını nasıl
+anlarsın" kontrolü, toplam ~28 dk), Doğrulama Kontrolleri, Sık Yapılan
+Hatalar (bu projenin GERÇEK geçmişinde yaşanmış hatalardan derlendi),
+Bakım ve Yedekleme. **Ekran görüntüsü YOK** — AI gerçek bir Supabase/
+Vercel hesabına erişemediği için, her adımda tam menü yolu metin olarak
+yazıldı.
+
+**Yeni `scripts/setup-new-customer.sh`** — `supabase db push` (şema+RLS)
++ `supabase/setup/seed-template.sql`'i (yer tutucuları `sed` ile
+doldurup) `psql` ile uygulayan, sıralı ve tekrar çalıştırılabilir
+(`on conflict do nothing`, liste tabloları için `if not exists`
+sentinel) tek bir akış. **Demo içerik bilinçli olarak jenerik/markasız**
+— "Akme İnşaat" DEĞİL, gerçek müşteri kurulumunda panelden
+düzenlenecek yer tutucu metinler.
+
+**Gerçek bir kurulum boşluğu bulundu:** `page_sections` tablosunun
+seed'i `supabase/seed.sql`'de DEĞİL, ayrı bir migration'da
+(`20260810120000_...`) olduğu görüldü — bu tablo boşsa ana sayfa
+SESSİZCE tamamen boş render edilir (hata yok). Yeni müşteri şablonuna
+bu adım dahil edildi, `KURULUM.md`'de ayrıca vurgulandı.
+
+**Yol boyunca bulunan, ilgisiz ama gerçek bir bug düzeltildi:**
+`app/panel/(protected)/page.tsx`'teki "Hızlı Erişim" linki hâlâ "Tema
+ayarları (yakında) →" yazıyordu — Tema ekranı 2026-08-15'ten beri
+gerçek/tam çalışır durumda, metin 2026-08-14'ten kalma, güncellenmemişti.
+
+**Dokümantasyon:** `VERİ-MODELİ.md` (`sender_ip` kolonu, migration
+sayısı 20'ye çıktı, `seed-template.sql` notu), `MIMARI.md` madde 7
+(`ACTIVE_TENANT_DOMAIN` artık ortam değişkeni), `MUSTERİ-KILAVUZU.md`
+(eksik "Özet Ekranı" bölümü eklendi) güncellendi.
+
+**Yapılamayan (kullanıcının/başka birinin yapması gereken):** Kılavuzun
+gerçek bir sıfırdan Supabase projesiyle uçtan uca test edilmesi — AI
+bunu yapamaz (gerçek hesap gerekir), `scripts/setup-new-customer.sh` da
+bu yüzden canlı test edilmedi, sadece kod incelemesiyle doğrulandı.
+
+`npm run build` kullanıcı tarafından çalıştırılıp temiz çıktığı
+doğrulandı.
+
+## 2026-08-17 (aynı gün, yedinci oturum) — Teslim paketi, README, temizlik, canlı yayın hazırlığı
+
+Satışa/teslime hazırlık: yeni `docs/TESLIM-PAKETI.md` (Ürün Özeti,
+Kapsam ve Kapsam Dışı, Teslim Edilenler, Kurulum Gereksinimleri, Bakım
+ve Destek, Fiyatlandırma Önerisi — sonuncusu açıkça "başlangıç önerisi,
+kesin karar değil" olarak işaretlendi, bu bir işletme kararı, AI'nin
+tek başına karar veremeyeceği bir alan). 3 maddelik "rakiplerden fark"
+`docs/rakip-analizi.md`'deki gerçek gözlemlere dayanıyor (uydurulmadı).
+
+`README.md` tamamen yeniden yazıldı — hâlâ `create-next-app`
+varsayılanıydı. Yeni içerik: Proje Nedir, Teknolojiler, Hızlı
+Başlangıç, Dokümantasyon Haritası, Testleri Çalıştırma.
+
+**Temizlik:** `app/test-components/`/`app/test-theme/` (kendi
+dokümantasyonunda "ürünle yayınlanmaz" yazan geçici vitrin sayfaları)
++ `public/`'teki 5 kullanılmayan `create-next-app` varsayılan SVG'si
+silindi — hepsi grep ile "hiçbir yerde referans edilmiyor"
+doğrulandıktan sonra.
+
+`playwright.config.ts`, `PLAYWRIGHT_BASE_URL` ortam değişkeniyle canlı
+adrese karşı çalışabilecek şekilde güncellendi (webServer'ı atlıyor).
+
+**Yapılamayan (AI'nin gerçek bir sınırı):** Vercel'e GitHub bağlama +
+ortam değişkeni girme + yayınlama, canlı adrese karşı uçtan uca test
+çalıştırma, canlı Lighthouse ölçümü — hiçbiri AI tarafından
+yapılamadı, gerçek bir Vercel/GitHub hesap erişimi gerektiriyor. Adım
+adım talimat + build hatası varsa düzeltme desteği kullanıcıya sohbette
+verildi.
+
+**Ayrıca bu oturumda fark edilip düzeltilen bir eksik:** Önceki 6
+oturumun (Lighthouse, erişilebilirlik, test, güvenlik, kurulum
+kılavuzu) HİÇBİRİ bu dosyaya (KARAR-GUNLUGU.md) kaydedilmemişti —
+kullanıcı sorunca fark edildi, 5 geriye dönük kayıt (yukarıdaki
+"ikinci oturum"dan "altıncı oturum"a) eklendi; `VERİ-MODELİ.md`/
+`MIMARI.md`'deki ilgili eksikler de aynı anda kapatıldı.

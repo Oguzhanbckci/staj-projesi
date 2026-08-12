@@ -216,8 +216,10 @@ ikincil/destekleyici.
 `components/ui/` — sayfa/tema bağımsız, genel amaçlı UI bileşenleri (bkz.
 `AI-KURALLARI.md` madde 3). Hepsi Server Component (hiçbiri `"use client"`
 içermiyor — state/etkileşim gerektirmiyorlar, sadece markup + token
-class'ları üretiyorlar). Görsel doğrulama için geçici vitrin sayfası:
-`app/test-components/page.tsx` (ürünle yayınlanmaz).
+class'ları üretiyorlar). Görsel doğrulama için geçici bir vitrin sayfası
+(`app/test-components/page.tsx`) kullanılmıştı — teslim öncesi temizlik
+sırasında (2026-08-17) kaldırıldı, gerçek kullanım artık üretim
+bileşenlerinin (Hero/Hizmetler/Panel formları vb.) kendisinde görünür.
 
 | Bileşen | Dosya | Props (özet) | Kullanım amacı |
 |---|---|---|---|
@@ -269,7 +271,9 @@ yenileri de aynı kalıba uymalı:
    state/etkileşim (ör. bir dropdown'ın kendi açık/kapalı state'i)
    gerektiğinde eklenir.
 
-**Klavye ile doğrulama adımları** (`app/test-components/page.tsx` için):
+**Klavye ile doğrulama adımları** (2026-08-17'den beri gerçek ürün
+sayfalarında — ör. `/iletisim` formu, panel formları — uygulanır, ayrı
+bir vitrin sayfası artık yok):
 1. Sayfayı aç, fareye hiç dokunmadan `Tab` tuşuna basarak ilerle.
 2. Her buton/form alanına sırayla ulaşabildiğini doğrula — hiçbir
    etkileşimli öğe atlanmamalı.

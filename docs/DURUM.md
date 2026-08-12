@@ -11,11 +11,15 @@ modeli, RLS politikaları, anahtar yönetimi, güvenlik kontrol listesi) ve
 kontrast doğrulaması, bileşen envanteri/API kuralları) ve `TEMA-MIMARISI.md`'yi
 (tema değerlerinin DB'den `<html>`'e akışı, tema ön ayarları, FOUC
 önlemi), gerekirse `KARAR-GUNLUGU.md`'yi (tarihli, hiç silinmeyen karar
-geçmişi) oku.
+geçmişi) oku. Yeni bir müşteri kurulumu yapılacaksa `KURULUM.md`'ye
+(sıfırdan kurulum, geliştirici için), panelin günlük kullanımı için
+`MUSTERİ-KILAVUZU.md`'ye (teknik olmayan okuyucu için) bakılır.
 
-**Son güncelleme:** 2026-08-17 — Spam koruması, hata sayfaları, güvenlik
-başlıkları eklendi; sır taraması + RLS/Storage denetimi yapıldı
-(`GUVENLIK.md`, henüz kullanıcı tarafından çalıştırılıp doğrulanmadı)
+**Son güncelleme:** 2026-08-17 — `docs/TESLIM-PAKETI.md` eklendi
+(satış/teslim özeti), `README.md` yeniden yazıldı, kullanılmayan
+scaffold dosyaları temizlendi, Playwright canlı adrese karşı
+çalıştırılabilir hale getirildi — **Vercel'e ilk yayın henüz
+yapılmadı**, kullanıcının kendi hesabından yapması gerekiyor
 
 ## Proje bağlamı
 
@@ -1209,6 +1213,99 @@ formu ve 404 sayfası gerçek tarayıcıda denendi, `curl.exe -I` ile 6/6
 güvenlik başlığı doğru geldi (bu sırada fark edilen `X-Powered-By`
 sızıntısı `poweredByHeader: false` ile kapatıldı), `npm audit` **0
 açık** verdi. `GUVENLIK.md` madde 10 son haliyle güncellendi.
+
+**Yeni müşteri kurulum kılavuzu + kurulum betiği (2026-08-17, aynı gün,
+yeni oturum):** Dışarıdan gelen bir yönergeyle, ürünün "tek müşteri =
+tek kurulum" satış modeli (bkz. `PRD.md`) için gerçek bir sıfırdan-
+kuruluma-yayına kılavuzu ve onu destekleyen kod yazıldı.
+
+- **Yeni `docs/KURULUM.md`** — Ön Koşullar, Müşteriden Alınacak
+  Bilgiler, Adım Adım Kurulum (9 numaralı adım, her birinde tahmini
+  süre + "doğru yaptığını nasıl anlarsın" kontrolü, toplam ~28 dk),
+  Doğrulama Kontrolleri, Sık Yapılan Hatalar (bu projenin GERÇEK
+  geçmişinde yaşanmış hatalardan derlendi — SQL Editor'e kesik yapıştırma,
+  `types:generate` unutma, PowerShell `curl -I` sorunu vb.), Bakım ve
+  Yedekleme. **Ekran görüntüsü YOK** — AI gerçek bir Supabase/Vercel
+  hesabına erişemediği için; bunun yerine her adımda tam menü yolu
+  metin olarak yazıldı, gerçek ilk kurulumda ekran görüntüsü eklenmesi
+  öneriliyor.
+- **Gerçek bir mimari değişiklik:** `lib/supabase/queries.ts`'teki
+  `ACTIVE_TENANT_DOMAIN` sabiti artık `process.env.ACTIVE_TENANT_DOMAIN`'den
+  okunuyor (yoksa mevcut "akmeinsaat.com.tr"ye düşer — bu oturumun kendi
+  `.env.local`'i etkilenmedi). Sebep: eskisi gibi her müşteri için kaynak
+  kodda bir satır değiştirip yeniden deploy etmek yerine, sadece Vercel
+  ortam değişkeni ayarlamak yeterli olsun diye.
+- **Yeni `scripts/setup-new-customer.sh`** — `supabase db push` (şema+RLS,
+  tüm migration'lar) + `supabase/setup/seed-template.sql`'i (yer
+  tutucuları `sed` ile doldurup) `psql` ile uygulayan, sıralı ve tekrar
+  çalıştırılabilir (`on conflict do nothing`, liste tabloları için
+  `if not exists` sentinel) tek bir akış. psql yoksa elle SQL Editor'e
+  yapıştırma alternatifi de kılavuzda var.
+- **Gerçek bir kurulum boşluğu bulundu:** `page_sections` tablosunun
+  seed'i `supabase/seed.sql`'de DEĞİL, ayrı bir migration'da
+  (`20260810120000_...`) olduğu görüldü — bu tablo boşsa ana sayfa
+  SESSİZCE tamamen boş render edilir (hata yok). Yeni müşteri şablonuna
+  bu adım dahil edildi, `KURULUM.md`'de ayrıca vurgulandı.
+- **`.env.local.example` tamamlandı** — her değişken için "ne işe
+  yarar/nereden alınır" yorumları, yeni `ACTIVE_TENANT_DOMAIN`, ve
+  `E2E_*` değişkenlerinin sadece yerel test için olduğu, üretim
+  deploy'una eklenmemesi gerektiği notu.
+- **`docs/MUSTERİ-KILAVUZU.md`'deki eksik bulundu ve kapatıldı:** panelin
+  7 nav öğesinden biri (Özet/dashboard ekranı) hiç anlatılmamıştı — yeni
+  bir "Özet Ekranı" başlığı eklendi.
+- **Yol boyunca bulunan, ilgisiz ama gerçek bir bug düzeltildi:**
+  `app/panel/(protected)/page.tsx`'teki "Hızlı Erişim" linki hâlâ "Tema
+  ayarları (**yakında**) →" yazıyordu — Tema ekranı 2026-08-15'ten beri
+  gerçek/tam çalışır durumda, "(yakında)" ibaresi 2026-08-14'teki panel
+  incelemesinden kalma, o zamandan beri güncellenmemiş yanlış bir metin.
+
+**Yapılamayan (kullanıcının/başka birinin yapması gereken, KISITLAR/
+GÖREVLER'in kendi isteği):** Kılavuzun gerçek bir sıfırdan Supabase
+projesiyle uçtan uca test edilmesi — AI bunu yapamaz (gerçek hesap
+gerekir). `scripts/setup-new-customer.sh` da bu yüzden canlı test
+edilmedi, sadece kod incelemesiyle doğrulandı.
+
+**Teslim paketi, README, temizlik, canlı yayın hazırlığı (2026-08-17,
+aynı gün, yedinci oturum):** Dışarıdan gelen bir yönergeyle, satışa/
+teslime hazırlık yapıldı. **Vercel'e gerçek yayın, canlı uçtan uca
+test ve canlı Lighthouse ölçümü AI TARAFINDAN YAPILAMADI** — bunlar
+kullanıcının kendi Vercel/GitHub hesap erişimini gerektiriyor, adım
+adım talimat sohbet geçmişinde verildi.
+
+- **Yeni `docs/TESLIM-PAKETI.md`** — Ürün Özeti, Kapsam ve Kapsam Dışı
+  (dürüstçe: e-posta bildirimi yok, CAPTCHA yok, çoklu dil yok vb.),
+  Teslim Edilenler, Kurulum Gereksinimleri, Bakım ve Destek (gerçekçi
+  beklenti — SLA taahhüdü yok), Fiyatlandırma Önerisi (açıkça "senin
+  ayarlaman gereken bir başlangıç önerisi" olarak işaretlendi, kesin
+  bir iddia değil). 3 maddelik rakip farkı `rakip-analizi.md`'deki
+  GERÇEK verilere dayanıyor (Referanslar 8 siteden 3'ünde, Ekip
+  sayfası 2'sinde vardı — uydurulmadı).
+- **`README.md` tamamen yeniden yazıldı** — hâlâ `create-next-app`
+  varsayılanıydı, hiç güncellenmemişti. Yeni başlıklar: Proje Nedir,
+  Teknolojiler, Hızlı Başlangıç, Dokümantasyon Haritası (tüm `docs/`
+  dosyalarına ne zaman bakılacağı tablosu), Testleri Çalıştırma.
+- **Gereksiz dosyalar temizlendi:** `app/test-components/`,
+  `app/test-theme/` (kendi dokümantasyonlarında "ürünle yayınlanmaz"
+  yazan geçici vitrin sayfalarıydı — `TASARIM-SISTEMI.md` güncellendi)
+  + `public/`'teki 5 kullanılmayan `create-next-app` varsayılan SVG'si
+  (`file.svg`/`globe.svg`/`next.svg`/`vercel.svg`/`window.svg` —
+  kodda hiç referans edilmediği grep ile doğrulandı).
+- **`playwright.config.ts`** — `PLAYWRIGHT_BASE_URL` ortam değişkeni
+  tanımlıysa canlı adrese karşı çalışacak şekilde güncellendi
+  (webServer'ı hiç başlatmıyor). ⚠️ Admin akışı testi canlıda
+  çalıştırılırsa GERÇEK siteye birkaç saniyeliğine görünür bir test
+  kaydı ekleyip siliyor — bilerek yapılmalı.
+- **`docs/VERİ-MODELİ.md`/`MIMARI.md`/`TASARIM-SISTEMI.md`** bugünkü
+  değişikliklerle güncellendi (önceki oturumda unutulmuştu, kullanıcı
+  sorunca fark edildi — bkz. yukarıdaki not).
+
+**Kullanıcının yapması gereken (sırasıyla):** (1) Vercel'e GitHub
+deposunu bağlayıp üretim ortam değişkenlerini girip yayınlamak, (2)
+oluşan build hatalarını (varsa) bana getirmek, (3) canlı adrese karşı
+`PLAYWRIGHT_BASE_URL=<adres> npm run test:e2e` çalıştırmak, (4) canlı
+adreste Chrome DevTools Lighthouse çalıştırıp yerel sonuçlarla (mobil
+88→96, masaüstü 99→100, bkz. bu dosyanın önceki bir kaydı)
+karşılaştırmak. Tam talimat sohbet geçmişinde.
 
 ## Sıradaki adım
 
