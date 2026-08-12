@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import { Navbar } from "@/components/site/Navbar";
 import { Footer } from "@/components/site/Footer";
+import { SkipLink } from "@/components/ui/SkipLink";
 import {
   getActiveTenantDomain,
   getPageSections,
@@ -56,9 +57,12 @@ export default async function SiteLayout({ children }: { children: ReactNode }) 
 
   return (
     <>
+      <SkipLink targetId="main-content" />
       <LocalBusinessJsonLd />
       <Navbar logoText={tenantName} logoUrl={logoUrl} links={navLinks} contactHref="/iletisim" />
-      <main>{children}</main>
+      <main id="main-content" tabIndex={-1} className="focus:outline-none">
+        {children}
+      </main>
       <Footer />
     </>
   );

@@ -13,8 +13,8 @@ kontrast doğrulaması, bileşen envanteri/API kuralları) ve `TEMA-MIMARISI.md`
 önlemi), gerekirse `KARAR-GUNLUGU.md`'yi (tarihli, hiç silinmeyen karar
 geçmişi) oku.
 
-**Son güncelleme:** 2026-08-17 — Lighthouse performans denetimi: gereksiz font
-preload'ları kaldırıldı (mobil Performance 88 → 96)
+**Son güncelleme:** 2026-08-17 — Erişilebilirlik denetimi: atlama bağlantısı
+eklendi, gereksiz canlı bölge (role="status") kaldırıldı
 
 ## Proje bağlamı
 
@@ -1065,6 +1065,40 @@ optimizasyonuyla kapandı. Diğer 3 kategori beklenildiği gibi
 değişmedi (font önceliklendirmesi sadece Performance metriklerini
 etkiler). `npm run build`/`lint` bu oturumda ayrıca doğrulanmadı —
 kullanıcı sıradaki oturumda teyit edebilir.
+
+**Erişilebilirlik denetimi: atlama bağlantısı + gereksiz canlı bölge
+düzeltmesi (2026-08-17, aynı gün, yeni oturum):** Dışarıdan gelen bir
+yönergeyle site+panel için erişilebilirlik denetimi istendi. Bu ortamda
+tarayıcı aracı `localhost`'a erişemediği için otomatik tarama/klavye
+turu/ekran okuyucu dinlemesi AI tarafından gerçek zamanlı yapılamadı —
+hedefli bir kod incelemesi yapıldı, kapsam 2026-08-14'teki son
+kapsamlı panel taramasından SONRA eklenen yüzeylere (Tema Ayarları,
+Sayfa Düzeni, SEO Ayarları, marka görseli yükleme) daraltıldı. Detaylı
+bulgu tablosu, test yöntemleri ve yanlış pozitif değerlendirmesi:
+`TEST-STRATEJISI.md` madde 9.
+
+- **Yeni `components/ui/SkipLink.tsx`** — `app/(site)/layout.tsx` ve
+  `components/panel/PanelShell.tsx`'e eklendi, hedef `<main>`'ler
+  `id`+`tabIndex={-1}` aldı (Kritik bulgu — hiçbir yerde atlama
+  bağlantısı yoktu).
+- **`role="status"` kaldırıldı** — `SeoEditor.tsx`'teki karakter
+  sayacından ve `ThemeEditor.tsx`'teki 2 kontrast geri bildirim
+  paragrafından (Yüksek bulgu — her tuş vuruşunda/renk değişiminde
+  ekran okuyucuyu kesiyordu). Form gönderim sonrası tek seferlik
+  "Değişiklikler kaydedildi" mesajlarına dokunulmadı.
+- **Düşük öncelikli not (düzeltilmedi):** `BrandImageUploader`'daki
+  seçili-dosya önizlemesinin `alt` metni jenerik, dosya adını
+  içermiyor.
+- **Yanlış pozitif olarak elendi:** `ColorPickerField`'daki native
+  renk seçici + metin kutusu ikilisi — incelemede ikisinin de doğru
+  isimlendirildiği görüldü.
+
+**Kullanıcı tarafından tamamlandı:** Klavye turu (site + panel) ve
+Windows Narrator ile ekran okuyucu denemesi gerçek tarayıcıda elle
+yapıldı — hiçbir yeni sorun bulunmadı, 2 düzeltmenin (atlama
+bağlantısı, canlı bölge) gerçek kullanımda işe yaradığı doğrulandı.
+`npm run build`/`lint` bu oturumda ayrıca doğrulanmadı, henüz
+commit'lenmedi.
 
 ## Sıradaki adım
 

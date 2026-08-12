@@ -5,6 +5,7 @@ import Link from "next/link";
 import { X, Menu as MenuIcon } from "lucide-react";
 import { useDialogBehavior } from "@/lib/hooks/useDialogBehavior";
 import { Button } from "@/components/ui/Button";
+import { SkipLink } from "@/components/ui/SkipLink";
 import { PANEL_NAV_ITEMS } from "./navItems";
 
 // Genel bir "her nav öğesi rozet alabilir" sistemi bilerek KURULMADI
@@ -77,6 +78,7 @@ export function PanelShell({
 
   return (
     <div className="flex min-h-full bg-surface">
+      <SkipLink targetId="panel-main-content" />
       {/* Masaüstü: kalıcı kenar menüsü (bkz. lg: — Navbar'daki aynı
           kırılma noktasıyla tutarlı, bkz. docs/KARAR-GUNLUGU.md 2026-08-11). */}
       <aside className="hidden w-60 shrink-0 border-r border-neutral-300 bg-surface-raised p-4 lg:block">
@@ -136,7 +138,9 @@ export function PanelShell({
             </Button>
           </form>
         </header>
-        <main className="flex-1 p-4 sm:p-6">{children}</main>
+        <main id="panel-main-content" tabIndex={-1} className="flex-1 p-4 sm:p-6 focus:outline-none">
+          {children}
+        </main>
       </div>
     </div>
   );

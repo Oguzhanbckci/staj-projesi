@@ -5,7 +5,8 @@ sayılması" için gereken koşulları tanımlar. `AI-KURALLARI.md` madde 7 bura
 işaret eder; test kararı değişirse önce `KARAR-GUNLUGU.md`'ye kayıt düşülür,
 sonra bu dosya güncellenir. Kod içermez.
 
-**Son güncelleme:** 2026-08-11
+**Son güncelleme:** 2026-08-17 — Erişilebilirlik denetim kaydı (madde 9):
+atlama bağlantısı + gereksiz canlı bölge düzeltmesi
 
 ## 0. Bağlam
 
@@ -152,6 +153,67 @@ Bu bulgular gerçek bir tarayıcıda (kullanıcı tarafından) henüz teyit
 edilmedi — sıradaki adımda kullanıcının kendi tarayıcısında hızlı bir
 görsel kontrol yapması öneriliyor.
 
-## 9. Açık Sorular
+## 9. Erişilebilirlik Denetim Kaydı (2026-08-17)
+
+Dışarıdan gelen bir yönergeyle, ziyaretçi sitesi + panel için "otomatik
+denetim → klavye turu → ekran okuyucu denemesi → düzelt → yeniden
+denetle" akışı istendi. Bu ortamda tarayıcı aracı `localhost`'a
+erişemediği için (aynı kısıt: `KARAR-GUNLUGU.md` 2026-08-08/2026-08-14)
+otomatik tarama/klavye turu/ekran okuyucu dinlemesi **AI tarafından
+gerçek zamanlı yapılamadı** — bunun yerine hedefli bir kod incelemesi
+yapıldı. Kapsam bilerek 2026-08-14'teki son kapsamlı panel taramasından
+SONRA eklenen, henüz hiç denetlenmemiş yüzeylere daraltıldı: Tema
+Ayarları (canlı önizleme/renk seçici), Sayfa Düzeni (varyant seçimi),
+SEO Ayarları (karakter sayacı/arama önizlemesi), marka görseli yükleme.
+Daha eski yüzeyler (site bölümleri, ilk 19 panel sayfası) zaten
+2026-08-08 ve 2026-08-14'te denetlendi, tekrar taranmadı.
+
+**Bulgular:**
+
+| # | Öncelik | Bulgu | Etki | Durum |
+|---|---|---|---|---|
+| 1 | Kritik | Atlama bağlantısı ("skip link") hiç yoktu — ne sitede ne panelde | Klavye kullanıcısı her sayfada Navbar'ın (site) veya kenar menüsünün (panel, ~8 link) tamamını Tab'layıp geçmeden içeriğe ulaşamıyor — tekrarlayan görevlerde ciddi zaman kaybı | ✅ Düzeltildi |
+| 2 | Yüksek | `SeoEditor`'daki karakter sayacı ve `ThemeEditor`'daki kontrast geri bildirimi `role="status"` taşıyordu — her tuş vuruşunda/renk değişiminde tetikleniyor | Ekran okuyucu kullanıcısı ilgili alana yazarken sürekli ek anonsla kesintiye uğruyor, alanı kullanmak ciddi zorlaşıyor | ✅ Düzeltildi |
+| 3 | Düşük | `BrandImageUploader`'daki seçili-dosya önizlemesinin `alt` metni jenerik ("Yüklenecek görselin önizlemesi"), dosya adını içermiyor | Ekran okuyucu kullanıcısı önizlemeden hangi dosyayı seçtiğini anlayamıyor | 📝 Not edildi, düzeltilmedi |
+
+**Yanlış pozitif olarak elenen:** `ColorPickerField`'daki native
+`<input type="color">` + metin kutusu ikilisi ilk bakışta "aynı değer
+için iki kontrol, karışıklık riski" gibi görünebilir; incelemede her
+ikisinin de ayrı doğru isimlendirildiği (`aria-label` / `label`+
+`htmlFor`) ve tab sırasının mantıklı olduğu görüldü — gerçek bir sorun
+değil.
+
+**Düzeltmelerin somut kodu:** yeni `components/ui/SkipLink.tsx`,
+`app/(site)/layout.tsx` ve `components/panel/PanelShell.tsx`'e
+eklendi (hedef `<main>`'ler `id`+`tabIndex={-1}` aldı);
+`role="status"` `SeoEditor.tsx`'teki `CharacterCount` ve
+`ThemeEditor.tsx`'teki iki kontrast paragrafından kaldırıldı (form
+gönderim sonrası tek seferlik "Değişiklikler kaydedildi" mesajlarına
+DOKUNULMADI — onlar doğru kullanım).
+
+**Test yöntemi:**
+- *Atlama bağlantısı:* Sayfa yüklenince ilk Tab'da "İçeriğe geç"
+  bağlantısının görünür hâle gelmesi; Enter'a basınca odağın
+  `<main>`'e atlaması (bir sonraki Tab, içerik alanındaki ilk
+  etkileşimli öğeye gitmeli).
+- *Canlı bölge düzeltmesi:* Bir ekran okuyucuyla (NVDA/VoiceOver/
+  Narrator) SEO Ayarları/Tema sayfasında ilgili alana yazarken artık
+  her karakterde ek anons duyulmaması; değerin görsel olarak hâlâ
+  anlık güncellendiğinin gözle doğrulanması.
+
+**Kullanıcı tarafından tamamlandı (2026-08-17, aynı gün):** Klavye turu
+(site + panel, atlama bağlantısı/proje modalı/SSS akordeonu/iletişim
+formu/Tema/Sayfa Düzeni/SEO Ayarları dahil) ve Windows Narrator ile
+ekran okuyucu denemesi gerçek tarayıcıda elle yapıldı — **hiçbir yeni
+sorun bulunmadı**. Bu, yukarıdaki 2 düzeltmenin (atlama bağlantısı,
+canlı bölge) gerçek kullanıcı deneyiminde de işe yaradığını doğruluyor.
+
+**Öncesi/sonrası:** Otomatik bir araçla sayısal bir öncesi/sonrası
+karşılaştırması bu oturumda üretilemedi (denetim bir tarama aracı
+çıktısı değil, hedefli kod incelemesiydi) — somut sonuç: 2 gerçek
+bulgu (1 kritik + 1 yüksek) düzeltildi, 1 düşük öncelikli bulgu not
+olarak bırakıldı, 1 aday yanlış pozitif olarak elendi.
+
+## 10. Açık Sorular
 
 Şu an aktif açık soru yok.

@@ -27,13 +27,17 @@ const initialState: ActionResult<keyof SeoSettingsFormValues> = {
 // görsel bir renk değişimi (bkz. lib/validation/seo.ts'teki yorum: zod
 // max'ları çok daha yüksek, gerçek SEO pratiğinde uzun bir başlık hata
 // değil, sadece arama sonucunda kesilme demek).
+// KISITLAR/erişilebilirlik: BİLEREK role="status"/aria-live YOK — bu metin
+// her tuş vuruşunda değişiyor, bir canlı bölgeye bağlanırsa ekran okuyucu
+// kullanıcısının kendi yazdığı karakterlerin echo'suyla çakışıp alanı
+// pratikte kullanılamaz hale getirir (bkz. docs/GUVENLIK.md/TEST-
+// STRATEJISI.md erişilebilirlik denetimi, 2026-08-17). Görsel kullanıcı
+// için değer zaten anlık güncelleniyor; ekran okuyucu kullanıcısı normal
+// okuma komutlarıyla istediğinde bu paragrafa ulaşabilir.
 function CharacterCount({ length, max }: { length: number; max: number }) {
   const overLimit = length > max;
   return (
-    <p
-      role="status"
-      className={`text-caption ${overLimit ? "text-warning" : "text-text-muted"}`}
-    >
+    <p className={`text-caption ${overLimit ? "text-warning" : "text-text-muted"}`}>
       {length} / {max} karakter
       {overLimit && " — bu sınırın üzerindeki metin arama sonucunda kesilebilir."}
     </p>

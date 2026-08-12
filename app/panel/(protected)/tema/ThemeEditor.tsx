@@ -111,9 +111,11 @@ export function ThemeEditor({ initialData }: { initialData: ThemeSettingsData })
                 error={fieldErrors.primaryColor}
                 helpText="Boş bırakırsanız varsayılan tema rengi kullanılır."
               />
+              {/* BİLEREK role="status" YOK — renk seçilirken çok sık
+                  değişiyor, bkz. SeoEditor.tsx CharacterCount'taki aynı
+                  gerekçe. */}
               {primaryContrast && (
                 <p
-                  role="status"
                   className={`mt-1 text-caption ${primaryContrast.passes ? "text-text-muted" : "text-warning"}`}
                 >
                   Kontrast oranı: {primaryContrast.ratio.toFixed(2)}:1 (
@@ -136,7 +138,6 @@ export function ThemeEditor({ initialData }: { initialData: ThemeSettingsData })
               />
               {secondaryContrast && (
                 <p
-                  role="status"
                   className={`mt-1 text-caption ${secondaryContrast.passes ? "text-text-muted" : "text-warning"}`}
                 >
                   Kontrast oranı: {secondaryContrast.ratio.toFixed(2)}:1 (
