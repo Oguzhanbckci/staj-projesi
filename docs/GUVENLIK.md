@@ -734,7 +734,7 @@ panel) aşağıdaki HTTP yanıt başlıklarını ekliyor:
 
 | Başlık | Değer | Ne işe yarar |
 |---|---|---|
-| `Content-Security-Policy` | `default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' blob: data:; font-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; upgrade-insecure-requests` | Tarayıcının hangi kaynaktan script/stil/görsel/font yükleyebileceğini kısıtlar — XSS'in en etkili tek karşılığı (kötü niyetli bir script enjekte edilse bile çalışamaz/veri dışarı sızamaz). |
+| `Content-Security-Policy` | `default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' blob: data:; font-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; upgrade-insecure-requests` | Tarayıcının hangi kaynaktan script/stil/görsel/font yükleyebileceğini kısıtlar — XSS'in en etkili tek karşılığı (kötü niyetli bir script enjekte edilse bile çalışamaz/veri dışarı sızamaz). |
 | `X-Frame-Options` | `DENY` | Site başka bir sayfada `<iframe>` içine gömülemez — clickjacking'e karşı (CSP'nin `frame-ancestors`'ı ile aynı işi eski tarayıcılar için de yapan yedek katman). |
 | `X-Content-Type-Options` | `nosniff` | Tarayıcının `Content-Type` başlığını yok sayıp dosya içeriğini "tahmin etmesini" engeller — ör. bir görsel gibi yüklenen kötü niyetli bir dosyanın çalıştırılabilir sanılmasını önler. |
 | `Referrer-Policy` | `strict-origin-when-cross-origin` | Bir bağlantıya tıklandığında hedef siteye tam URL yerine sadece kök alan adı gönderilir (ör. `/panel/mesajlar/gizli-id` değil, sadece site adresi) — sayfa içi hassas yol bilgisinin başka sitelere sızmasını azaltır. |
@@ -746,9 +746,26 @@ dokümanı nonce kullanıldığında TÜM sayfaların dinamik render edilmesini
 şart koşuyor — bu proje statik üretim + on-demand ISR üzerine kurulu
 (`docs/MIMARI.md`), nonce'a geçmek bu mimariyi tamamen bozardı. Bunun
 yerine sabit bir CSP (`next.config.ts`, "Without Nonces" yöntemi)
-seçildi. Tek zorunlu gevşetme: `style-src 'unsafe-inline'` — tenant
+seçildi. İki zorunlu gevşetme: `style-src 'unsafe-inline'` — tenant
 temasının `<html style={...}>` olarak enjekte edilmesi
-(`docs/TEMA-MIMARISI.md`) nonce olmadan başka türlü mümkün değil.
+(`docs/TEMA-MIMARISI.md`) nonce olmadan başka türlü mümkün değil; ve
+`script-src 'unsafe-inline'` — Next.js App Router hydration'ı
+başlatmak için HTML'e gömülü `<script>` etiketleri kullanır, nonce'sız
+CSP'de bunlara izin vermenin tek yolu bu.
+
+**Gerçek bir hata bulunup düzeltildi (2026-08-17, canlı ortamda ilk
+uçtan uca test koşusunda):** İlk yazımda `script-src`'ye
+`'unsafe-inline'` EKLENMEMİŞTİ (Next'in kendi "Without Nonces"
+örneğinde her ikisi de var, bu satır gözden kaçmıştı). Sonuç: CSP,
+Next.js'in hydration script'lerini sessizce engelliyordu — sayfa
+görsel olarak tamamen normal görünüyordu (HTML/CSS engellenmedi) ama
+**HİÇBİR** buton/form/etkileşim çalışmıyordu (React hiç hydrate
+olmuyordu). Yerel `npm run build`/manuel gezinme bunu yakalayamadı
+(görsel olarak fark edilmiyor); canlıya karşı çalıştırılan Playwright
+testleri (bir tıklamanın gerçek bir durum değişikliği ürettiğini
+doğrulayan) bunu hemen yakaladı — bu, "sadece görsel/kod incelemesi
+yeterli değil, gerçek etkileşim testi gerekir" ilkesinin somut bir
+kanıtı.
 
 **Neden `preload` yok (HSTS):** HSTS preload listesine girmek
 tarayıcılara GÖMÜLÜR ve geri almak aylar sürebilir — proje henüz

@@ -29,6 +29,12 @@ export default defineConfig({
   // Retry, gerçek bir kırılganlığı maskeleyip yanlış bir güven verirdi.
   retries: 0,
   fullyParallel: true,
+  // Canlı adrese karşı çalıştırılırken (LIVE_BASE_URL dolu) TEK işçiye
+  // düşülüyor — 3 paralel testin aynı anda gerçek (Hobby plan, sınırlı
+  // kaynaklı) bir deploy'a yüklenmesi soğuk başlatma/kaynak yarışını
+  // artırıp yanıltıcı zaman aşımlarına yol açabilir. Yerelde (dev
+  // sunucusu) 3 paralel işçi kalıyor.
+  workers: LIVE_BASE_URL ? 1 : undefined,
   reporter: [["list"]],
   use: {
     baseURL: LIVE_BASE_URL ?? "http://localhost:3000",

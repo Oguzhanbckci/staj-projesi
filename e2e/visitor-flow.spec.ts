@@ -40,8 +40,21 @@ test.describe("Kritik akış: ziyaretçi", () => {
       expect(await filterButtons.count()).toBeGreaterThan(1);
 
       const firstCategoryButton = filterButtons.nth(1);
-      await firstCategoryButton.click();
-      await expect(firstCategoryButton).toHaveAttribute("aria-pressed", "true");
+      // Tek seferlik click() + assert YETERSİZ kalabilir: sayfa yeni
+      // yüklendiği için React'in bu butona olay dinleyicisini bağlaması
+      // (hydration) yerelde neredeyse anlık ama gerçek ağ gecikmesi olan
+      // bir ortamda (canlı deploy) ölçülebilir sürebilir — tıklama
+      // "hidrasyon bitmeden" gelirse hiçbir şey olmaz. Sabit bir bekleme
+      // (KISITLAR: yasak) yerine, durum değişene kadar tıklamayı TEKRAR
+      // deneyen koşula dayalı bir döngü (bkz. docs/KARAR-GUNLUGU.md,
+      // 2026-08-17 — canlıya karşı ilk test koşusunda gerçek bir
+      // hidrasyon-zamanlaması bulgusu).
+      await expect(async () => {
+        await firstCategoryButton.click();
+        await expect(firstCategoryButton).toHaveAttribute("aria-pressed", "true", {
+          timeout: 1_000,
+        });
+      }).toPass({ timeout: 15_000 });
     });
 
     await test.step("İletişim formu gönderiliyor", async () => {

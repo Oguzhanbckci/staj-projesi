@@ -56,9 +56,18 @@ test.describe("Kritik akış: admin — hizmet ekle, yayınla, doğrula, sil", (
     await test.step("Hizmet panelden silinir", async () => {
       await page.goto("/panel/icerikler/hizmetler");
       const row = page.getByRole("row", { name: serviceTitle });
-      await row.getByRole("button", { name: "Sil" }).click();
-      await page.getByRole("button", { name: "Evet, Sil" }).click();
-      await expect(page.getByRole("row", { name: serviceTitle })).toHaveCount(0);
+      const confirmButton = page.getByRole("button", { name: "Evet, Sil" });
+      // "Sil" tıklaması sayfa yeni yüklendikten hemen sonra geliyor —
+      // canlı ortamda hidrasyon henüz bitmemişse tıklama hiçbir şey
+      // yapmaz, onay penceresi hiç açılmaz (bkz. visitor-flow.spec.ts'teki
+      // aynı gerekçe). Onay butonu görünene kadar "Sil"i tekrar tıklamayı
+      // dener — koşula dayalı, sabit bekleme yok.
+      await expect(async () => {
+        await row.getByRole("button", { name: "Sil" }).click();
+        await expect(confirmButton).toBeVisible({ timeout: 1_000 });
+      }).toPass({ timeout: 15_000 });
+      await confirmButton.click();
+      await expect(row).toHaveCount(0);
     });
 
     await test.step("Silinen hizmet artık ziyaretçi sitesinde görünmüyor", async () => {

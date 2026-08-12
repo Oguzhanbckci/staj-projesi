@@ -21,10 +21,21 @@ import type { NextConfig } from "next";
 // createBrowserSupabaseClient'ın hiçbir yerde kullanılmadığı doğrulandı,
 // bkz. docs/GUVENLIK.md "Spam Koruması" bölümünün yanındaki sır taraması
 // notu). `connect-src` de bu yüzden sadece 'self'.
+//
+// `script-src`'te de 'unsafe-inline' GEREKLİ (2026-08-17'de canlı ortamda
+// bulunan gerçek bir hata ile öğrenildi) — Next.js App Router, hydration'ı
+// başlatmak için HTML'e gömülü (inline) <script> etiketleri kullanır;
+// nonce'sız bir CSP'de bunlara izin vermenin TEK yolu 'unsafe-inline'.
+// Bu olmadan CSP tüm bu script'leri sessizce engelliyor — sayfa görsel
+// olarak normal görünüyor (HTML/CSS engellenmiyor) ama HİÇBİR buton/form
+// çalışmıyor (React hiç hydrate olmuyor). Next'in kendi "Without Nonces"
+// örneği zaten script-src'de de 'unsafe-inline' kullanıyor — ilk yazımda
+// bu satır gözden kaçmıştı. Nonce'a geçmemenin gerekçesi (statik render)
+// script için de style için olduğu gibi aynen geçerli.
 const isDev = process.env.NODE_ENV === "development";
 const CSP_HEADER = [
   "default-src 'self'",
-  `script-src 'self'${isDev ? " 'unsafe-eval'" : ""}`,
+  `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ""}`,
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' blob: data:",
   "font-src 'self'",
