@@ -46,7 +46,7 @@ export default async function PanelPage() {
           </li>
           <li>
             <Link href="/panel/tema" className="font-semibold text-brand hover:underline">
-              Tema ayarları (yakında) →
+              Tema ayarlarını düzenle →
             </Link>
           </li>
         </ul>

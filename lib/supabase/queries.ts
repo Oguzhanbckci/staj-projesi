@@ -29,7 +29,13 @@ import { isSectionKey, type PageSectionRow } from "@/lib/sections/config";
 // site" olarak platform yerine Akme'yi hedeflemek PRD'ye daha sadık (bkz.
 // docs/KARAR-GUNLUGU.md, 2026-08-10). `cache()` ile bir istekte (ör. Navbar +
 // Footer + PageSections aynı anda) birden fazla çağrılsa da tek sorguya iner.
-const ACTIVE_TENANT_DOMAIN = "akmeinsaat.com.tr";
+// 2026-08-17: Ortam değişkeninden okunacak şekilde değiştirildi (bkz.
+// docs/KURULUM.md) — "tek müşteri = tek kurulum" modelinde her müşterinin
+// KENDİ Vercel projesinde bu değişkeni kendi alan adına ayarlaması yeterli,
+// kaynak kodda bir satır değiştirip yeniden deploy etmeye gerek kalmıyor.
+// Değişken tanımsızsa bu projenin (staj/demo) mevcut geliştirme değerine
+// düşer — geriye dönük uyumluluk, bu oturumun kendi .env.local'i etkilenmez.
+const ACTIVE_TENANT_DOMAIN = process.env.ACTIVE_TENANT_DOMAIN ?? "akmeinsaat.com.tr";
 
 export const getActiveTenantId = cache(async (): Promise<string | null> => {
   try {

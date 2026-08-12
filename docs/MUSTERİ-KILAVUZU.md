@@ -16,6 +16,22 @@ e-posta ve şifreyle giriş yapın. Soldaki menüden (mobilde üstteki
 ☰ simgesinden) **İçerikler**'e, sonra düzenlemek istediğiniz bölüme
 (Hizmetler / Projeler / Referanslar / SSS / Ekip) tıklayın.
 
+## Özet Ekranı
+
+Panele her girdiğinizde ilk gördüğünüz sayfa budur — genel bir bakış
+sunar:
+
+- Üstte 3 kutu: kaç **Hizmet**, kaç **Proje** ve kaç **Okunmamış
+  Mesaj**'ınız olduğunu gösterir. "Okunmamış Mesaj" kutusu, okunmamış
+  mesajınız varsa mavi bir çerçeveyle öne çıkar. Herhangi bir kutuya
+  tıklamak sizi ilgili sayfaya götürür.
+- Altta **"Hızlı Erişim"** başlığıyla, sık kullanılan sayfalara
+  (Mesajlar, İçerikler, Tema Ayarları) doğrudan giden bağlantılar
+  vardır.
+
+Bu ekranda hiçbir şey düzenlenmez, sadece genel durumu görüp hızlıca
+ilgili sayfaya geçmek içindir.
+
 ## İçerik Ekleme
 
 1. İlgili bölüm sayfasının **en altında** "Yeni … Ekle" başlıklı bir form
