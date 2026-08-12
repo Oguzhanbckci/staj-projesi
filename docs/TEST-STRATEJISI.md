@@ -5,8 +5,9 @@ sayılması" için gereken koşulları tanımlar. `AI-KURALLARI.md` madde 7 bura
 işaret eder; test kararı değişirse önce `KARAR-GUNLUGU.md`'ye kayıt düşülür,
 sonra bu dosya güncellenir. Kod içermez.
 
-**Son güncelleme:** 2026-08-17 — Erişilebilirlik denetim kaydı (madde 9):
-atlama bağlantısı + gereksiz canlı bölge düzeltmesi
+**Son güncelleme:** 2026-08-17 — Vitest + Playwright kuruldu, 3 birim + 3
+uçtan uca test yazıldı ve kullanıcı tarafından 3x yeşil doğrulandı
+(madde 10-12: kapsam, çalıştırma, kapsanmayan alanlar)
 
 ## 0. Bağlam
 
@@ -37,18 +38,21 @@ zamanın büyük kısmını test yazmaya değil ürüne ayırmak.
 
 ## 3. E2E ile Kapsanacak Kritik Akışlar
 
-- `panel`'e kullanıcı adı/şifre ile giriş (auth).
-- Yeni tenant oluşturma + demo import (one-click).
-- Bir tenant'ın içerik/temasını `panel`'den düzenleme ve `(site)` tarafında
-  değişikliğin göründüğünü doğrulama.
-- Tenant sitesindeki iletişim formunun (ad-soyad, telefon, mesaj) gönderilmesi
-  ve WhatsApp butonunun doğru linke gittiğinin doğrulanması.
-- Açık/koyu tema geçişi.
-- **Güvenlik doğrulaması:** bir tenant domaininde `panel`'in gerçekten
-  erişilemez olduğu (proxy seviyesinde engellendiği — henüz kodlanmadı,
-  bkz. `GUVENLIK.md` madde 8 açık madde). Panel auth'un kendisi (girişsiz
-  erişim engeli, yanlış şifre, doğru giriş/çıkış akışı) 2026-08-10'da elle
-  test edildi, bkz. `KARAR-GUNLUGU.md`.
+- ✅ `panel`'e kullanıcı adı/şifre ile giriş (auth) — `e2e/admin-service-flow.spec.ts`.
+- Yeni tenant oluşturma + demo import (one-click) — özellik henüz yok (Faz 5).
+- ✅ Bir tenant'ın içerik/temasını `panel`'den düzenleme ve `(site)` tarafında
+  değişikliğin göründüğünü doğrulama — `e2e/admin-service-flow.spec.ts`
+  (Hizmetler örneğiyle; diğer içerik türleri madde 12'de "kapsanmayan").
+- ✅ Tenant sitesindeki iletişim formunun (ad-soyad, e-posta, telefon,
+  konu, mesaj) gönderilmesi — `e2e/visitor-flow.spec.ts`. WhatsApp
+  butonu bu akışa dahil değil (sadece platform sahibinin tanıtım
+  sitesinde var, tenant sitelerinde yok — bkz. `PRD.md` madde 3.1/3.3).
+- Açık/koyu tema geçişi — henüz otomatikleştirilmedi (madde 12).
+- **Güvenlik doğrulaması:** ✅ girişsiz erişimin `/panel/giris`'e
+  yönlendirildiği artık otomatik test ediliyor —
+  `e2e/unauthorized-access.spec.ts`. Bir tenant domaininde `panel`'in
+  proxy seviyesinde tamamen erişilemez olması hâlâ kodlanmadı (bkz.
+  `GUVENLIK.md` madde 8 açık madde), o yüzden hâlâ test edilmiyor.
 
 ## 4. Kalite Eşikleri — Lighthouse
 
@@ -214,6 +218,127 @@ karşılaştırması bu oturumda üretilemedi (denetim bir tarama aracı
 bulgu (1 kritik + 1 yüksek) düzeltildi, 1 düşük öncelikli bulgu not
 olarak bırakıldı, 1 aday yanlış pozitif olarak elendi.
 
-## 10. Açık Sorular
+## 10. Otomatik Test Kapsamı *(2026-08-17 eklendi)*
+
+Vitest (birim) ve Playwright (uçtan uca) kuruldu — madde 2'deki plan
+artık kısmen gerçek koda döküldü. Kapsam:
+
+**Birim testler (Vitest) — 3 dosya, hepsi saf fonksiyon, DOM'a ihtiyaç
+duymuyor:**
+
+| Dosya | Test edilen | Ne doğrulanıyor |
+|---|---|---|
+| `lib/theme/contrast.test.ts` | `lib/theme/contrast.ts` | WCAG kontrast oranı hesabı (siyah/beyaz = 21:1), `pickReadableTextColor` (koyu→beyaz, açık→siyah), geçersiz hex'te hata fırlatma, **#808080 için doğru sonucu döndüğü — 2026-08-15'te bulunan gerçek bir hatanın regresyon testi** (bkz. `KARAR-GUNLUGU.md`). |
+| `lib/validation/contact.test.ts` | `lib/validation/contact.ts` | Geçerli veri kabulü, opsiyonel telefon, kısa ad/mesaj reddi, geçersiz e-posta/telefon/konu reddi, üst sınır aşımı. |
+| `lib/seo/formatPhone.test.ts` | `lib/seo/formatPhone.ts` | 4 farklı girdi biçiminin (uluslararası, ülke kodlu, yerel `0...`, çıplak 10 hane) hepsinin aynı E.164 çıktısına düştüğü; tanınmayan girdide **yanlış bir tahmin yerine `null`** döndüğü. |
+
+**Uçtan uca testler (Playwright) — 3 kritik akış, `e2e/` altında:**
+
+| Dosya | Akış |
+|---|---|
+| `e2e/visitor-flow.spec.ts` | Ana sayfa açılır → bölümler görünür → proje galerisi kategoriye göre filtrelenir → iletişim formu gönderilir (kendi oluşturduğu `contact_messages` satırını testten sonra siler). |
+| `e2e/admin-service-flow.spec.ts` | Admin girişi → yeni hizmet ekleme + "Hemen yayınla" → ana sayfada göründüğünün doğrulanması → panelden silme → ana sayfada artık görünmediğinin doğrulanması. `E2E_ADMIN_EMAIL`/`E2E_ADMIN_PASSWORD` tanımlı değilse otomatik atlanır. |
+| `e2e/unauthorized-access.spec.ts` | Girişsiz `/panel` ve `/panel/mesajlar` erişiminin `/panel/giris`'e yönlendirildiği — 2026-08-12'de `curl` ile elle doğrulanmış aynı senaryonun otomatikleştirilmiş hâli (bkz. `GUVENLIK.md` madde 8-9). |
+
+**Tasarım ilkeleri (KISITLAR, hepsi kodda uygulandı):**
+- Seçiciler `getByRole`/`getByLabel` — CSS class'ı veya kırılgan metin
+  eşleşmesi yok; bu, kod tabanının zaten sahip olduğu erişilebilirlik
+  disiplininin (madde 9) doğal bir sonucu.
+- Her test kendi verisini `Date.now()` ile benzersiz üretir (e-posta/
+  başlık) ve `test.afterEach`'te service-role client'la siler — başka
+  bir teste veya gerçek demo veriye sızmaz. Admin akışında bu temizlik
+  bir GÜVENLİK AĞI olarak da çalışır: testin ortasında bir adım
+  başarısız olsa bile kayıt arkada kalmaz (KABUL KRİTERİ: "3 kez üst
+  üste geçmeli").
+- Sabit `sleep`/`waitForTimeout` HİÇ kullanılmadı — Playwright'ın
+  web-first `expect(...).toBeVisible()`/`toHaveURL()`/`toHaveCount()`
+  gibi koşula dayalı bekleyen assertion'larına güvenildi.
+- Admin girişi `process.env.E2E_ADMIN_EMAIL`/`E2E_ADMIN_PASSWORD`'den
+  okunuyor, kodda hiçbir yerde yazılı değil.
+- Her akış `test.step(...)` ile adımlara bölündü — bir adım başarısız
+  olduğunda Playwright raporu TAM olarak hangi adımda durduğunu gösterir
+  (KABUL KRİTERİ).
+- `playwright.config.ts`: `retries: 0` BİLİNÇLİ — "3 kez üst üste
+  geçmeli" kriteri framework'ün otomatik tekrar denemesiyle
+  MASKELENMİYOR, testin kendi idempotency'sinin gerçekten sağlaması
+  isteniyor. `timeout: 60_000` (KABUL KRİTERİ).
+
+## 11. Testleri Çalıştırma *(2026-08-17 eklendi)*
+
+**İlk kurulum (bir kere):**
+```
+npm install -D vitest @vitejs/plugin-react vite-tsconfig-paths jsdom @testing-library/react @testing-library/jest-dom @playwright/test dotenv
+npx playwright install chromium
+```
+
+**Birim testler:**
+```
+npm run test:unit          # tek seferlik
+npm run test:unit:watch    # geliştirirken, dosya değişince otomatik tekrar çalışır
+```
+
+**Uçtan uca testler:**
+```
+npm run test:e2e
+```
+Dev sunucusunu (`npm run dev`) kendisi başlatır — ayrıca elle
+başlatmaya gerek yok; zaten açıksa onu kullanır. `E2E_ADMIN_EMAIL`/
+`E2E_ADMIN_PASSWORD` `.env.local`'de tanımlı değilse admin akışı
+otomatik atlanır (skip), diğer 2 akış yine çalışır.
+
+**Hepsi birden (main'e push'lamadan önce, `AI-KURALLARI.md` madde 8.4):**
+```
+npm test
+```
+
+**Bir test başarısız olursa:** Playwright, hangi `test.step`'te
+durduğunu terminale yazar; `playwright-report/` klasöründe (otomatik
+üretilir, git'e girmez) ekran görüntüsü + trace bulunur —
+`npx playwright show-report` ile açılabilir.
+
+**Doğrulama (gerçek, kullanıcı tarafından, 2026-08-17):** `npm test`
+art arda **3 kez** çalıştırıldı, üçünde de tamamı yeşil: 26/26 birim
+test, 3/3 e2e test (en uzun tekil test 11.5s — KABUL KRİTERİ'ndeki 60s
+sınırının içinde). Yol boyunca gerçek bir yapılandırma hatası bulunup
+düzeltildi: `.env.local`'de admin test hesabı zaten `TEST_AUTH_EMAIL`/
+`TEST_AUTH_PASSWORD` adıyla duruyordu (ayrı bir eski script,
+`scripts/test-rls.mjs`, için) — `E2E_ADMIN_EMAIL`/`E2E_ADMIN_PASSWORD`
+adıyla AYRICA eklenmesi gerekti, isimler kasıtlı olarak birleştirilmedi
+(`test-rls.mjs` bozulmasın diye). KABUL KRİTERİ'nin tamamı (3x yeşil,
+her adımda hata konumu net, 60s altı) karşılandı.
+
+## 12. Kapsanmayan Alanlar *(2026-08-17 eklendi, dürüstçe listelenir)*
+
+- **Bileşen (component) render testi henüz yok** — Vitest jsdom +
+  `@testing-library/react` kurulu/hazır ama şu an sadece 3 saf fonksiyon
+  modülü test ediliyor, hiçbir `.tsx` bileşeni için `render()` testi
+  yazılmadı.
+- **Diğer 6 doğrulama şeması test edilmedi** — sadece
+  `lib/validation/contact.ts` kapsandı; `service.ts` (kısmen e2e ile
+  dolaylı test edildi), `project.ts`/`testimonial.ts`/`faq.ts`/
+  `teamMember.ts`/`theme.ts`/`seo.ts` aynı zod deseninde ama ayrı ayrı
+  doğrulanmadı.
+- **Projeler/Referanslar/SSS/Ekip için ayrı bir admin CRUD e2e'si yok**
+  — sadece Hizmetler örnek alındı (KISITLAR'daki akış buydu); diğer 4
+  tür `AdminListTable`/`DeleteButton` üzerinden birebir aynı paylaşılan
+  bileşenleri kullanıyor, yüksek olasılıkla aynı şekilde çalışıyor ama
+  bu iddia edilmiyor, test edilmedi.
+- **Açık/koyu tema geçişi** e2e ile doğrulanmadı (madde 3'te hâlâ
+  planlanan bir kritik akış).
+- **Yeni tenant oluşturma + demo import** — özelliğin kendisi henüz
+  yok (Faz 5), test de yok.
+- **Görsel yükleme akışı** (proje/marka görseli) e2e kapsamında değil —
+  2026-08-14'te ayrı, geçici script'lerle elle doğrulanmıştı (bkz.
+  `KARAR-GUNLUGU.md`), kalıcı bir e2e testine dönüştürülmedi.
+- **Rate limiting/spam koruması** iletişim formunda hâlâ yok (`GUVENLIK.md`
+  madde 10 açık madde) — olsaydı bile test edilecek bir şey olmazdı.
+- **Bir tenant domaininde panelin gerçekten erişilemez olması**
+  (host-bazlı tenant/panel ayrımı) henüz kodlanmadı (`GUVENLIK.md`
+  madde 8 açık madde) — mevcut yetkisiz-erişim testi sadece "girişsiz
+  kullanıcı" senaryosunu kapsıyor, "yanlış domain" senaryosunu değil.
+- **CI (sürekli entegrasyon) kurulmadı** — testler şu an sadece yerel
+  makinede elle çalıştırılıyor, her push'ta otomatik tetiklenmiyor.
+
+## 13. Açık Sorular
 
 Şu an aktif açık soru yok.

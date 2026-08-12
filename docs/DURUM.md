@@ -13,8 +13,8 @@ kontrast doğrulaması, bileşen envanteri/API kuralları) ve `TEMA-MIMARISI.md`
 önlemi), gerekirse `KARAR-GUNLUGU.md`'yi (tarihli, hiç silinmeyen karar
 geçmişi) oku.
 
-**Son güncelleme:** 2026-08-17 — Erişilebilirlik denetimi: atlama bağlantısı
-eklendi, gereksiz canlı bölge (role="status") kaldırıldı
+**Son güncelleme:** 2026-08-17 — Vitest + Playwright kuruldu; 3 birim + 3
+uçtan uca kritik akış testi yazıldı ve 3x yeşil doğrulandı
 
 ## Proje bağlamı
 
@@ -1100,16 +1100,56 @@ bağlantısı, canlı bölge) gerçek kullanımda işe yaradığı doğrulandı.
 `npm run build`/`lint` bu oturumda ayrıca doğrulanmadı, henüz
 commit'lenmedi.
 
+**Vitest + Playwright kuruldu, 3 birim + 3 uçtan uca kritik akış testi
+yazıldı (2026-08-17, aynı gün, yeni oturum):** Dışarıdan gelen bir
+yönergeyle, `Sıradaki adım` listesinin en yüksek öncelikli maddesi
+(mentör değerlendirmesinde de işaretlenmişti) kapandı. Detay, kapsam ve
+çalıştırma talimatları: `TEST-STRATEJISI.md` madde 10-12.
+
+- **Birim (Vitest):** `lib/theme/contrast.test.ts` (WCAG kontrast
+  hesabı, 2026-08-15'teki gerçek #808080 hatasının regresyon testi
+  dahil), `lib/validation/contact.test.ts`, `lib/seo/formatPhone.test.ts`
+  — üçü de saf fonksiyon, DOM'a ihtiyaç duymuyor.
+- **Uçtan uca (Playwright):** `e2e/visitor-flow.spec.ts` (ana sayfa →
+  proje filtresi → iletişim formu), `e2e/admin-service-flow.spec.ts`
+  (giriş → hizmet ekle/yayınla → sitede doğrula → sil —
+  `E2E_ADMIN_EMAIL`/`E2E_ADMIN_PASSWORD` yoksa otomatik atlanır),
+  `e2e/unauthorized-access.spec.ts` (2026-08-12'deki `curl` testinin
+  otomatikleştirilmiş hâli).
+- Seçiciler `getByRole`/`getByLabel` (erişilebilir rol/etiket) — CSS
+  class'ı veya kırılgan metin eşleşmesi yok. Her test `Date.now()` ile
+  kendi verisini üretir, `test.afterEach`'te service-role client'la
+  siler (`e2e/helpers/supabaseAdmin.ts`) — admin akışında bu aynı
+  zamanda bir başarısızlık güvenlik ağı. Sabit `sleep` hiç kullanılmadı.
+  `playwright.config.ts`: `retries: 0` (bilinçli — idempotency framework
+  retry'ıyla maskelenmiyor), `timeout: 60_000`.
+- `package.json`'a `test:unit`/`test:unit:watch`/`test:e2e`/`test`
+  script'leri eklendi (`npm test` = ikisi birden — `AI-KURALLARI.md`
+  madde 8.4'ün beklediği komut buydu). `.env.local.example`'a
+  `E2E_ADMIN_EMAIL`/`E2E_ADMIN_PASSWORD` eklendi. `.gitignore`'a
+  Playwright'ın ürettiği `test-results/`/`playwright-report/` eklendi.
+
+**Doğrulama (gerçek, kullanıcı tarafından tamamlandı):** Paketler
+kuruldu, `npx playwright install chromium` yapıldı,
+`E2E_ADMIN_EMAIL`/`E2E_ADMIN_PASSWORD` `.env.local`'e eklendi (yol
+boyunca gerçek bir sorun bulundu: bu iki değişken önce yanlışlıkla
+farklı bir isimle — `TEST_AUTH_EMAIL`/`PASSWORD`, `scripts/test-rls.mjs`'in
+kullandığı ayrı bir çift — sanılmıştı, düzeltildi). `npm test`
+(`test:unit` + `test:e2e`) **art arda 3 kez** çalıştırıldı, hepsi yeşil:
+26/26 birim test, 3/3 e2e test (en uzunu 11.5s — 60s sınırının içinde).
+KABUL KRİTERİ'nin tamamı karşılandı. `npm run build`/`lint` bu
+oturumda ayrıca doğrulanmadı.
+
 ## Sıradaki adım
 
 1. Diğer 5 bucket (`services`/`hero`/`about`/`testimonials`/`team`) için
    de aynı desenle bucket+RLS+yükleme akışı kurulmalı — şu an bu
    tablolardaki `*_path` kolonlarına değer girilse bile görsel 404 verir.
-2. Vitest ve Playwright'ı kur (bkz. `TEST-STRATEJISI.md`) — hâlâ yarım
-   kalmış bir kurulum, `npm install` adımları henüz çalıştırılmadı;
-   mentör değerlendirmesinde de en yüksek öncelikli sistemik eksik
-   olarak işaretlendi. `lib/theme/contrast.ts` gibi yeni saf fonksiyonlar
-   da hâlâ gerçek Vitest testi olmadan (sadece elle doğrulanmış) duruyor.
+2. ~~Vitest/Playwright kur~~ — 2026-08-17'de tamamlandı, `npm test` 3x
+   yeşil doğrulandı (bkz. `TEST-STRATEJISI.md` madde 10-12). Kapsanmayan
+   alanlar (madde 12) için ayrı bir öncelik kararı bekliyor: bileşen
+   render testleri, diğer 6 doğrulama şeması, Projeler/Referanslar/SSS/
+   Ekip için ayrı e2e, açık/koyu tema geçişi, CI kurulumu.
 3. İletişim formuna bir e-posta bildirimi eklenmeli (kayıt artık gerçek,
    bildirim hâlâ yok — bkz. `GUVENLIK.md` madde 10).
 4. Site tasarımı ilerledikçe `KURUMSAL-SITE-STANDARTLARI.md`'deki kontrol listesini
