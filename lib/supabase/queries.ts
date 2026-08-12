@@ -17,6 +17,7 @@ import type { TestimonialItem } from "@/components/site/testimonials/types";
 import type { StatItem } from "@/components/site/stats/types";
 import type { TeamMember } from "@/components/site/team/types";
 import { isSectionKey, type PageSectionRow } from "@/lib/sections/config";
+import { getSiteHost } from "@/lib/seo/getSiteUrl";
 
 // Akme İnşaat — "aktif site" olarak hedeflenen tenant. Host header'a göre
 // tenant çözümleyen middleware henüz yok (bkz. docs/MIMARI.md madde 7,
@@ -560,7 +561,10 @@ export const getLocalBusinessData = cache(async (): Promise<LocalBusinessData | 
   try {
     const supabase = createServiceRoleClient();
     const tenantId = await getActiveTenantId();
-    const domain = await getActiveTenantDomain();
+    // getSiteHost (getActiveTenantDomain DEĞİL) — JSON-LD'nin url/@id alanı
+    // sitenin GERÇEK yayın adresini yansıtmalı, tenant kimlik domain'ini
+    // değil (bkz. lib/seo/getSiteUrl.ts, 2026-08-17'de bulunan gerçek hata).
+    const domain = getSiteHost(await getActiveTenantDomain());
     if (!tenantId) return null;
 
     const { data, error } = await supabase

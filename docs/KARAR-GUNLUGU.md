@@ -3421,3 +3421,45 @@ kılavuzu) HİÇBİRİ bu dosyaya (KARAR-GUNLUGU.md) kaydedilmemişti —
 kullanıcı sorunca fark edildi, 5 geriye dönük kayıt (yukarıdaki
 "ikinci oturum"dan "altıncı oturum"a) eklendi; `VERİ-MODELİ.md`/
 `MIMARI.md`'deki ilgili eksikler de aynı anda kapatıldı.
+
+## 2026-08-17 (aynı gün, sekizinci oturum) — Vercel'e ilk canlı yayın, canlıda bulunan 2 gerçek hata
+
+Kullanıcı Vercel'e yayınladı (`staj-projesi-olive.vercel.app`). Canlıya
+karşı çalıştırılan uçtan uca testler ve Lighthouse, **kod
+incelemesiyle/yerel testle hiç yakalanamayacak** iki gerçek hata buldu
+— bu oturum, "canlıda doğrulamanın neden kod incelemesinin yerini
+tutamayacağı"nın somut kanıtı.
+
+**Hata 1 (kritik) — CSP hydration'ı tamamen bloke ediyordu:** Güvenlik
+görevinde (5. oturum) CSP'nin `script-src`'sine `'unsafe-inline'`
+eklenmemişti (`style-src`'ye eklenmiş, `script-src` unutulmuştu — Next'in
+kendi resmi "Without Nonces" örneğinde ikisi de var). Next.js App
+Router hydration'ı gömülü `<script>` etiketleriyle başlatıyor, CSP
+bunları sessizce engelliyordu — **sayfa görsel olarak tamamen normal
+görünüyordu ama HİÇBİR buton/form çalışmıyordu.** Bu hem canlıda hem
+YEREL geliştirmede vardı (CSP eklendikten sonra e2e testleri yerelde
+bir daha hiç çalıştırılmamıştı, bu yüzden fark edilmemişti). Düzeltme:
+tek satır (`'unsafe-inline'` eklendi). Ayrıca 2 e2e testin tıklama
+adımı gerçek ağ gecikmesine dayanıklı olsun diye `toPass()` (koşula
+dayalı tekrar) desenine çevrildi; canlıya karşı Playwright işçi sayısı
+1'e düşürüldü. **Doğrulama: düzeltme sonrası canlıda 3/3 test yeşil.**
+
+**Hata 2 (SEO) — sitemap/robots.txt/JSON-LD yanlış domain
+kullanıyordu:** Canlı Lighthouse SEO skoru **92'den 58'e** düştü
+(diğer 3 kategori etkilenmedi). Kök sebep: `app/robots.ts`/
+`app/sitemap.ts`/`lib/seo/localBusiness.ts`/`app/(site)/layout.tsx`
+hepsi `getActiveTenantDomain()`'i ("hangi tenant'ın verisi gösterilsin"
+— bir iş/kimlik kavramı, DB'deki yer tutucu `akmeinsaat.com.tr`)
+sitenin GERÇEK yayın adresiymiş gibi kullanıyordu — bu demo deploy'unda
+ikisi farklı (`akmeinsaat.com.tr` ≠ `staj-projesi-olive.vercel.app`)
+olduğu için `robots.txt`'in sitemap referansı erişilemez bir adresi
+gösteriyordu. **Gerçek bir mimari düzeltme:** yeni `lib/seo/
+getSiteUrl.ts` — "tenant kimliği" ile "gerçek yayın adresi" kavramları
+AYRIŞTIRILDI. Öncelik: `NEXT_PUBLIC_SITE_URL` (elle, özel alan adı
+bağlandığında) → `VERCEL_URL` (Vercel'in HER deploy'da otomatik
+sağladığı, elle ayar gerektirmeyen doğru değer) → tenant domain'i (son
+çare). `app/(site)/layout.tsx`'e eksik olan `metadataBase` de eklendi.
+4 kullanım yeri güncellendi, 5 birim testli yeni `getSiteUrl.test.ts`
+eklendi (gerçek hatanın regresyon testi). `.env.local.example`/
+`SEO-PERFORMANS.md`/`GUVENLIK.md` güncellendi. **Henüz canlıda yeniden
+ölçülmedi** — kullanıcı deploy edip Lighthouse'u tekrar çalıştıracak.

@@ -14,7 +14,9 @@ ayırmaktır. "Yapısal Veri" bölümündeki testler bile dev ortamında (gerçe
 canlı bir domain olmadan) yapıldı — bu, aşağıdaki kontrol listesinde
 açıkça not edilmiştir.
 
-**Son güncelleme:** 2026-08-17
+**Son güncelleme:** 2026-08-17 (2. güncelleme aynı gün — `getSiteUrl()`
+ile gerçek yayın adresi/tenant kimlik domain'i ayrımı, canlı Lighthouse
+SEO 92→58 hatasının kök sebebi ve düzeltmesi)
 
 ## Meta Veri Stratejisi
 
@@ -73,12 +75,26 @@ group'unun içinde değil (Next.js'in dosya kuralı böyle gerektiriyor,
   paneli taramaktan caydıran bir ek katman — panelin gerçek erişim
   koruması hâlâ ve sadece `proxy.ts` + oturum kontrolü (bkz.
   `docs/GUVENLIK.md` madde 13, orada bu ayrım daha ayrıntılı açıklanıyor).
-- **Domain kaynağı:** İkisi de yeni `getActiveTenantDomain()`
-  (`lib/supabase/queries.ts`) kullanıyor — DB'ye gitmeden, `tenants`
-  çözümlemesinde zaten kullanılan sabit domain sabitini döner (gerçek
-  Host-bazlı çok-kiracı çözümleme gelene kadar geçici, bkz.
-  `docs/MIMARI.md` madde 7). `npm run build` çıktısında ikisi de
-  **statik (○)** üretiliyor — istek başına yeniden hesaplanmıyor.
+- **Domain kaynağı:** İkisi de yeni `lib/seo/getSiteUrl.ts`'teki
+  `getSiteUrl()`'ü kullanıyor — `getActiveTenantDomain()`'i (`lib/
+  supabase/queries.ts`) DEĞİL. **Gerçek bir hata bulunup düzeltildi
+  (2026-08-17):** İlk yazımda ikisi de doğrudan `getActiveTenantDomain()`
+  kullanıyordu — bu, "hangi tenant'ın verisi gösterilsin" sorusuna cevap
+  veren bir iş/kimlik kavramı (`tenants.domain` kolonu), sitenin GERÇEKTE
+  hangi adresten yayında olduğuyla aynı şey DEĞİL. Bir Vercel önizleme
+  deploy'unda (`*.vercel.app`, özel alan adı henüz bağlanmamışken) tenant
+  domain'i (`akmeinsaat.com.tr`) gerçek yayın adresinden (`staj-projesi-
+  olive.vercel.app`) FARKLI olduğu için `robots.txt`'teki sitemap
+  referansı ve JSON-LD'nin `url`/`@id` alanı yanlış/erişilemez bir adresi
+  gösteriyordu — canlı Lighthouse SEO skoru bu yüzden **92'den 58'e**
+  düştü. `getSiteUrl()` önce `NEXT_PUBLIC_SITE_URL` (elle ayarlanmışsa),
+  sonra Vercel'in otomatik sağladığı `VERCEL_URL`'i, en son tenant
+  domain'ini dener — bu demo deploy'unda elle bir şey ayarlamaya gerek
+  kalmadan `VERCEL_URL` üzerinden kendiliğinden düzeliyor. `npm run
+  build` çıktısında ikisi de **statik (○)** üretiliyor — istek başına
+  yeniden hesaplanmıyor (yani `VERCEL_URL`/`NEXT_PUBLIC_SITE_URL` BUILD
+  ZAMANINDA okunuyor, bu bilinçli/beklenen bir davranış, Vercel'in build
+  ortamında bu değişkenler zaten dolu).
 
 **Müşterinin/yayıncının yapması gereken:** Gerçek domain'e deploy
 edildikten SONRA, alan adının sahibi olan Google hesabıyla Google

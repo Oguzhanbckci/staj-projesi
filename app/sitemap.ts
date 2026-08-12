@@ -1,5 +1,6 @@
 import type { MetadataRoute } from "next";
 import { getActiveTenantDomain } from "@/lib/supabase/queries";
+import { getSiteUrl } from "@/lib/seo/getSiteUrl";
 
 // Sadece GERÇEK sayfalar — bölüm çapaları (/#hizmetler vb.) ayrı bir
 // sayfa değil, sitemap'e girmez (bkz. lib/sections/config.ts). `panel`
@@ -7,7 +8,7 @@ import { getActiveTenantDomain } from "@/lib/supabase/queries";
 // sitemap'te listelemek arama motoruna "tara" sinyali verirdi.
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const domain = await getActiveTenantDomain();
-  const baseUrl = `https://${domain}`;
+  const baseUrl = getSiteUrl(domain);
 
   return [
     { url: baseUrl, lastModified: new Date(), changeFrequency: "monthly", priority: 1 },

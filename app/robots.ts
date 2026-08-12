@@ -1,5 +1,6 @@
 import type { MetadataRoute } from "next";
 import { getActiveTenantDomain } from "@/lib/supabase/queries";
+import { getSiteUrl } from "@/lib/seo/getSiteUrl";
 
 // KISITLAR: "admin sayfaları taranmaya kapalı olsun" — /panel'in TAMAMI
 // (giriş sayfası dahil) Disallow. Panel zaten proxy.ts'te auth arkasında
@@ -15,6 +16,6 @@ export default async function robots(): Promise<MetadataRoute.Robots> {
       allow: "/",
       disallow: "/panel",
     },
-    sitemap: `https://${domain}/sitemap.xml`,
+    sitemap: `${getSiteUrl(domain)}/sitemap.xml`,
   };
 }

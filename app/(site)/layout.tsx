@@ -11,6 +11,7 @@ import {
 import { getPublicImageUrl } from "@/lib/supabase/storage";
 import { buildSectionNavLinks } from "@/lib/sections/config";
 import { LocalBusinessJsonLd } from "@/components/site/LocalBusinessJsonLd";
+import { getSiteUrl } from "@/lib/seo/getSiteUrl";
 
 // site_settings.seo_title/seo_description'tan — kök layout.tsx'teki
 // create-next-app varsayılanının (yer tutucu metin) yerini alıyor.
@@ -28,9 +29,10 @@ export async function generateMetadata(): Promise<Metadata> {
   const [settings, domain] = await Promise.all([getSiteSettings(), getActiveTenantDomain()]);
   const ogImageUrl = settings?.ogImagePath
     ? getPublicImageUrl("branding", settings.ogImagePath)
-    : `https://${domain}/api/og`;
+    : `${getSiteUrl(domain)}/api/og`;
 
   return {
+    metadataBase: new URL(getSiteUrl(domain)),
     title: settings?.seoTitle ?? settings?.tenantName ?? "Kurumsal Web Sitesi",
     description: settings?.seoDescription ?? undefined,
     keywords: settings?.seoKeywords ?? undefined,

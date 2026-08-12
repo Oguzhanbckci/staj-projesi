@@ -15,11 +15,13 @@ geçmişi) oku. Yeni bir müşteri kurulumu yapılacaksa `KURULUM.md`'ye
 (sıfırdan kurulum, geliştirici için), panelin günlük kullanımı için
 `MUSTERİ-KILAVUZU.md`'ye (teknik olmayan okuyucu için) bakılır.
 
-**Son güncelleme:** 2026-08-17 — `docs/TESLIM-PAKETI.md` eklendi
-(satış/teslim özeti), `README.md` yeniden yazıldı, kullanılmayan
-scaffold dosyaları temizlendi, Playwright canlı adrese karşı
-çalıştırılabilir hale getirildi — **Vercel'e ilk yayın henüz
-yapılmadı**, kullanıcının kendi hesabından yapması gerekiyor
+**Son güncelleme:** 2026-08-17 — **Vercel'e ilk yayın yapıldı**
+(`staj-projesi-olive.vercel.app`), canlıda 2 gerçek hata bulunup
+düzeltildi: (1) CSP `script-src`'de `'unsafe-inline'` eksikti,
+hydration tamamen bloke oluyordu, (2) sitemap/robots.txt/JSON-LD
+tenant'ın veritabanı domain'ini gerçek yayın adresi sanıyordu (canlı
+Lighthouse SEO 92→58). İkisi de düzeltildi, canlı uçtan uca testler
+3/3 yeşil
 
 ## Proje bağlamı
 
@@ -1306,6 +1308,53 @@ oluşan build hatalarını (varsa) bana getirmek, (3) canlı adrese karşı
 adreste Chrome DevTools Lighthouse çalıştırıp yerel sonuçlarla (mobil
 88→96, masaüstü 99→100, bkz. bu dosyanın önceki bir kaydı)
 karşılaştırmak. Tam talimat sohbet geçmişinde.
+
+**Vercel'e ilk canlı yayın + 2 gerçek hata bulunup düzeltildi
+(2026-08-17, aynı gün, sekizinci oturum):** Kullanıcı Vercel'e yayınladı
+(`https://staj-projesi-olive.vercel.app`), canlıya karşı uçtan uca
+testler + Lighthouse çalıştırıldı — ikisi de gerçek, ciddi hata buldu.
+
+**Hata 1 — CSP hydration'ı tamamen bloke ediyordu:** Canlıya karşı ilk
+Playwright koşusunda (1 geçti, 2 başarısız — kategori filtresi
+tıklaması hiç etki etmiyordu, "Sil" onay penceresi hiç açılmıyordu),
+15 saniyelik "tekrar dene" döngüsü bile hiçbir sonuç vermeyince gerçek
+sebep bulundu: `next.config.ts`'teki CSP'de `script-src`'ye
+`'unsafe-inline'` eklenmemişti (güvenlik görevinde `style-src`'ye
+eklenmiş ama `script-src` unutulmuştu — Next'in kendi resmi örneğinde
+ikisi de var). Next.js App Router hydration'ı gömülü `<script>`
+etiketleriyle başlatıyor, CSP bunları sessizce engelliyordu — sayfa
+görsel olarak tamamen normal görünüyordu ama HİÇBİR şey tıklanabilir
+değildi. **Bu, güvenlik görevinden beri hem canlıda hem YEREL
+geliştirmede bozuktu** — e2e testleri CSP eklendikten sonra yerelde bir
+daha hiç çalıştırılmadığı için fark edilmemişti. Düzeltme: `script-src`e
+`'unsafe-inline'` eklendi. Ayrıca 2 testin tıklama+kontrol adımı,
+gerçek ağ gecikmesine karşı daha dayanıklı olsun diye "başarılı olana
+kadar tekrar dene" (`toPass()`) desenine çevrildi; canlıya karşı
+çalışırken Playwright işçi sayısı 1'e düşürüldü (Hobby plan'a gereksiz
+yük bindirmesin diye). **Doğrulama: düzeltme sonrası canlıda 3/3 test
+yeşil.**
+
+**Hata 2 — sitemap/robots.txt/JSON-LD yanlış domain kullanıyordu:**
+Canlı Lighthouse SEO skoru mobilde ve masaüstünde **92'den 58'e**
+düştü (Performance/Accessibility/Best Practices etkilenmedi, hatta
+Performance arttı — gerçek CDN yereldan hızlı). Kök sebep: canlı
+`robots.txt`'in sitemap satırı `https://akmeinsaat.com.tr/sitemap.xml`
+diyordu — ama site GERÇEKTE `staj-projesi-olive.vercel.app`'te yayında;
+`akmeinsaat.com.tr` sadece demo tenant'ın veritabanındaki YER TUTUCU
+isim. `app/robots.ts`/`app/sitemap.ts`/`lib/seo/localBusiness.ts`/
+`app/(site)/layout.tsx` hepsi "hangi tenant'ın verisi gösterilsin"
+sorusuna cevap veren `getActiveTenantDomain()`'i sitenin GERÇEK yayın
+adresiymiş gibi kullanıyordu — iki farklı kavram birbirine
+karıştırılmıştı. Düzeltme: yeni `lib/seo/getSiteUrl.ts` — öncelik sırası
+`NEXT_PUBLIC_SITE_URL` (elle) → `VERCEL_URL` (Vercel'in otomatik
+sağladığı, HER deploy'da doğru) → tenant domain'i (son çare). Bu demo
+deploy'unda `VERCEL_URL` sayesinde elle bir ayar gerekmeden düzeliyor;
+gerçek bir müşteri özel alan adı bağladığında `NEXT_PUBLIC_SITE_URL`'i
+elle ayarlaması önerilir (`.env.local.example`'a eklendi).
+`app/(site)/layout.tsx`'e ayrıca eksik olan `metadataBase` eklendi.
+4 kullanım yeri güncellendi, `lib/seo/getSiteUrl.test.ts` (5 birim
+test) eklendi. **Henüz canlıda yeniden ölçülmedi** — düzeltme
+commit'lenip yayınlandıktan sonra Lighthouse tekrar çalıştırılmalı.
 
 ## Sıradaki adım
 
