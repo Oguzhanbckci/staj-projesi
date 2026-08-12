@@ -1,5 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { getKnownSiteUrl } from "@/lib/seo/getSiteUrl";
 
 const LOGIN_PATH = "/panel/giris";
 
@@ -29,6 +30,30 @@ const LOGIN_PATH = "/panel/giris";
  * sayfası kendi kendini asla tekrar login'e göndermez.
  */
 export async function updateSession(request: NextRequest) {
+  // KANONİK ADRESE YÖNLENDİRME (2026-08-17 eklendi) — Vercel her deploy
+  // için birden fazla adres üretir (kalıcı üretim adresi + git dalı
+  // önizlemesi + o TEK deploy'a özel bir adres, bkz. docs/KARAR-GUNLUGU.md).
+  // Ziyaretçi/arama motoru "yan" adreslerden birine gelirse, bilinen tek
+  // GERÇEK adrese (NEXT_PUBLIC_SITE_URL/VERCEL_PROJECT_PRODUCTION_URL)
+  // 308 (kalıcı) yönlendirilir — SEO sinyalleri tek adreste toplanır,
+  // panel oturum çerezleri de her zaman AYNI origin'de kurulur (birden
+  // fazla adreste dağılıp tutarsız oturum durumuna düşmez). Sadece bu
+  // ikisinden biri KESİN olarak biliniyorsa çalışır (VERCEL_URL/tenant
+  // domain'i gibi güvenilmez tahminlerle YÖNLENDİRME yapılmaz, bkz.
+  // getKnownSiteUrl yorumu) ve sadece üretimde (yerel `next dev`'de host
+  // zaten `localhost` olduğu için bu kontrol anlamsız/zararlı olurdu).
+  const isLocalHost = /^(localhost|127\.0\.0\.1)(:\d+)?$/.test(request.nextUrl.host);
+  if (process.env.NODE_ENV !== "development" && !isLocalHost) {
+    const knownSiteUrl = getKnownSiteUrl();
+    if (knownSiteUrl) {
+      const canonicalHost = new URL(knownSiteUrl).host;
+      if (request.nextUrl.host !== canonicalHost) {
+        const target = new URL(request.nextUrl.pathname + request.nextUrl.search, knownSiteUrl);
+        return NextResponse.redirect(target, 308);
+      }
+    }
+  }
+
   let response = NextResponse.next({ request });
 
   const supabase = createServerClient(

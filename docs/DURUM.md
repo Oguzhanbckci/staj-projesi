@@ -17,11 +17,10 @@ geçmişi) oku. Yeni bir müşteri kurulumu yapılacaksa `KURULUM.md`'ye
 
 **Son güncelleme:** 2026-08-17 — **Vercel'e ilk yayın yapıldı**
 (`staj-projesi-olive.vercel.app`), canlıda 2 gerçek hata bulunup
-düzeltildi: (1) CSP `script-src`'de `'unsafe-inline'` eksikti,
-hydration tamamen bloke oluyordu, (2) sitemap/robots.txt/JSON-LD
-tenant'ın veritabanı domain'ini gerçek yayın adresi sanıyordu (canlı
-Lighthouse SEO 92→58). İkisi de düzeltildi, canlı uçtan uca testler
-3/3 yeşil
+düzeltildi (CSP hydration engeli, yanlış domain'le SEO 92→58) + kanonik
+adrese otomatik yönlendirme eklendi. Canlı uçtan uca testler 3/3 yeşil,
+kanonik adreste Lighthouse SEO 92 doğrulandı. **Kanonik yönlendirme
+kodu henüz deploy edilmedi/canlıda test edilmedi.**
 
 ## Proje bağlamı
 
@@ -1353,8 +1352,24 @@ gerçek bir müşteri özel alan adı bağladığında `NEXT_PUBLIC_SITE_URL`'i
 elle ayarlaması önerilir (`.env.local.example`'a eklendi).
 `app/(site)/layout.tsx`'e ayrıca eksik olan `metadataBase` eklendi.
 4 kullanım yeri güncellendi, `lib/seo/getSiteUrl.test.ts` (5 birim
-test) eklendi. **Henüz canlıda yeniden ölçülmedi** — düzeltme
-commit'lenip yayınlandıktan sonra Lighthouse tekrar çalıştırılmalı.
+test) eklendi.
+
+**Düzeltme YANLIŞ çıktı (ilk seferde) — `VERCEL_URL` sanıldığı gibi
+kalıcı değilmiş** (deploy'a özel, değişken bir hash içeriyormuş) —
+`VERCEL_PROJECT_PRODUCTION_URL` (gerçekten kalıcı) araya eklendi,
+kullanıcıdan `NEXT_PUBLIC_SITE_URL`'i Vercel'de ELLE ayarlaması
+istendi. **Bu sefer doğrulandı: kanonik adres (`staj-projesi-
+olive.vercel.app`) canlı Lighthouse'ta SEO 92 verdi.**
+
+**Ek bulgu ve düzeltme (aynı gün):** Vercel'in aynı deploy için ürettiği
+3 farklı adresin (kalıcı üretim adresi + git-dalı önizlemesi + deploy'a
+özel adres) her biri farklı bir SEO skoru veriyordu — beklenen/doğru
+davranış (sadece kanonik adres önemli) ama kafa karıştırıcı. Kalıcı bir
+çözüm eklendi: `lib/supabase/proxy.ts`'e, kanonik OLMAYAN bir host'tan
+gelen HER isteği 308 ile kanonik adrese yönlendiren bir kontrol
+eklendi — hem SEO sinyallerini tek adreste toplar hem panel oturum
+çerezlerinin her zaman aynı origin'de kurulmasını garanti eder. Detay:
+`GUVENLIK.md` madde 8 "Kanonik adrese yönlendirme".
 
 ## Sıradaki adım
 

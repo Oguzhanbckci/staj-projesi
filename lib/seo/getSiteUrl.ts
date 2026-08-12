@@ -32,16 +32,24 @@
 // 4. tenantDomain (çağıran taraf sağlar) — yerel geliştirme ya da
 //    yukarıdakilerin hiçbiri yoksa son çare.
 export function getSiteUrl(tenantDomain: string): string {
+  return getKnownSiteUrl() ?? (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : `https://${tenantDomain}`);
+}
+
+// NEXT_PUBLIC_SITE_URL veya VERCEL_PROJECT_PRODUCTION_URL'den GÜVENİLİR
+// biçimde bilinen kanonik adresi döner — hiçbiri yoksa `null`. VERCEL_URL
+// ve tenantDomain BİLEREK kullanılmaz: proxy.ts'teki kanonik-adrese-
+// yönlendirme (bkz. lib/supabase/proxy.ts) için bir YÖNLENDİRME kararı
+// veriyor, ikisi de bunun için yeterince güvenilir değil (VERCEL_URL her
+// deploy'da değişir — sabit bir hedefe yönlendirme yapamaz; tenantDomain
+// gerçek bir adrese hiç karşılık gelmeyebilir, ör. bu demo dağıtımında).
+export function getKnownSiteUrl(): string | null {
   if (process.env.NEXT_PUBLIC_SITE_URL) {
     return process.env.NEXT_PUBLIC_SITE_URL.replace(/\/$/, "");
   }
   if (process.env.VERCEL_PROJECT_PRODUCTION_URL) {
     return `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`;
   }
-  if (process.env.VERCEL_URL) {
-    return `https://${process.env.VERCEL_URL}`;
-  }
-  return `https://${tenantDomain}`;
+  return null;
 }
 
 /** getSiteUrl'ün şema (https://) OLMADAN, sadece host kısmı — JSON-LD gibi

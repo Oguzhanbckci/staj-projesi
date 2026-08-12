@@ -298,6 +298,21 @@ sadece `(protected)` route group'unun içini sarıyor, `/panel/giris`
 (ayrı bir kardeş route) bu layout'un hiç parçası değil — o da ikinci bir
 döngü kaynağı olamaz. Gerçek testlerle doğrulandı (bkz. madde 9).
 
+### Kanonik adrese yönlendirme *(2026-08-17 eklendi)*
+
+`lib/supabase/proxy.ts`'teki `updateSession()`'ın EN BAŞINDA (oturum
+mantığından önce) çalışan ayrı bir kontrol: istek, bilinen kanonik
+adresten (`NEXT_PUBLIC_SITE_URL`/`VERCEL_PROJECT_PRODUCTION_URL`) farklı
+bir host'tan geliyorsa (ör. Vercel'in git-dalı önizleme adresi veya
+deploy'a özel adresi — bkz. madde 15/`docs/SEO-PERFORMANS.md`), 308
+(kalıcı) ile kanonik adrese yönlendirilir. Bu SADECE SEO için değil —
+**panel oturum çerezleri de bu sayede her zaman AYNI origin'de kurulur**,
+birden fazla adres arasında dağılıp tutarsız/kaybolan oturum durumuna
+düşmez. Sadece kanonik adres KESİN olarak biliniyorsa çalışır (Vercel'in
+deploy'a özel `VERCEL_URL`'i gibi güvenilmez bir tahminle YÖNLENDİRME
+yapılmaz — SEO madde 15'teki gerekçeyle aynı) ve `localhost`'ta/geliştirme
+modunda devre dışıdır.
+
 ## 9. Yetkisiz Erişim Test Sonuçları *(2026-08-12 eklendi)*
 
 Kullanıcının isteği üzerine, çıkış yapmış/hiç giriş yapmamış bir durumda
