@@ -13,8 +13,8 @@ kontrast doğrulaması, bileşen envanteri/API kuralları) ve `TEMA-MIMARISI.md`
 önlemi), gerekirse `KARAR-GUNLUGU.md`'yi (tarihli, hiç silinmeyen karar
 geçmişi) oku.
 
-**Son güncelleme:** 2026-08-17 — JSON-LD yapısal veri (LocalBusiness),
-site haritası/robots, paylaşım görseli garantisi, `docs/SEO-PERFORMANS.md`
+**Son güncelleme:** 2026-08-17 — Lighthouse performans denetimi: gereksiz font
+preload'ları kaldırıldı (mobil Performance 88 → 96)
 
 ## Proje bağlamı
 
@@ -1011,6 +1011,60 @@ hepsi bilinçli kapsam kararlarının beklenen sonucu). `npm run lint`/
 `docs/SEO-PERFORMANS.md` (4 başlık) + `VERİ-MODELİ.md`/`GUVENLIK.md`/
 `MUSTERİ-KILAVUZU.md`/`CLAUDE.md` güncellemeleri. Detay:
 `KARAR-GUNLUGU.md`, 2026-08-17.
+
+**Lighthouse performans denetimi: gereksiz font indirmeleri temizlendi
+(2026-08-17, aynı gün, yeni oturum):** Kullanıcı gerçek bir Lighthouse
+raporu (mobil+masaüstü, sadece 4 kategori skoru) paylaştı; rapor
+detayları (Opportunities/metrikler) olmadığı için, kod tabanı dışarıdan
+gelen bir yönergedeki 4 kategori (görsel, font, istemci JS, CLS) için
+statik olarak tarandı. `next/font`'un resmi "Preloading" davranışı
+(`node_modules/next/dist/docs/01-app/03-api-reference/02-components/
+font.md`) doğrulanarak gerçek bir sorun bulundu: **`app/layout.tsx`
+(root layout) 6 font ailesini (Geist Sans, Geist Mono, Manrope, Inter,
+Poppins×4 ağırlık, Work Sans) TÜM rotalarda otomatik preload ediyordu**,
+ama `resolveThemeTokens()` (`lib/theme/resolve.ts`) aynı anda sadece TEK
+`--font-sans` kullanıyor — font seçimi tenant bazlı, `site_settings.
+font_family_key`'e göre.
+
+- **Geist Mono komple kaldırıldı** — kodda `font-mono` class'ı hiçbir
+  yerde kullanılmadığı grep ile doğrulandı, %100 ölü ağırlıktı.
+- **`manrope`/`inter`/`poppins`/`workSans`'a `preload: false` eklendi**
+  — Geist Sans (`kurumsal-mavi` varsayılan preset'in fontu) `preload:
+  true` (varsayılan) kaldı. Bu, next/font'un otomatik `<link
+  rel="preload">` enjeksiyonunu o 4 font için kapatıyor; tarayıcı artık
+  sadece `--font-sans` gerçekten o fonta çözüldüğünde indiriyor.
+- `app/globals.css`'teki artık boşta kalan `--font-mono: var(--font-
+  geist-mono);` token'ı silindi.
+- **Görsel boyutlandırma/priority** (her yerde `next/image`, `sizes`
+  gerçek render genişlikleriyle eşleşiyor, `priority` sadece Hero + ilk
+  3 proje kartında), **font `display`** (next/font varsayılanı zaten
+  `swap`) ve **CLS** (her görsel `aspect-[...]`/sabit boyut container
+  kullanıyor, `adjustFontFallback` varsayılan `true`) kod incelemesinde
+  zaten sorunsuz bulundu — ekstra iş yapılmadı, uydurma bulgu
+  eklenmedi.
+- **Projeler galerisinin client-boundary'si** (`ProjectsExplorer.tsx`
+  tüm galeriyi kendi içinde render ediyor, "Server Component'i children
+  geçme" deseni kullanılmıyor) düşük/belirsiz kazanç + yüksek efor
+  (URL/arama-parametresi tabanlı modal mimarisi gerektirir) gerekçesiyle
+  bilinçli olarak ertelendi.
+
+**Doğrulama (gerçek, kullanıcı tarafından):** `npm run build` + `npm run
+start` sonrası Chrome DevTools Lighthouse aynı iki profilde (mobil +
+masaüstü) tekrar çalıştırıldı:
+
+| Kategori | Mobil (önce → sonra) | Masaüstü (önce → sonra) |
+|---|---|---|
+| Performance | 88 → **96** | 99 → **100** |
+| Accessibility | 100 → 100 | 100 → 100 |
+| Best Practices | 96 → 96 | 96 → 96 |
+| SEO | 92 → 92 | 92 → 92 |
+
+Mobil Performance artık `TEST-STRATEJISI.md` madde 4 eşiğinin (≥90)
+üzerinde — düzeltme öncesi tek eksik kalem buydu, font preload
+optimizasyonuyla kapandı. Diğer 3 kategori beklenildiği gibi
+değişmedi (font önceliklendirmesi sadece Performance metriklerini
+etkiler). `npm run build`/`lint` bu oturumda ayrıca doğrulanmadı —
+kullanıcı sıradaki oturumda teyit edebilir.
 
 ## Sıradaki adım
 
