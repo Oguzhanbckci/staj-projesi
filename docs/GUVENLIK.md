@@ -7,8 +7,10 @@ edilmeyen tek konudur — bu yüzden yazılı ve güncel tutulur. Kararların
 kronolojik gerekçesi için `KARAR-GUNLUGU.md`, teknik mimari için `MIMARI.md`,
 tablo/kolon tasarımı için `VERİ-MODELİ.md` referans alınır.
 
-**Son güncelleme:** 2026-08-14 (2. güncelleme aynı gün — iletişim
-formu gerçek kayda bağlandı, madde 2/10 güncellendi)
+**Son güncelleme:** 2026-08-17 — Spam koruması (madde 14), güvenlik
+başlıkları (madde 15), sır taraması (madde 16), RLS/Storage erişim
+denetimi (madde 17) eklendi; yayın öncesi kontrol listesi (madde 10)
+güncellendi — **hâlâ tam işaretli değil, canlıya çıkılmamalı**
 
 ## 1. Tehdit Modeli
 
@@ -49,7 +51,8 @@ seviyeleri (editör, görüntüleyici vb.) yok.
 | `tenants.contact_recipient_email` herkese açık sitede sızar | Kolon seviyesinde `REVOKE`/`GRANT` ile anon'dan tamamen gizli |
 | Service role key/DB şifresi/access token tarayıcıya veya repoya sızar | Madde 3 — sadece sunucu tarafı, `.gitignore`'lu, chat'e hiç yazılmadı |
 | `panel` route'u bir tenant'ın kendi domaininden erişilebilir olur | Proxy ile `Host` başlığına göre kısıtlanacak (henüz kodlanmadı — bkz. madde 8, açık madde) |
-| İletişim formuna kötü amaçlı/doğrulanmamış veri gönderilir | Sunucu tarafı doğrulama gereksinimi (`AI-KURALLARI.md` madde 6.5) — route handler henüz yazılmadı, bkz. madde 5 |
+| İletişim formuna kötü amaçlı/doğrulanmamış veri gönderilir | Sunucu tarafı doğrulama (zod, `AI-KURALLARI.md` madde 6.5) — bkz. madde 2 |
+| İletişim formu bot/spam ile doldurulur | Honeypot + sunucu tarafı IP hız sınırı, bkz. madde 14 |
 
 ## 2. RLS Politikaları
 
@@ -314,11 +317,16 @@ kullanıcı içeriği bir an bile görmesin" koşulu gerçek bir sunucuya karş�
 doğrulandı — bu bir kod incelemesi değil, çalışan `next dev` sunucusuna
 atılan gerçek HTTP istekleriydi (2026-08-12).
 
-## 10. Yayın Öncesi Güvenlik Kontrol Listesi
+## 10. Yayın Öncesi Güvenlik Kontrol Listesi (Durum: 2026-08-17)
 
 Bu proje şu an gerçek bir müşteriye canlıya alınmıyor (bkz. `DURUM.md`,
 "Proje bağlamı") — ama ileride bu değişirse, veya staj değerlendirmesi için
 "bitti" sayılmadan önce, aşağıdaki liste madde madde işaretlenmeli.
+
+**⚠️ SONUÇ: Liste hâlâ tam işaretli DEĞİL — aşağıdaki "Henüz açık" bölümünde
+en az bir madde varken gerçek bir müşteriye canlıya ÇIKILMAMALI (KISITLAR'ın
+kendi kuralı).** Bugünkü (2026-08-17) oturumda 4 yeni madde kapandı, ama
+tenant/domain ayrımı gibi bazı maddeler bilinçli olarak hâlâ açık.
 
 **Tamamlanan maddeler:**
 - [x] Tüm tablolarda RLS açık (11/11 tablo, bkz. madde 2).
@@ -328,9 +336,12 @@ Bu proje şu an gerçek bir müşteriye canlıya alınmıyor (bkz. `DURUM.md`,
       testle doğrulandı (madde 4).
 - [x] Hassas kolon (`tenants.contact_recipient_email`) anon'dan kolon
       seviyesinde gizlendi.
-- [x] `.env.local` commit'lenmedi (`git status`/`.gitignore` ile
-      doğrulandı).
-- [x] Service role key sadece sunucu tarafı kodda kullanılıyor.
+- [x] `.env.local` commit'lenmedi — `git status`/`.gitignore` ile VE
+      2026-08-17'de tüm `git log --all` geçmişi taranarak doğrulandı
+      (bkz. madde 16, sır taraması).
+- [x] Service role key sadece sunucu tarafı kodda kullanılıyor —
+      2026-08-17'de gerçek prod client bundle'ı (`.next/static`) grep
+      edilerek, sızmadığı doğrudan doğrulandı (bkz. madde 16).
 - [x] Şema tipleri (`types/database.types.ts`) gerçek şemadan üretiliyor —
       yanlış kolon adı yazımı derleme zamanında yakalanır (bkz. `MIMARI.md`
       madde 4.2).
@@ -339,26 +350,49 @@ Bu proje şu an gerçek bir müşteriye canlıya alınmıyor (bkz. `DURUM.md`,
 - [x] Panel auth'u (Supabase Auth, e-posta/şifre, kayıt kapalı) kodlandı —
       bkz. madde 5-7.
 
+**Tamamlanan maddeler (2026-08-14 eklendi):**
+- [x] İletişim formu → sunucu tarafı doğrulama → `contact_messages`'a
+      insert çalışıyor (bkz. madde 2 — Route Handler değil, Server
+      Action). **E-posta bildirimi HÂLÂ yok** — ayrı bir açık madde
+      olarak aşağıda duruyor.
+
+**Tamamlanan maddeler (2026-08-17 eklendi, bugünkü oturum):**
+- [x] Kullanıcıdan alınan formlarda (iletişim) rate limiting/spam
+      koruması eklendi — honeypot + sunucu tarafı IP hız sınırı, bkz.
+      madde 14. **Not:** gerçek bir bot simülasyonuyla henüz canlı
+      test edilmedi, sadece kod incelemesiyle doğrulandı (dürüstçe
+      belirtilmeli).
+- [x] Lighthouse Best Practices skoru ölçüldü: **96/100** (hem mobil hem
+      masaüstü) — hedef ≥90'ın üzerinde (bkz. `TEST-STRATEJISI.md`
+      madde 4, ölçüm tarihi 2026-08-17).
+- [x] Temel güvenlik başlıkları eklendi (CSP, X-Frame-Options,
+      X-Content-Type-Options, Referrer-Policy, Permissions-Policy,
+      Strict-Transport-Security) VE gerçek sunucuya karşı `curl.exe -I`
+      ile canlı doğrulandı, 6/6 doğru geldi — bkz. madde 15.
+- [x] Hata sayfaları (`app/not-found.tsx`, `app/error.tsx`,
+      `app/global-error.tsx`) kullanıcıya teknik detay (stack trace,
+      hata mesajı) göstermiyor, ne yapması gerektiğini söylüyor.
+- [x] Sır taraması yapıldı (repo + git geçmişi TÜMÜ + prod client
+      bundle) — sızıntı bulunmadı, bkz. madde 16 (detaylı kanıt).
+- [x] `npm audit` çalıştırıldı — **0 güvenlik açığı** bulundu. Not: bu,
+      bağımlılıkların o AN bilinen açık listesine göre temiz olduğu
+      anlamına gelir, gelecekte yeni açıklar bildirilebilir — periyodik
+      olarak tekrar çalıştırılmalı.
+
 **Henüz açık/yapılmamış maddeler (bilinçli olarak, sıradaki adımlarda):**
 - [ ] Proxy (`proxy.ts`) ile `panel` route'unun bir tenant'ın kendi
       domaininde tamamen erişilemez olduğu henüz doğrulanmadı — bu, Host
       header'a göre tenant çözümleyen ayrı bir mantık gerektiriyor (bkz.
       `MIMARI.md` madde 7), henüz yazılmadı. Şu anki `proxy.ts` sadece
       oturum kontrolü yapıyor, tenant/domain ayrımı yapmıyor.
-- [x] *(2026-08-14)* İletişim formu → sunucu tarafı doğrulama →
-      `contact_messages`'a insert artık çalışıyor (bkz. madde 2 —
-      Route Handler değil, Server Action). **E-posta bildirimi HÂLÂ
-      yok** — sadece DB kaydı, bu ayrı bir açık madde olarak kalıyor.
-- [ ] Kullanıcıdan alınan formlarda rate limiting / spam koruması yok
-      (iletişim formu artık gerçekten DB'ye yazdığı için bu risk daha
-      somut hale geldi — anonim, kimliksiz bir uç nokta, teorik değil).
-- [ ] Lighthouse Best Practices skoru (güvenli header'lar, HTTPS zorunluluğu
-      vb.) henüz ölçülmedi — hedef ≥90 (bkz. `TEST-STRATEJISI.md`).
-- [ ] `npm audit` ile bağımlılıklarda bilinen güvenlik açığı taraması henüz
-      yapılmadı.
+- [ ] İletişim formu bildirimi hâlâ sadece DB kaydı, e-posta bildirimi yok.
+- [ ] Spam koruması (madde 14) gerçek bir bot/saldırı simülasyonuyla henüz
+      canlı test edilmedi.
 - [ ] Gerçek bir müşteriye canlıya alınacaksa: Vercel Hobby → Pro plan
       geçişi (bkz. `MIMARI.md` madde 5) ve KVKK aydınlatma metni/çerez
-      politikası (bkz. `KURUMSAL-SITE-STANDARTLARI.md`) eklenmeli.
+      politikası (bkz. `KURUMSAL-SITE-STANDARTLARI.md`) eklenmeli — ayrıca
+      yeni saklanan `contact_messages.sender_ip` kolonu KVKK aydınlatma
+      metnine eklenmeli (bkz. madde 14).
 
 Bu liste, ilgili adımlar tamamlandıkça güncellenmeli — yeni bir madde
 "tamamlandı" olarak işaretlenmeden önce madde 4'teki gibi gerçek bir testle
@@ -510,3 +544,300 @@ gerçek `curl` ile `/robots.txt`/`/sitemap.xml`/`/api/og` doğrulandı;
 Google'ın Zengin Sonuçlar Testi'ne (search.google.com/test/rich-results,
 "Kod" sekmesi) gerçek üretilen JSON-LD yapıştırılıp **0 hata** ile
 doğrulandı. Detay: `docs/SEO-PERFORMANS.md`.
+
+## 14. Spam Koruması *(2026-08-17 eklendi)*
+
+İletişim formu (`components/site/contact/`) kimliği doğrulanmamış her
+ziyaretçiye açık ve gelen talepler firmanın en değerli çıktısı —
+dışarıdan gelen bir yönergeyle, gerçek kullanıcıyı zorlamayan **2
+katmanlı** bir spam koruması eklendi. CAPTCHA bilinçli olarak SON ÇARE
+sayıldı (KISITLAR) — aşağıdaki "CAPTCHA'ya ne zaman geçilir" bölümüne
+bakın.
+
+### Katman 1 — Gizli tuzak alanı (honeypot)
+
+`lib/security/contactHoneypot.ts` (`isHoneypotFilled`) +
+`ContactForm.tsx`'teki `website` adlı gizli alan.
+
+```ts
+// lib/security/contactHoneypot.ts
+export const HONEYPOT_FIELD_NAME = "website";
+
+export function isHoneypotFilled(formData: FormData): boolean {
+  const value = formData.get(HONEYPOT_FIELD_NAME);
+  return typeof value === "string" && value.trim().length > 0;
+}
+```
+
+```tsx
+// ContactForm.tsx — gerçek ziyaretçi bunu ASLA görmez/odaklanmaz
+<div aria-hidden="true" className="absolute left-[-9999px] top-[-9999px]">
+  <label htmlFor="iletisim-website">Web siteniz</label>
+  <input type="text" id="iletisim-website" name="website" tabIndex={-1} autoComplete="off" />
+</div>
+```
+
+**Erişilebilirlik (KISITLAR):** `aria-hidden="true"` ekran okuyucudan
+tamamen çıkarır, `tabIndex={-1}` klavye Tab sırasından çıkarır,
+ekran-dışı konumlandırma (`display:none`/`visibility:hidden` DEĞİL —
+bazı botlar özellikle bunları tarayıp atlıyor) görsel olarak gizler.
+`autoComplete="off"` + "website" adı, tarayıcı otomatik doldurmasının
+false-positive riskini azaltır.
+
+**Ne kadar etkili / nasıl atlatılır (dürüstçe):** Formu programatik
+olarak (headless tarayıcı, script) her alanı dolduran "kaba kuvvet"
+botların büyük kısmını yakalar — bu botlar genelde DOM'daki her
+`<input>`'u görür görmez doldurur, ARIA/CSS'e bakmaz. **Atlatma yolu
+basit:** bir bot yazarı bu SİTEYİ özel olarak inceleyip "website" adlı
+alanı BOŞ bırakacak şekilde script'ini ayarlarsa (ya da genel kural
+olarak "görmediğim/adı tanımadığım alanlara dokunma" stratejisi
+kullanan bir bot ise) bu katman hiç iş görmez. Yani: **jenerik/otomatik
+botlara karşı güçlü, SİTEYE ÖZEL hedeflenmiş bir bota karşı zayıf.**
+
+**Yanlış pozitif / mesaj kaybı:** Tetiklenirse istek sessizce yok
+sayılır (DB'ye yazılmaz) ama kullanıcıya YİNE DE başarı mesajı
+gösterilir — botu "yakalandığını" öğrenip stratejisini değiştirmesin
+diye. Gerçek bir ziyaretçinin bu alanı doldurma ihtimali (aria-hidden +
+ekran dışı + tabIndex=-1 üçlüsüyle) pratikte sıfıra yakın, bu yüzden bu
+katmanda "sessiz reddetme" kabul edilebilir bir risk (KISITLAR'daki
+"mesajı kaybetme" endişesi asıl katman 2 için geçerli, aşağıda).
+
+### Katman 2 — Sunucu tarafı IP-bazlı hız sınırı
+
+`lib/security/contactRateLimit.ts` (`checkContactRateLimit`) —
+**KISITLAR: "hız sınırı sunucu tarafında olsun"**, bu fonksiyon sadece
+`components/site/contact/actions.ts`'teki Server Action'dan çağrılır,
+istemci tarafı hiç göremez/etkileyemez.
+
+**Gerçek bir build hatası bulunup düzeltildi (2026-08-17):** Honeypot
+(katman 1, istemci-güvenli) ve hız sınırı (katman 2, `next/headers`
+kullanır — sunucuya özel) başlangıçta TEK dosyada (`contactSpamGuard.ts`)
+yazılmıştı. `ContactForm.tsx` (Client Component) bu dosyadan sadece
+`HONEYPOT_FIELD_NAME`'i import etse bile, Next.js/Turbopack dosyanın
+TAMAMINI (içindeki `next/headers` importu dahil) tarayıcı paketine dahil
+etmeye çalıştı ve `npm run build`'da gerçek bir hatayla durdu ("You're
+importing a module that depends on next/headers... in the Pages Router"
+— Turbopack'in yanıltıcı ama tanıdık hata mesajı, aslında App Router'da
+istemci/sunucu sınırı ihlaliydi). Düzeltme: dosya ikiye bölündü —
+`contactHoneypot.ts` (istemci-güvenli, next/headers YOK) ve
+`contactRateLimit.ts` (sunucu-özel, next/headers kullanır) — aynı
+istemci/sunucu ayrım ilkesi `lib/supabase/client.ts`/`server.ts`
+bölünmesiyle tutarlı.
+
+```ts
+export const CONTACT_RATE_LIMIT_MAX_SUBMISSIONS = 3;
+export const CONTACT_RATE_LIMIT_WINDOW_MINUTES = 15;
+
+export async function checkContactRateLimit(supabase, tenantId, ip) {
+  if (!ip) return { allowed: true }; // IP okunamazsa engelleme, güvenli varsayılan
+  const windowStart = new Date(Date.now() - CONTACT_RATE_LIMIT_WINDOW_MINUTES * 60_000).toISOString();
+  const { count } = await supabase
+    .from("contact_messages")
+    .select("id", { count: "exact", head: true })
+    .eq("tenant_id", tenantId)
+    .eq("sender_ip", ip)
+    .gte("created_at", windowStart);
+  return (count ?? 0) >= CONTACT_RATE_LIMIT_MAX_SUBMISSIONS
+    ? { allowed: false, retryAfterMinutes: CONTACT_RATE_LIMIT_WINDOW_MINUTES }
+    : { allowed: true };
+}
+```
+
+**Mimari karar (kullanıcıya soruldu — gerçek bir gizlilik/mimari
+tercihti, tek başıma karar vermedim):**
+- **Anahtar: IP adresi**, e-posta değil — e-posta kullanıcı girdisi,
+  bir bot her seferinde farklı sahte e-posta ile bunu bedavaya atlatır;
+  IP daha zor değiştirilir. **Bedeli:** IP adresi KVKK kapsamında kişisel
+  veri — yeni bir `contact_messages.sender_ip` kolonu eklendi (migration
+  `20260817130000_add_contact_message_sender_ip.sql`), SADECE service
+  role yazıyor/okuyor, `anon`'a hiç açılmadı (`contact_messages` zaten
+  anon'a tamamen kapalı, bkz. madde 2), panelde şu an gösterilmiyor
+  (sadece spam tespiti amaçlı).
+- **Sayaç deposu: Supabase'in kendisi** (ayrı bir Redis/servis DEĞİL) —
+  `contact_messages` tablosu sorgulanıyor. Bellek-içi (in-memory) bir
+  sayaç BİLİNÇLİ OLARAK reddedildi: Vercel serverless'te her istek
+  farklı, izole bir sunucu örneğine gidebilir, bellek paylaşılmaz — bu
+  yüzden bellek-içi bir sayaç üretimde güvenilir ÇALIŞMAZDI (sadece
+  `next dev`/`next start` gibi tek-süreçli yerel ortamda tam doğru
+  olurdu). DB sorgusu her serverless örneğinden aynı gerçeği görür.
+
+**Eşik:** Aynı (tenant, IP) çifti için **15 dakikada en fazla 3 mesaj**.
+Gerekçe: bu bir B2B iletişim formu, gerçek bir ziyaretçi aynı oturumda
+1-2'den fazla mesaj göndermez (belki bir yazım hatasını düzeltip
+yeniden gönderir) — 3 sınırı gerçek kullanıcıyı neredeyse hiç
+zorlamazken sürekli/otomatik gönderimi belirgin şekilde yavaşlatır.
+
+**Ne kadar etkili / nasıl atlatılır (dürüstçe):** Tek bir IP'den gelen
+sürekli/hızlı gönderimi (en yaygın basit bot deseni) etkili şekilde
+yavaşlatır. **Atlatma yolu:** IP rotasyonu (rezidansiyel proxy ağları,
+mobil operatör NAT'ı her bağlantıda IP değiştirebilir) veya "yavaş ve
+sabırlı" bir bot (eşiğin altında kalacak şekilde ör. 20 dakikada bir
+mesaj) bu katmanı anlamlı şekilde zorlamaz — hedefli/kaynaklı bir
+saldırgana karşı TEK BAŞINA yeterli değil.
+
+**Yanlış pozitif / mesaj kaybı (KISITLAR):** Aynı IP'yi paylaşan birden
+fazla gerçek kullanıcı (kurumsal NAT, aynı ofis/kafe Wi-Fi'ı) teorik
+olarak birbirinin sınırını tüketebilir — bu YANLIŞ POZİTİF gerçek bir
+risk, göz ardı edilmiyor. Bu yüzden tetiklenince mesaj **sessizce
+kaybedilmiyor**: kullanıcıya "az önce çok fazla mesaj gönderildi, X
+dakika sonra tekrar deneyin ya da bizi arayın" gibi DÜRÜST, aksiyon
+öneren bir hata gösteriliyor; yazdıkları form'da kalıyor (yeniden
+yazmaya gerek yok, `values: raw` ile korunuyor) ve iletişim sayfasındaki
+telefon/e-posta gibi alternatif kanallar hâlâ görünür durumda.
+
+### Değerlendirilip ŞİMDİLİK kod olarak eklenmeyen: gönderim süresi kontrolü
+
+KISITLAR'ın bahsettiği üçüncü CAPTCHA'sız yöntem — form açıldıktan
+sonra çok kısa sürede (ör. <2-3 saniye) gönderilen bir isteği şüpheli
+saymak. **Etkili olduğu senaryo:** formu hiç render etmeden/okumadan
+anında dolduran en tembel bot script'leri. **Atlatma yolu:** bot
+yazarı bir `sleep()` eklemesi yeterli, trivial bir önlem. Katman 1+2
+zaten makul bir kapsama sağladığı için ŞİMDİLİK eklenmedi (gereksiz
+karmaşıklık, KISITLAR'daki "gerçek kullanıcıyı zorlama" ilkesiyle de
+nötr — ekstra bir zamanlayıcı state'i gerektirir) — katman 1+2 yetersiz
+kalırsa (aşağıdaki eşik) eklenecek ilk/en ucuz üçüncü katman budur.
+
+### CAPTCHA'ya ne zaman geçilmeli (KABUL KRİTERİ: net bir eşik)
+
+CAPTCHA, KISITLAR gereği SON ÇARE — gerçek kullanıcıyı ekstra bir
+adımla (görsel bulmaca, checkbox bekleme) zorlar. Aşağıdaki
+durumlardan **herhangi biri** gerçekleşirse gündeme alınmalı:
+
+1. Katman 1+2'ye rağmen, panelin Mesajlar ekranında elle işaretlenen
+   ("bu spam") mesaj sayısı **haftada 10'u** aşarsa.
+2. Aynı anda **farklı IP'lerden ama benzer/aynı içerikli** çok sayıda
+   mesaj gözlenirse (dağıtık/koordineli bir bot ağı — katman 2 tek
+   başına IP-bazlı olduğu için bunu yakalayamaz).
+3. Honeypot'un (katman 1) sistematik olarak boş geçildiği, yani bir
+   bot'un SİTEYE ÖZEL olarak hedeflendiği tespit edilirse.
+
+**Öneri:** Klasik Google reCAPTCHA yerine **Cloudflare Turnstile**
+(veya benzeri "gizli/sürtünmesiz" bir seçenek) — çoğu gerçek kullanıcı
+için hiçbir ek adım göstermez (arka planda tarayıcı sinyallerine
+bakar), Google'ın takip/gizlilik yüküne (üçüncü taraf script, çerez)
+sahip değildir. Sadece iletişim formuna, sadece yukarıdaki eşiklerden
+biri tetiklendiğinde eklenmeli — baştan/varsayılan olarak DEĞİL.
+
+### Test / doğrulama durumu (dürüstçe)
+
+Kod incelemesiyle ve migration'ın gerçek şemayla tutarlılığıyla
+doğrulandı; **gerçek bir bot/saldırı simülasyonu yapılmadı** (ne
+otomatik bir script'le honeypot atlatma denemesi, ne de gerçek bir IP
+hız sınırı aşımı canlı olarak tetiklendi) — bu, kullanıcının kendi
+ortamında (migration uygulandıktan sonra) elle doğrulaması gereken bir
+adım (bkz. sohbet geçmişindeki adım adım talimat).
+
+## 15. Güvenlik Başlıkları *(2026-08-17 eklendi)*
+
+`next.config.ts`'teki `headers()` fonksiyonu, TÜM rotalara (site +
+panel) aşağıdaki HTTP yanıt başlıklarını ekliyor:
+
+| Başlık | Değer | Ne işe yarar |
+|---|---|---|
+| `Content-Security-Policy` | `default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' blob: data:; font-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; upgrade-insecure-requests` | Tarayıcının hangi kaynaktan script/stil/görsel/font yükleyebileceğini kısıtlar — XSS'in en etkili tek karşılığı (kötü niyetli bir script enjekte edilse bile çalışamaz/veri dışarı sızamaz). |
+| `X-Frame-Options` | `DENY` | Site başka bir sayfada `<iframe>` içine gömülemez — clickjacking'e karşı (CSP'nin `frame-ancestors`'ı ile aynı işi eski tarayıcılar için de yapan yedek katman). |
+| `X-Content-Type-Options` | `nosniff` | Tarayıcının `Content-Type` başlığını yok sayıp dosya içeriğini "tahmin etmesini" engeller — ör. bir görsel gibi yüklenen kötü niyetli bir dosyanın çalıştırılabilir sanılmasını önler. |
+| `Referrer-Policy` | `strict-origin-when-cross-origin` | Bir bağlantıya tıklandığında hedef siteye tam URL yerine sadece kök alan adı gönderilir (ör. `/panel/mesajlar/gizli-id` değil, sadece site adresi) — sayfa içi hassas yol bilgisinin başka sitelere sızmasını azaltır. |
+| `Permissions-Policy` | `camera=(), microphone=(), geolocation=(), browsing-topics=()` | Kamera/mikrofon/konum gibi tarayıcı API'lerini TAMAMEN kapatır — site bunların hiçbirini kullanmıyor, bir XSS senaryosunda bile bunlara erişilemez. |
+| `Strict-Transport-Security` | `max-age=63072000; includeSubDomains` | Tarayıcıya "bu siteyi bir daha asla HTTP üzerinden yükleme, hep HTTPS kullan" der (2 yıl boyunca hatırlar) — araya girme (man-in-the-middle) saldırılarına karşı. `preload` BİLİNÇLİ OLARAK yok (aşağıda). |
+
+**Neden nonce tabanlı (strict) bir CSP değil:** Next.js'in kendi
+dokümanı nonce kullanıldığında TÜM sayfaların dinamik render edilmesini
+şart koşuyor — bu proje statik üretim + on-demand ISR üzerine kurulu
+(`docs/MIMARI.md`), nonce'a geçmek bu mimariyi tamamen bozardı. Bunun
+yerine sabit bir CSP (`next.config.ts`, "Without Nonces" yöntemi)
+seçildi. Tek zorunlu gevşetme: `style-src 'unsafe-inline'` — tenant
+temasının `<html style={...}>` olarak enjekte edilmesi
+(`docs/TEMA-MIMARISI.md`) nonce olmadan başka türlü mümkün değil.
+
+**Neden `preload` yok (HSTS):** HSTS preload listesine girmek
+tarayıcılara GÖMÜLÜR ve geri almak aylar sürebilir — proje henüz
+gerçek bir müşteriye/domaine canlıya alınmadığı için (`docs/DURUM.md`)
+bu taahhüdü şimdiden vermek erken. Gerçek bir domain'e geçilince
+yeniden değerlendirilmeli.
+
+**Doğrulama (gerçek, tamamlandı — 2026-08-17):** Kod incelemesiyle
+doğrulandı (next.config.ts, gerçek Next.js 16 dokümanlarına göre
+yazıldı — bkz. `node_modules/next/dist/docs/01-app/02-guides/
+content-security-policy.md` ve `.../headers.md`). Ayrıca kullanıcı
+`npm run dev`'e karşı gerçek `curl.exe -I` ile test etti — 6 başlığın
+(CSP, X-Frame-Options, X-Content-Type-Options, Referrer-Policy,
+Permissions-Policy, Strict-Transport-Security) hepsi doğru değerlerle
+geldi. Bu gerçek çıktıda fark edilen bir bulgu: Next.js'in varsayılan
+`X-Powered-By: Next.js` başlığı da geliyordu (framework bilgisi
+sızıntısı, ciddi değil ama gereksiz) — `next.config.ts`'e
+`poweredByHeader: false` eklenerek kapatıldı.
+
+## 16. Sır Taraması *(2026-08-17 eklendi)*
+
+Repo + geçmiş commit'ler + gerçek prod client bundle'ı için gerçek bir
+tarama yapıldı (harici bir araç — truffleHog/gitleaks vb. — kurulmadı,
+`git log`/`Grep` ile elle/hedefli bir tarama). **Sonuç: sızıntı
+bulunmadı.**
+
+| Kontrol | Yöntem | Sonuç |
+|---|---|---|
+| `.env.local` (gerçek sırlar) hiç commit'lenmiş mi | `git log --all --full-history --oneline -- .env.local` | Boş — hiç commit'lenmemiş |
+| `.env*` deseninde başka bir dosya commit'lenmiş mi | `git log --all --full-history --diff-filter=A -- '.env*'` | Sadece `.env.local.example` (değersiz şablon, commit'lenmesi ZATEN amaçlanan dosya) |
+| Service role key'in kendisi (`sb_secret_...` öneki) herhangi bir commit'te var mı | `git log --all -p -S'sb_secret_'` (pickaxe — bu string'in eklendiği/silindiği TÜM commit'leri bulur) | 0 sonuç |
+| Gerçek bir `SUPABASE_SERVICE_ROLE_KEY=sb...` ataması herhangi bir commit'te var mı | `git log --all -p -S'SUPABASE_SERVICE_ROLE_KEY=sb'` | 0 sonuç |
+| Supabase Personal Access Token (`sbp_...`) gerçek bir değer olarak var mı | `git log --all -p -S'sbp_'` + mevcut dosyalarda grep | Sadece `GUVENLIK.md`/`KARAR-GUNLUGU.md`'de FORMAT açıklaması olarak geçiyor (`` `sbp_...` ``, üç nokta ile — gerçek bir token değil) |
+| DB bağlantı şifresi (`postgres://user:pass@...`) herhangi bir yerde var mı | `git log --all -p -S'postgres://'` + mevcut dosyalarda grep | 0 sonuç |
+| Service role key **tarayıcıya giden gerçek prod paketinde** var mı | `.next/static` (gerçek bir `npm run build` çıktısı, bu oturumdan önceki bir Lighthouse ölçümünden kalma) içinde `SUPABASE_SERVICE_ROLE_KEY`/`sb_secret_`/`service_role` için grep | 0 sonuç — Next.js'in `NEXT_PUBLIC_` önekiyle env inlining kuralı beklendiği gibi çalışıyor |
+| `SUPABASE_SERVICE_ROLE_KEY`'i sadece sunucu-only dosyalar mı kullanıyor | `.ts`/`.tsx` genelinde grep | Sadece `lib/supabase/server.ts` (hiç `"use client"` yok), `e2e/helpers/supabaseAdmin.ts` (Node test süreci, tarayıcıya hiç gitmez), `playwright.config.ts` (build/test zamanı, tarayıcıya gitmez) |
+
+**Not (dürüstçe):** Bu bir "profesyonel" secret-scanning aracı (gitleaks,
+truffleHog, GitHub secret scanning vb.) taraması DEĞİL — kalıp bazlı,
+hedefli bir elle tarama. Gerçek bilinen sır formatlarının (Supabase
+`sb_secret_`/`sbp_`, JWT `eyJ...`, Postgres connection string, AWS
+`AKIA...`) her biri ayrı ayrı arandı ama listelenmeyen egzotik bir sır
+formatı gözden kaçmış olabilir. İleride gerçek bir CI kurulursa
+(`TEST-STRATEJISI.md` madde 12 "kapsanmayan") gitleaks/trufflehog gibi
+bir aracın pipeline'a eklenmesi önerilir.
+
+## 17. RLS ve Storage Erişim Denetimi — "Anon Ne Yapabilir" *(2026-08-17 eklendi)*
+
+Madde 2 ve 11'deki iddiaları TEKRAR DOĞRULAMAK için tüm migration
+dosyaları tek tek okunup gerçek SQL'den (yorumlardan/eski notlardan
+DEĞİL) bir "anon ne yapabilir" tablosu çıkarıldı. **Sonuç: madde 2/11'in
+mevcut açıklaması doğru, tutarsızlık bulunmadı** — ama görsel bucket
+kapsamındaki bir boşluk yeniden teyit edildi (aşağıda).
+
+**11/11 içerik tablosu — kanıt: `supabase/migrations/
+20260807130000_add_rls_policies.sql`:**
+
+| Tablo | anon SELECT | anon INSERT/UPDATE/DELETE |
+|---|---|---|
+| `tenants` | Sadece `is_published=true` VE sadece 7 güvenli kolon (`id`, `created_at`, `is_published`, `name`, `domain`, `is_platform_owner`, `theme_mode`) — `contact_recipient_email` kolon seviyesinde `REVOKE` ile tamamen gizli | ❌ Hiçbir policy yok → reddedilir |
+| `site_settings` | Sadece bağlı `tenants` satırı `is_published=true` ise (`exists` alt sorgusu) | ❌ |
+| `hero_sections` / `about_sections` / `services` / `projects` / `contact_sections` / `testimonials` / `faqs` / `team_members` (8 tablo, birebir aynı desen) | Sadece `is_published=true` | ❌ |
+| `contact_messages` | **Hiç policy yok → anon HİÇBİR SATIRI okuyamaz** (PII içerdiği için kasıtlı) | ❌ (yazma da `authenticated`'e özel — anonim form gönderimi RLS/anon key'i hiç kullanmıyor, service role ile insert ediyor, bkz. madde 2/14) |
+
+**2/2 kurulu Storage bucket'ı — kanıt: `supabase/migrations/
+20260814120000_create_projects_storage_bucket.sql` +
+`20260815120000_add_theme_settings_and_branding.sql`:**
+
+| Bucket | anon SELECT (okuma) | anon INSERT/UPDATE/DELETE (yazma) |
+|---|---|---|
+| `projects` (public=true) | ✅ — `bucket_id = 'projects'` filtresiyle | ❌ Hiçbir policy yok → reddedilir (bucket `public=true` olması SADECE anonim `GET`'i etkiler, `.upload()`/`.remove()` YİNE DE `storage.objects` RLS'inden geçer, bkz. madde 11) |
+| `branding` (public=true) | ✅ — `bucket_id = 'branding'` filtresiyle | ❌ Aynı desen |
+
+**5 bucket YOK — anon (ve authenticated) için soru anlamsız:**
+`services`/`hero`/`about`/`testimonials`/`team` bucket'ları Supabase'de
+hiç oluşturulmadı (madde 11'de zaten dokümante edilmiş bir boşluk, bu
+denetimde TEKRAR doğrulandı — `supabase/migrations/` içinde bu 5
+bucket için `insert into storage.buckets` çağıran HİÇBİR dosya yok).
+Sonuç: bu tablolardaki `*_path` kolonlarına bir değer girilse bile
+(panelden değil, elle) görsel isteği `404` döner — bir GÜVENLİK açığı
+değil, bir FONKSİYONELLİK boşluğu (yanlışlıkla "anon buraya yazabilir"
+gibi yorumlanmasın diye burada açıkça ayrılıyor).
+
+**Sonuç:** anon rolü, İSTİSNASIZ her tabloda/bucket'ta SADECE
+yayınlanmış/herkese-açık İÇERİĞİ okuyabiliyor, hiçbir tabloya/bucket'a
+hiçbir koşulda yazamıyor. `contact_messages` tek gerçek istisna (anon
+için okuma da kapalı). Bu denetim madde 2/4/11'deki önceki testlerle
+(gerçek `anon`/`authenticated` rolleriyle çalıştırılan `scripts/
+test-rls.mjs`, 6/6 geçti) TUTARLI — bugünkü denetim yeni bir SQL
+incelemesi, canlı DB'ye karşı yeni bir test çalıştırılmadı (madde 4'teki
+script hâlâ güncel/geçerli, yeniden çalıştırmaya gerek görülmedi çünkü
+şema/policy'ler o testten beri değişmedi).

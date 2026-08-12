@@ -65,6 +65,7 @@ export type Database = {
           is_read: boolean
           message: string
           sender_email: string | null
+          sender_ip: unknown
           sender_name: string
           sender_phone: string | null
           subject: string | null
@@ -76,6 +77,7 @@ export type Database = {
           is_read?: boolean
           message: string
           sender_email?: string | null
+          sender_ip?: unknown
           sender_name: string
           sender_phone?: string | null
           subject?: string | null
@@ -87,6 +89,7 @@ export type Database = {
           is_read?: boolean
           message?: string
           sender_email?: string | null
+          sender_ip?: unknown
           sender_name?: string
           sender_phone?: string | null
           subject?: string | null

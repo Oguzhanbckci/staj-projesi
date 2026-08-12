@@ -13,8 +13,9 @@ kontrast doğrulaması, bileşen envanteri/API kuralları) ve `TEMA-MIMARISI.md`
 önlemi), gerekirse `KARAR-GUNLUGU.md`'yi (tarihli, hiç silinmeyen karar
 geçmişi) oku.
 
-**Son güncelleme:** 2026-08-17 — Vitest + Playwright kuruldu; 3 birim + 3
-uçtan uca kritik akış testi yazıldı ve 3x yeşil doğrulandı
+**Son güncelleme:** 2026-08-17 — Spam koruması, hata sayfaları, güvenlik
+başlıkları eklendi; sır taraması + RLS/Storage denetimi yapıldı
+(`GUVENLIK.md`, henüz kullanıcı tarafından çalıştırılıp doğrulanmadı)
 
 ## Proje bağlamı
 
@@ -1139,6 +1140,75 @@ kullandığı ayrı bir çift — sanılmıştı, düzeltildi). `npm test`
 26/26 birim test, 3/3 e2e test (en uzunu 11.5s — 60s sınırının içinde).
 KABUL KRİTERİ'nin tamamı karşılandı. `npm run build`/`lint` bu
 oturumda ayrıca doğrulanmadı.
+
+**Spam koruması, hata sayfaları, güvenlik başlıkları, sır taraması ve
+RLS/Storage denetimi (2026-08-17, aynı gün, yeni oturum):** Dışarıdan
+gelen bir yönergeyle, `GUVENLIK.md`'nin açık maddelerinden birkaçı
+(rate limiting yok, güvenlik başlıkları yok) kapatıldı, ayrıca 2 gerçek
+denetim (sır taraması, RLS/Storage) yapıldı. Detay, kanıt ve dürüst
+etkinlik/atlatma değerlendirmesi: `GUVENLIK.md` madde 14-17.
+
+- **Spam koruması (2 katman):** Honeypot (`lib/security/
+  contactHoneypot.ts`, `ContactForm.tsx`'teki gizli `website` alanı) +
+  sunucu tarafı IP-bazlı hız sınırı (aynı tenant+IP için 15 dakikada en
+  fazla 3 mesaj, Supabase'in kendisi sorgulanarak — bellek-içi sayaç
+  BİLİNÇLİ OLARAK reddedildi, Vercel serverless'te güvenilmez olurdu).
+  Kullanıcıya iki mimari/gizlilik kararı (anahtar: IP mi e-posta mı,
+  sayaç: DB mi bellek mi) soruldu, **IP + Supabase** seçildi — yeni
+  `contact_messages.sender_ip` kolonu (migration
+  `20260817130000_add_contact_message_sender_ip.sql`, KVKK notuyla).
+  Yanlış pozitifte (hız sınırına takılan gerçek kullanıcı) mesaj
+  sessizce kaybolmuyor — dürüst bir hata + alternatif iletişim kanalı
+  gösteriliyor. CAPTCHA'ya geçiş için net bir eşik tanımlandı (haftada
+  10+ spam, dağıtık IP'li koordineli saldırı, ya da honeypot'un
+  sistematik atlatıldığı tespit edilirse) — Cloudflare Turnstile önerisi
+  ile, henüz kod olarak eklenmedi (KISITLAR: "CAPTCHA son çare").
+  `lib/security/contactHoneypot.test.ts` — honeypot fonksiyonu için 4
+  birim test. **Gerçek bir build hatası bulunup düzeltildi:** honeypot
+  (istemci-güvenli) ve hız sınırı (`next/headers` kullanır, sunucuya
+  özel) başta tek dosyaydı, `ContactForm.tsx`'in (Client Component) onu
+  import etmesi `next/headers`'ı tarayıcı paketine sürüklemeye çalışıp
+  `npm run build`'u durdurdu — dosya `contactHoneypot.ts` (istemci) /
+  `contactRateLimit.ts` (sunucu) olarak ikiye bölünerek çözüldü. Detay:
+  `GUVENLIK.md` madde 14.
+- **Hata sayfaları:** `app/not-found.tsx`, `app/error.tsx`,
+  `app/global-error.tsx` — hiçbiri teknik detay (stack/mesaj) göstermiyor,
+  hepsi ana sayfaya dönüş sunuyor. `error.tsx`/`global-error.tsx`'in prop
+  adının BU Next.js sürümünde `retry` olduğu (eski sürümlerdeki `reset`
+  DEĞİL) gerçek dokümandan doğrulanarak yazıldı.
+- **Güvenlik başlıkları:** `next.config.ts`'e CSP + X-Frame-Options +
+  X-Content-Type-Options + Referrer-Policy + Permissions-Policy +
+  Strict-Transport-Security eklendi. Nonce tabanlı strict CSP BİLİNÇLİ
+  OLARAK reddedildi — Next'in kendi dokümanı nonce'ın TÜM sayfaları
+  dinamik render'a zorladığını söylüyor, bu projenin statik+ISR
+  mimarisini (`MIMARI.md`) bozardı. `style-src 'unsafe-inline'` tek
+  gerekli gevşetme (tenant tema enjeksiyonu için). HSTS `preload`
+  bilinçli olarak eklenmedi (geri alınması zor bir taahhüt, proje henüz
+  canlı değil).
+- **Sır taraması:** repo + TÜM git geçmişi (`git log --all`, pickaxe
+  arama) + gerçek prod client bundle'ı (`.next/static`, önceki bir
+  Lighthouse ölçümünden kalma) tarandı — **sızıntı bulunmadı**. `.env.local`
+  hiç commit'lenmemiş, service role key client bundle'da hiç geçmiyor.
+- **RLS/Storage denetimi:** 11 tablo + 2 kurulu bucket'ın (projects,
+  branding) tüm migration SQL'i tek tek okunup "anon ne yapabilir"
+  tablosu çıkarıldı — mevcut dokümantasyonla (madde 2/11) tutarlı,
+  tutarsızlık bulunmadı. 5 eksik bucket (services/hero/about/
+  testimonials/team) TEKRAR doğrulandı (zaten bilinen bir boşluk).
+- **`GUVENLIK.md` madde 10 (yayın öncesi kontrol listesi) güncellendi**
+  — 4 yeni madde işaretlendi, ama liste HÂLÂ tam değil: tenant/domain
+  panel ayrımı, `npm audit`, e-posta bildirimi, güvenlik başlıklarının
+  canlı `curl` doğrulaması gibi maddeler açık kaldı. **Doküman açıkça
+  "canlıya çıkılmamalı" diyor** — bu dürüst, uydurulmuş bir "hazır"
+  durumu yok.
+
+**Doğrulama (gerçek, tamamlandı — kullanıcı tarafından):** Migration
+SQL Editor'de çalıştırıldı, `npm run types:generate` yapıldı — bu
+sırada gerçek bir build hatası bulunup düzeltildi (yukarıya bakın,
+istemci/sunucu dosya ayrımı). `npm run build`/`lint` temiz, iletişim
+formu ve 404 sayfası gerçek tarayıcıda denendi, `curl.exe -I` ile 6/6
+güvenlik başlığı doğru geldi (bu sırada fark edilen `X-Powered-By`
+sızıntısı `poweredByHeader: false` ile kapatıldı), `npm audit` **0
+açık** verdi. `GUVENLIK.md` madde 10 son haliyle güncellendi.
 
 ## Sıradaki adım
 

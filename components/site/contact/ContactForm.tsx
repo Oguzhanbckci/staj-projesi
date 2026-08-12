@@ -12,6 +12,7 @@ import {
   CONTACT_SUBJECT_LABELS,
 } from "@/lib/validation/contact";
 import { submitContactForm, type ContactFormState } from "./actions";
+import { HONEYPOT_FIELD_NAME } from "@/lib/security/contactHoneypot";
 
 // "use server" dosyasından (actions.ts) sadece fonksiyon export
 // edilebilir — düz bir sabit nesne (initial state) oradan import edilirse
@@ -57,6 +58,25 @@ export function ContactForm() {
 
   return (
     <form ref={formRef} action={formAction} noValidate className="space-y-4">
+      {/* Gizli tuzak alanı (honeypot) — spam koruması katman 1, bkz.
+          lib/security/contactHoneypot.ts. Gerçek ziyaretçi bunu ASLA
+          görmemeli/odaklanmamalı: `aria-hidden` ekran okuyucudan,
+          `tabIndex={-1}` klavye Tab sırasından, ekran-dışı konumlandırma
+          (display:none/visibility:hidden DEĞİL — bazı botlar özellikle
+          bunları tarayıp atlıyor) görsel olarak gizler. `autoComplete="off"`
+          + "website" adı, tarayıcı otomatik doldurmasının burayı gerçek
+          bir alan sanıp doldurma riskini azaltır. */}
+      <div aria-hidden="true" className="absolute left-[-9999px] top-[-9999px]">
+        <label htmlFor={`${FIELD_ID_PREFIX}-website`}>Web siteniz</label>
+        <input
+          type="text"
+          id={`${FIELD_ID_PREFIX}-website`}
+          name={HONEYPOT_FIELD_NAME}
+          tabIndex={-1}
+          autoComplete="off"
+        />
+      </div>
+
       {state.formError && (
         <p
           role="alert"
