@@ -19,7 +19,10 @@ eklerse bu kılavuz gerçek görsellerle tamamlanmış olur — bkz. dosya
 sonundaki "Bu Kılavuzu Test Etme" notu.
 
 **Toplam tahmini süre: ~28 dakika** (özel alan adı bağlama hariç — DNS
-yayılması saatler sürebilir, bu yüzden ayrı/opsiyonel tutuldu).
+yayılması saatler sürebilir, bu yüzden ayrı/opsiyonel tutuldu). Adım
+8'de müşterinin alan adı kurulum ANINDA henüz belli değilse, ~3 dakikalık
+bir "2. tur" (env değişkeni ekleyip yeniden yayınlama) gerekir — bkz.
+Adım 8.
 
 ---
 
@@ -238,7 +241,7 @@ Yapılan Hatalar" — muhtemelen `ACTIVE_TENANT_DOMAIN` uyuşmazlığı.
 `http://localhost:3000/panel/giris`'ten 5. adımdaki hesapla giriş
 yapabildiğinizi de kontrol edin.
 
-### 8. Vercel'e ilk yayın *(~8 dk)*
+### 8. Vercel'e ilk yayın *(~8 dk + gerekirse aşağıdaki 2. tur ~3 dk)*
 
 1. [vercel.com/new](https://vercel.com/new)'a gidin, bu projenin GitHub
    deposunu seçip **"Import"**.
@@ -247,18 +250,52 @@ yapabildiğinizi de kontrol edin.
    `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `ACTIVE_TENANT_DOMAIN`'i tek tek
    ekleyin — **`E2E_ADMIN_EMAIL`/`E2E_ADMIN_PASSWORD`'ü EKLEMEYİN**,
    bunlar sadece yerel test için.
-3. **"Deploy"**'a tıklayın, ~2-3 dakika bekleyin.
-4. Yayın bitince Vercel size `<proje-adı>.vercel.app` biçiminde bir
+3. **`NEXT_PUBLIC_SITE_URL`'i de MUTLAKA ekleyin** (bkz.
+   `.env.local.example`, `lib/seo/getSiteUrl.ts`) — sitemap/robots.txt/
+   paylaşım görseli/arama motoru yapısal verisinin (JSON-LD) DOĞRU
+   adresi göstermesi için gerekli. **İki senaryo:**
+   - **Müşterinin özel alan adı ŞİMDİDEN belliyse** (Adım'ın en
+     başındaki "Müşteriden Alınacak Bilgiler"): değerini o adrese yazın
+     (ör. `https://akmeinsaat.com.tr`) — DNS henüz bağlanmamış olsa
+     bile şimdiden doğru değeri girmek sorun değil.
+   - **Henüz bilinmiyorsa/sadece Vercel'in geçici adresiyle
+     başlıyorsanız:** ŞİMDİLİK BOŞ BIRAKIN, "Deploy"a devam edin —
+     4. adımda Vercel'in verdiği gerçek `.vercel.app` adresini
+     öğrendikten SONRA bu değişkeni ekleyip **yeniden deploy**
+     etmeniz gerekecek (aşağıda "2. tur").
+4. **"Deploy"**'a tıklayın, ~2-3 dakika bekleyin.
+5. Yayın bitince Vercel size `<proje-adı>.vercel.app` biçiminde bir
    adres verir.
 
 **✅ Doğru yaptığını nasıl anlarsın:** Verilen `.vercel.app` adresini
 açtığınızda 7. adımdaki AYNI siteyi (gerçek verilerle) görürsünüz.
 
+**2. tur (SADECE 3. adımda `NEXT_PUBLIC_SITE_URL`'i boş bıraktıysanız):**
+Vercel'in verdiği gerçek adresi (ör. `https://staj-projesi-olive.
+vercel.app`) kopyalayın → Project Settings → Environment Variables →
+`NEXT_PUBLIC_SITE_URL` olarak ekleyin → Deployments sekmesinden en son
+deploy'un yanındaki "..." menüsünden **"Redeploy"** ile yeniden
+yayınlayın. **Bunu atlamayın** — 2026-08-17'de gerçekten yaşandı: bu
+değişken boş kalınca sitemap/robots.txt yanlış bir adrese işaret etti,
+canlı Lighthouse SEO skoru **92'den 58'e düştü** (bkz.
+`docs/KARAR-GUNLUGU.md`).
+
+⚠️ **Önemli bir etkileşim:** `NEXT_PUBLIC_SITE_URL`'i özel alan adına
+(henüz DNS bağlanmamışken) ayarladıysanız, site artık Vercel'in
+`.vercel.app` adresinden ziyaret edildiğinde OTOMATİK olarak o özel
+alan adına yönlendirir (bkz. `docs/GUVENLIK.md` madde 8 "Kanonik
+adrese yönlendirme") — DNS henüz hazır değilse bu yönlendirme
+ÇALIŞMAYAN bir adrese gider! DNS bağlanana kadar test etmek için ya
+`NEXT_PUBLIC_SITE_URL`'i geçici olarak boş bırakın ya da DNS'i önce
+bağlayın.
+
 **Özel alan adı bağlama (opsiyonel, süreye dahil değil — DNS yayılması
 saatler sürebilir):** Vercel proje ayarları → **Domains** → müşterinin
 alan adını girip Vercel'in verdiği DNS kayıtlarını müşterinin alan adı
 sağlayıcısında (GoDaddy, Natro vb.) tanımlamanız gerekir — bu adım bu
-kılavuzun kapsamı dışında, alan adı sağlayıcısına göre değişir.
+kılavuzun kapsamı dışında, alan adı sağlayıcısına göre değişir. DNS
+bağlandıktan sonra `NEXT_PUBLIC_SITE_URL`'in (yukarıdaki 3. adımda
+girdiğiniz) hâlâ doğru/aynı değerde olduğunu teyit edin.
 
 ### 9. Yayın sonrası doğrulama *(~3 dk)*
 

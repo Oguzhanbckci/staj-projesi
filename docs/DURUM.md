@@ -17,10 +17,17 @@ geçmişi) oku. Yeni bir müşteri kurulumu yapılacaksa `KURULUM.md`'ye
 
 **Son güncelleme:** 2026-08-17 — **Vercel'e ilk yayın yapıldı**
 (`staj-projesi-olive.vercel.app`), canlıda 2 gerçek hata bulunup
-düzeltildi (CSP hydration engeli, yanlış domain'le SEO 92→58) + kanonik
-adrese otomatik yönlendirme eklendi. Canlı uçtan uca testler 3/3 yeşil,
-kanonik adreste Lighthouse SEO 92 doğrulandı. **Kanonik yönlendirme
-kodu henüz deploy edilmedi/canlıda test edilmedi.**
+düzeltildi (CSP hydration engeli, yanlış domain'le SEO 92→58). Düzeltme
+sonrası canlı uçtan uca testler 3/3 yeşil, kanonik adreste Lighthouse
+**mobil/masaüstü Performance 97-100, Accessibility 100, Best Practices
+96, SEO 92** doğrulandı (dördü de ≥90 hedefinin üzerinde). Ardından
+kanonik adrese otomatik yönlendirme (`proxy.ts`) eklenip GitHub'a
+push'landı — **ama bu son özellik henüz canlıda ayrıca test edilmedi**
+(Vercel'in otomatik yeniden yayını tetiklenmiş olmalı, doğrulanmadı).
+Panel için `noindex` meta etiketi (`app/panel/layout.tsx`) de eklendi
+ama **henüz commit'lenmedi** — bkz. aşağıdaki "Sıradaki adım" madde 0.
+Gün sonu dokümantasyon taraması yapıldı, tüm `docs/` dosyaları güncel
+(bkz. `KARAR-GUNLUGU.md`, "dokuzuncu oturum").
 
 ## Proje bağlamı
 
@@ -1371,8 +1378,27 @@ eklendi — hem SEO sinyallerini tek adreste toplar hem panel oturum
 çerezlerinin her zaman aynı origin'de kurulmasını garanti eder. Detay:
 `GUVENLIK.md` madde 8 "Kanonik adrese yönlendirme".
 
+**Panel için `noindex` meta etiketi eklendi (aynı gün):** Kullanıcı
+panelin (`/panel/giris`) canlı Lighthouse SEO skorunun düşük (63)
+çıktığını paylaştı — bu bir hata DEĞİL, panel bilerek anonim/gizli
+kalması gereken bir sayfa (bkz. `PRD.md`). Yine de gerçek bir eksik
+bulundu: `robots.txt`'teki `Disallow: /panel` tek başına dizine
+eklenmeyi engellemiyor, sadece taramayı caydırıyor. Yeni
+`app/panel/layout.tsx` — panelin TÜM alt ağacını (giriş + korumalı
+alan) tek noktadan `robots: { index: false, follow: false }` ile
+işaretliyor, daha kesin bir ikinci katman. Detay: `SEO-PERFORMANS.md`.
+
 ## Sıradaki adım
 
+0. **(Öncelikli, hemen)** `app/panel/layout.tsx` (panel `noindex`
+   özelliği) ve bu gün sonu dokümantasyon taramasındaki `docs/`
+   değişiklikleri henüz commit'lenmedi/push'lanmadı — bir sonraki
+   terminal oturumunda önce `git status` ile kontrol edip commit+push
+   yapılmalı. Ardından kanonik yönlendirmenin (proxy.ts, önceki commit)
+   ve panel `noindex`'in canlıda gerçekten çalıştığı doğrulanmalı
+   (kanonik: Vercel'in önizleme adresine gidip üretim adresine
+   yönlendiğini gör; noindex: sayfa kaynağında `<meta name="robots"
+   content="noindex,nofollow">` görünüyor mu bak).
 1. Diğer 5 bucket (`services`/`hero`/`about`/`testimonials`/`team`) için
    de aynı desenle bucket+RLS+yükleme akışı kurulmalı — şu an bu
    tablolardaki `*_path` kolonlarına değer girilse bile görsel 404 verir.

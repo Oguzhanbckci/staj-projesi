@@ -75,6 +75,12 @@ group'unun içinde değil (Next.js'in dosya kuralı böyle gerektiriyor,
   paneli taramaktan caydıran bir ek katman — panelin gerçek erişim
   koruması hâlâ ve sadece `proxy.ts` + oturum kontrolü (bkz.
   `docs/GUVENLIK.md` madde 13, orada bu ayrım daha ayrıntılı açıklanıyor).
+  **`Disallow` tek başına dizine eklenmeyi ENGELLEMEZ** — bir bot elinde
+  zaten `/panel`'e bir link varsa (biri yanlışlıkla paylaşırsa) içeriğini
+  okuyamasa da adresi dizine ekleyebilir. Bu yüzden 2026-08-17'de yeni
+  `app/panel/layout.tsx`'e sayfa seviyesinde `robots: { index: false,
+  follow: false }` eklendi — panelin TÜM alt ağacını (giriş + korumalı
+  alan) tek noktadan kapsayan, daha kesin bir ikinci katman.
 - **Domain kaynağı:** İkisi de yeni `lib/seo/getSiteUrl.ts`'teki
   `getSiteUrl()`'ü kullanıyor — `getActiveTenantDomain()`'i (`lib/
   supabase/queries.ts`) DEĞİL. **Gerçek bir hata bulunup düzeltildi

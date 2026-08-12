@@ -130,6 +130,15 @@ ama bu proje kapsamında **gerçek bir müşteriye canlıya alınmıyor** (madde
 müşteriye satılıp canlıya alınacaksa, o aşamada Pro plana ($20/ay) geçilmesi
 gerekir; bu, staj kapsamının dışında bir gelecek adımdır.
 
+**İlk gerçek canlı yayın (2026-08-17):** Proje `staj-projesi-olive.
+vercel.app` adresine yayınlandı — bu, mimarinin (statik üretim, ISR,
+proxy tabanlı auth, güvenlik başlıkları) ilk defa gerçek bir Vercel
+ortamında çalıştığı doğrulamadır. Bu süreçte, yerel geliştirmede/kod
+incelemesinde yakalanamayan 2 gerçek hata bulunup düzeltildi (CSP
+`script-src`, tenant-domain/gerçek-yayın-adresi karışıklığı) — detay:
+`KARAR-GUNLUGU.md` "sekizinci oturum", `TEST-STRATEJISI.md` madde 13,
+madde 7 (aşağıda).
+
 ## 6. Render Stratejisi
 
 **Statik üretim + panelden tetiklenen on-demand ISR (Incremental Static
@@ -193,6 +202,30 @@ için, bkz. `GUVENLIK.md` madde 5), tenant çözümleme AYNI dosyaya
 eklenmeli (Next.js proje başına tek proxy dosyasına
 izin veriyor). Detay ve gerekçe (neden platform sahibinin satırı değil):
 `KARAR-GUNLUGU.md`, 2026-08-10.
+
+**Önemli kavram ayrımı (2026-08-17'de canlıda bulunan bir hatadan
+sonra netleşti):** `ACTIVE_TENANT_DOMAIN`/`tenants.domain` ("tenant
+kimliği" — DB'de hangi tenant'ın verisi gösterilsin sorusuna cevap) ile
+sitenin gerçekte hangi adresten yayınlandığı ("gerçek yayın adresi")
+FARKLI kavramlardır — bir demo/geliştirme deploy'unda ikisi
+uyuşmayabilir. `lib/seo/getSiteUrl.ts`, sadece ikincisini (gerçek yayın
+adresi) çözer: `NEXT_PUBLIC_SITE_URL` (elle ayarlanan, en güvenilir),
+sonra `VERCEL_PROJECT_PRODUCTION_URL` (Vercel'in projeye atadığı kalıcı
+üretim adresi), sonra tenant domain'i (son çare). `VERCEL_URL` BİLİNÇLİ
+OLARAK kullanılmaz — deploy'a özel, her yayında değişen bir hash adresi
+verir, yanlış sonuca götürür (bkz. `KARAR-GUNLUGU.md` "sekizinci
+oturum"). `sitemap.ts`/`robots.ts`/`generateMetadata`/
+`getLocalBusinessData` hep bu fonksiyonu kullanır, asla ham
+`tenants.domain`'i site adresi olarak varsaymaz.
+
+**Kanonik adrese yönlendirme:** `lib/supabase/proxy.ts`'teki
+`updateSession()`, kanonik adres (`NEXT_PUBLIC_SITE_URL`/
+`VERCEL_PROJECT_PRODUCTION_URL`) KESİN olarak biliniyorsa ve istek
+başka bir host'tan (Vercel'in git-dalı önizleme adresi, deploy'a özel
+adresi vb.) geliyorsa, 308 (kalıcı) yönlendirmeyle kanonik adrese
+yönlendirir — hem SEO (tek bir "gerçek" adres) hem panel oturum
+çerezlerinin her zaman aynı origin'de kalması için. Detay:
+`GUVENLIK.md` madde 8.
 
 ## 8. Proje Klasör Yapısı
 

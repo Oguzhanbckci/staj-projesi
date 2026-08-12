@@ -3483,3 +3483,87 @@ davranışı canlı doğrulama olmadan varsayılmamalı — bu, aynı oturumda
 İKİNCİ kez "sadece kod incelemesi yetmez, canlı test şart" dersiydi
 (ilki CSP hatasıydı). Kullanıcı henüz env değişkenini eklemedi/yeniden
 deploy etmedi — sıradaki adım.
+
+---
+
+## 2026-08-17 (aynı gün, dokuzuncu oturum) — SEO düzeltmesi doğrulandı; kanonik yönlendirme ve panel gizliliği eklendi
+
+Kullanıcı `NEXT_PUBLIC_SITE_URL`'i Vercel'e ekleyip yeniden yayınladı.
+Canlı `robots.txt`/sitemap artık doğru (kanonik) adresi gösteriyordu;
+yeniden ölçülen Lighthouse SEO skoru **58'den 92'ye** çıktı, diğer 3
+kategori (Performance 97-100, Accessibility 100, Best Practices 96)
+değişmedi. Sekizinci oturumdaki hatanın gerçek düzeltmesi böylece canlı
+olarak doğrulanmış oldu.
+
+**Yeni bir gözlem, yeni bir karar — kanonik adrese yönlendirme:**
+Kullanıcı, Vercel'in aynı içeriği 3 farklı adresten (üretim, git-dalı
+önizlemesi, deploy'a özel hash) sunmasının kafa karıştırıcı olduğunu ve
+her adresin farklı Lighthouse skoru verebileceğini fark etti. Bunun bir
+hata değil Vercel'in normal davranışı olduğu açıklandı; kullanıcının
+isteği üzerine bir düzeltme/iyileştirme eklendi: `lib/supabase/
+proxy.ts`'in EN BAŞINA, `getKnownSiteUrl()` KESİN biliniyorsa ve istek
+başka bir host'tan geliyorsa 308 ile kanonik adrese yönlendiren bir
+kontrol eklendi. Gerekçe: sadece SEO değil, panel oturum çerezlerinin
+de her zaman AYNI origin'de kurulmasını garantiliyor (birden fazla
+adres arasında dağılıp kaybolan/tutarsız oturum riski ortadan kalkıyor).
+`localhost`/geliştirme ortamında devre dışı. Detay/kod:
+`GUVENLIK.md` madde 8, `docs/Mimari.md` madde 7.
+
+**Mentör değerlendirmesi (canlı, doğrulanmış skorlar üzerinden):**
+Kullanıcıya skorların gerçek/uydurulmadığı doğrulandı, dürüst
+sınırlamalar belirtildi — henüz gerçek ürün görseli yok (yer
+tutucularla ölçüldü), tek sayfa/tek seferlik ölçüm, çoklu-sayfa/gerçek
+içerikle yeniden ölçülmesi öneriliyor. Bu bir mimari karar değil, ayrı
+bir kayıt gerektirmiyor — ama `TESLIM-PAKETI.md`'ye bu sayılar (aynı
+dürüst notla) kanıt olarak eklendi (bu oturumun docs taraması,
+aşağıya bakınız).
+
+**Panel'in düşük SEO skoru (63) — beklenen, sorun DEĞİL, ek bir
+gizlilik katmanı eklendi:** Kullanıcı panel sayfasının Lighthouse'ta
+diğer 3 kategoride 100 ama SEO'da 63 çıktığını fark edip sordu. Panel
+bilinçli olarak "keşfedilemez" kalması gereken bir yüzey (bkz.
+`PRD.md`) — düşük SEO skoru burada bir kalite sorunu değil, aslında
+"arama motorları bu sayfayı önemsemiyor/indekslemiyor" göstergesi,
+istenen sonuç. Skoru yükseltmeye çalışmak (ör. meta açıklama eklemek)
+yanlış hedef olurdu. Bunun yerine, mevcut `robots.txt`'teki
+`Disallow: /panel` (sadece uyumlu botların TARAMASINI engelliyor,
+DİZİNE eklenmeyi değil) üzerine ikinci, daha güçlü bir katman eklendi:
+yeni `app/panel/layout.tsx`, `/panel` altındaki HER rotaya
+(`robots: { index: false, follow: false }`) meta etiketi ekliyor —
+"hiçbir koşulda dizine ekleme" der, biri yanlışlıkla panel linkini
+paylaşsa bile geçerli. Bu proaktif bir sertleştirme, bir hata
+düzeltmesi değil. Detay: `SEO-PERFORMANS.md`.
+
+**Gün sonu dokümantasyon taraması (kullanıcının terminali kapatıp
+kaldığı yerden devam edebilmesi için):** Bugünkü 9 oturumun (Lighthouse,
+erişilebilirlik, test altyapısı, güvenlik, kurulum kılavuzu, teslim
+paketi/README/temizlik, canlı yayın + 2 hata düzeltmesi, kanonik
+yönlendirme, panel gizliliği) `docs/` genelinde iz bıraktığından emin
+olmak için tam bir tarama yapıldı. Bulunan ve kapatılan gerçek
+boşluklar:
+- `KURULUM.md` Adım 8, `NEXT_PUBLIC_SITE_URL`'i Vercel ortam
+  değişkenleri listesinde HİÇ içermiyordu — yeni bir müşteri bu
+  kılavuzu harfiyen izlese bugün yaşanan SEO hatasını AYNEN
+  tekrarlardı. İki senaryo (alan adı baştan biliniyor/bilinmiyor) için
+  ayrı talimat + kanonik-yönlendirme ile DNS'siz özel alan adı
+  ayarlamanın etkileşim riski eklendi.
+- `TEST-STRATEJISI.md`'de canlıya karşı test yeteneği
+  (`PLAYWRIGHT_BASE_URL`) ve bunun bulduğu 2 gerçek hata hiç
+  belgelenmemişti — yeni madde 13 eklendi.
+- `Mimari.md` madde 7, "tenant kimlik domaini" ile "gerçek yayın
+  adresi" ayrımını ve kanonik yönlendirmeyi hiç açıklamıyordu — ikisi
+  de eklendi; madde 5'e ilk canlı yayının gerçekleştiği notu eklendi.
+- `TESLIM-PAKETI.md`'de hiç somut Lighthouse sayısı yoktu (sadece genel
+  "kaliteli" iddiaları) — gerçek/doğrulanmış tablo, dürüst sınırlama
+  notuyla birlikte eklendi.
+- `GUVENLIK.md` madde 10 (yayın öncesi kontrol listesi) ve
+  `KARAR-GUNLUGU.md`'nin kendisi (bu iki özellik) zaten/şimdi güncel —
+  ayrıca bir eksik bulunmadı.
+
+**Yapılamayan (kullanıcının/başka birinin yapması gereken, hâlâ
+açık):** `KURULUM.md`'nin gerçek bir sıfırdan Supabase projesiyle uçtan
+uca test edilmesi, gerçek ürün görselleriyle yeniden Lighthouse ölçümü,
+/ekip ve /iletişim sayfalarının canlıda ayrıca test edilmesi, gerçek
+bir özel alan adının bağlanması. Kullanıcı bugünkü çalışmayı burada
+kapatıp GitHub'a push'layacak, bir sonraki oturuma bu kayıttan devam
+edilecek.

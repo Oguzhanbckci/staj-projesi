@@ -7,7 +7,9 @@ sonra bu dosya güncellenir. Kod içermez.
 
 **Son güncelleme:** 2026-08-17 — Vitest + Playwright kuruldu, 3 birim + 3
 uçtan uca test yazıldı ve kullanıcı tarafından 3x yeşil doğrulandı
-(madde 10-12: kapsam, çalıştırma, kapsanmayan alanlar)
+(madde 10-12: kapsam, çalıştırma, kapsanmayan alanlar); ilk canlı yayın
+sonrası canlıya karşı e2e + Lighthouse doğrulaması ve bununla bulunan
+2 gerçek hata madde 13'e eklendi
 
 ## 0. Bağlam
 
@@ -339,6 +341,41 @@ her adımda hata konumu net, 60s altı) karşılandı.
 - **CI (sürekli entegrasyon) kurulmadı** — testler şu an sadece yerel
   makinede elle çalıştırılıyor, her push'ta otomatik tetiklenmiyor.
 
-## 13. Açık Sorular
+## 13. Canlıya Karşı Doğrulama (Live Testing) *(2026-08-17 eklendi)*
+
+`playwright.config.ts`, `PLAYWRIGHT_BASE_URL` ortam değişkeni verilirse
+`webServer`'ı (yerel `npm run dev` başlatma) atlayıp doğrudan o adrese
+karşı çalışır (`workers: 1`'e düşer — canlıya paralel istek atmamak
+için). Kullanım: `PLAYWRIGHT_BASE_URL=https://<canlı-adres> npm run
+test:e2e`.
+
+**Neden önemli — bu tam olarak teoriyle değil, pratikle kanıtlandı:**
+İlk gerçek canlı yayında (2026-08-17, bkz. `KARAR-GUNLUGU.md` "sekizinci
+oturum") madde 10'daki 3 e2e testin canlıya karşı çalıştırılması,
+**kod incelemesiyle veya yerelde hiç yakalanamayacak** 2 gerçek hata
+buldu:
+
+1. CSP'nin `script-src`'sinde eksik `'unsafe-inline'` — Next.js
+   hydration'ını tamamen sessizce blokluyordu (sayfa görsel olarak
+   normal görünüyordu, hiçbir buton çalışmıyordu).
+2. `robots.txt`/sitemap/JSON-LD'nin yanlış domain'e işaret etmesi
+   (tenant kimlik domain'i ile gerçek yayın adresinin karıştırılması) —
+   canlı Lighthouse SEO skorunu 92'den 58'e düşürüyordu.
+
+İkisi de yerel `npm test` yeşil geçtikten SONRA, sadece canlı ortamda
+ortaya çıktı (CSP başlığı ve gerçek Vercel domain'i yerelde mevcut
+değil/farklı). **Sonuç:** madde 7'deki "Bitti Tanımı" yerel testi
+yeterli sayıyor ama bu, **ilk canlı yayın** için tek başına yeterli
+değil — en az bir kez canlıya karşı `npm run test:e2e` + gerçek
+Lighthouse ölçümü, yerel testin YERİNE değil YANINDA gerekli. Bu iki
+bulgu ve düzeltmeleri: `KARAR-GUNLUGU.md` "sekizinci oturum",
+`docs/SEO-PERFORMANS.md`, `docs/GUVENLIK.md` madde 8.
+
+**Doğrulama (gerçek, kullanıcı tarafından):** Düzeltmeler sonrası canlı
+adrese karşı 3/3 e2e testi yeşil; canlı Lighthouse mobil/masaüstü
+performance 97-100, accessibility 100, best practices 96, **SEO 92**
+(bkz. `docs/SEO-PERFORMANS.md`).
+
+## 14. Açık Sorular
 
 Şu an aktif açık soru yok.

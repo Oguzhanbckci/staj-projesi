@@ -102,20 +102,39 @@ konusu olarak konuşulabilir:
 4. **Otomatik testler** — 26 birim test + 3 uçtan uca senaryo testi
    (ziyaretçi akışı, yönetici akışı, yetkisiz erişim engeli) — her yeni
    değişiklikte tekrar çalıştırılıp ürünün bozulmadığından emin
-   olunabilir.
+   olunabilir. Bu 3 senaryo, ürünün gerçek bir canlı adrese karşı da
+   çalıştırılıp doğrulandı (aşağıya bakınız).
 5. **Güvenlik denetimi** — erişim kuralları gerçek testlerle
    doğrulandı, sır/şifre sızıntısı taraması yapıldı, temel güvenlik
    başlıkları aktif, bağımlılıklarda bilinen açık taraması (`npm
    audit`) temiz.
-6. **Kurulum betiği ve kılavuzu** — yeni bir müşteri için veritabanı +
+6. **Gerçek bir canlı yayınla doğrulanmış kalite** — ürün, iddia
+   düzeyinde değil, gerçek bir Vercel adresine (`docs/KURULUM.md`'deki
+   sürecin aynısıyla) yayınlanıp ölçüldü. Google'ın Lighthouse aracıyla
+   (2026-08-17, hem mobil hem masaüstü) alınan sonuçlar:
+
+   | Kategori | Mobil | Masaüstü |
+   |---|---|---|
+   | Performans | 97 | 100 |
+   | Erişilebilirlik | 100 | 100 |
+   | En İyi Uygulamalar | 96 | 96 |
+   | Arama Motoru Optimizasyonu (SEO) | 92 | 92 |
+
+   Dördü de hedeflenen 90/100 eşiğinin üzerinde. **Dürüst not:** bu
+   ölçüm, henüz gerçek ürün görselleri eklenmemiş, tek bir sayfanın tek
+   seferlik ölçümüdür — gerçek müşteri içeriğiyle (özellikle büyük/çok
+   sayıda görsel eklenirse) sayılar bir miktar değişebilir, ama mimari
+   (statik üretim, resim optimizasyonu, erişilebilirlik altyapısı)
+   zaten bu skorları destekleyecek şekilde kuruldu.
+7. **Kurulum betiği ve kılavuzu** — yeni bir müşteri için veritabanı +
    içerik altyapısını tek bir komutla kuran bir betik + adım adım
    yazılı kılavuz (`docs/KURULUM.md`).
-7. **Kullanım kılavuzu** — panelin GÜNLÜK kullanımını anlatan, teknik
+8. **Kullanım kılavuzu** — panelin GÜNLÜK kullanımını anlatan, teknik
    bilgi gerektirmeyen bir doküman (`docs/MUSTERİ-KILAVUZU.md`) —
    içerik ekleme, düzenleme, yayınlama, görsel yükleme, tema
    değiştirme, mesajları yönetme dahil, panelin tüm ekranlarını
    kapsar.
-8. **Bu teslim paketi dokümanı.**
+9. **Bu teslim paketi dokümanı.**
 
 ## Kurulum Gereksinimleri
 
