@@ -3461,5 +3461,25 @@ sağladığı, elle ayar gerektirmeyen doğru değer) → tenant domain'i (son
 çare). `app/(site)/layout.tsx`'e eksik olan `metadataBase` de eklendi.
 4 kullanım yeri güncellendi, 5 birim testli yeni `getSiteUrl.test.ts`
 eklendi (gerçek hatanın regresyon testi). `.env.local.example`/
-`SEO-PERFORMANS.md`/`GUVENLIK.md` güncellendi. **Henüz canlıda yeniden
-ölçülmedi** — kullanıcı deploy edip Lighthouse'u tekrar çalıştıracak.
+`SEO-PERFORMANS.md`/`GUVENLIK.md` güncellendi.
+
+**Düzeltme YANLIŞ çıktı, İKİNCİ bir düzeltme gerekti (aynı gün, deploy
+sonrası):** Kullanıcı commit'i push'ladı, Vercel yeniden yayınladı, ama
+Lighthouse SEO skoru YİNE 58 çıktı. Canlı `robots.txt` tekrar kontrol
+edildi — sitemap referansı bu sefer `staj-projesi-b49qmlaf2-toffesoft-
+staj.vercel.app` gibi TAMAMEN FARKLI bir adrese işaret ediyordu.
+**Gerçek sebep:** `VERCEL_URL` — ilk düzeltmede "otomatik, elle ayar
+gerektirmeyen doğru yedek" sanılmıştı — aslında kullanıcının gördüğü
+KALICI adresi DEĞİL, o TEK deploy'a özel, HER deploy'da değişen bir
+hash'li adres veriyormuş. Yani ilk düzeltme sorunu ÇÖZMEDİ, sadece
+YANLIŞ değeri değiştirdi. Düzeltme: `VERCEL_PROJECT_PRODUCTION_URL`
+(Vercel'in projeye atanmış KALICI üretim adresi) `NEXT_PUBLIC_SITE_URL`
+ile `VERCEL_URL` arasına eklendi; `.env.local.example`'daki tavsiye
+"boş bırakabilirsiniz"den "HER Vercel deploy'unda mutlaka elle
+ayarlayın"a çevrildi — otomatik Vercel değişkenlerine güvenmek yerine
+kullanıcının gerçek adresi kendisinin girmesi tek güvenilir yol olarak
+işaretlendi. **Ders:** Vercel'in sistem ortam değişkenlerinin tam
+davranışı canlı doğrulama olmadan varsayılmamalı — bu, aynı oturumda
+İKİNCİ kez "sadece kod incelemesi yetmez, canlı test şart" dersiydi
+(ilki CSP hatasıydı). Kullanıcı henüz env değişkenini eklemedi/yeniden
+deploy etmedi — sıradaki adım.
