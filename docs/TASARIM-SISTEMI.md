@@ -47,7 +47,7 @@ gereği "nötr griler marka rengine hafif eğilim taşısın" isteğini karşıl
 | --------------------- | --------- | ---------------------------------------------------------------- |
 | `--color-neutral-50`  | `#f0f2f4` | Açık tema sayfa zemini                                           |
 | `--color-neutral-100` | `#e2e5e9` | Açık tema hafif bölücü/arka plan tonu; koyu temada ikincil metin |
-| `--color-neutral-300` | `#a8b0bd` | Açık temada dekoratif kenarlık; koyu temada ikincil/muted metin  |
+| `--color-neutral-300` | `#a8b0bd` | Açık VE koyu temada ortak kenarlık/dekoratif çizgi tonu (sabit, temaya göre değişmez — `--color-text-muted` 2026-08-18'den beri bu tokene bağlı DEĞİL, bkz. madde 1.3) |
 | `--color-neutral-500` | `#5e6a7d` | Açık temada muted (üçüncül) metin                                |
 | `--color-neutral-700` | `#373e49` | Açık temada ikincil metin/dekoratif kenarlık                     |
 | `--color-neutral-800` | `#21252c` | Koyu tema kart/panel zemini (`surface-raised`)                   |
@@ -55,7 +55,7 @@ gereği "nötr griler marka rengine hafif eğilim taşısın" isteğini karşıl
 
 | Token              | Açık tema | Koyu tema | Kullanım amacı                                                                     |
 | ------------------ | --------- | --------- | ---------------------------------------------------------------------------------- |
-| `--color-brand`    | `#2561c1` | `#6998e2` | Vurgu rengi — CTA buton, link, aktif durum. **Varsayılan**; tenant'a göre değişir. |
+| `--color-brand`    | `#2561c1` | `#5b9bff` *(2026-08-18: `#6998e2`'den canlandırıldı, bkz. madde 2 notu)* | Vurgu rengi — CTA buton, link, aktif durum. **Varsayılan**; tenant'a göre değişir. |
 | `--color-brand-on` | `#ffffff` | `#16191d` | `--color-brand` dolgusu üzerindeki metin/ikon rengi (buton etiketi)                |
 | `--color-accent`    | `var(--color-surface-raised)` | `var(--color-surface-raised)` | İkincil/accent renk (2026-08-15) — `site_settings.secondary_color` boşken nötr, doluysa tenant'ın rengi. `Button`/`LinkButton` `accent` varyantı, Eylem Çağrısı butonu. |
 | `--color-accent-on` | `var(--color-text)` | `var(--color-text)` | `--color-accent` dolgusu üzerindeki metin rengi — WCAG-doğru hesaplanır (bkz. `docs/TEMA-MIMARISI.md` madde 6, `lib/theme/contrast.ts`) |
@@ -81,8 +81,8 @@ karışmaz.
 | ------------------------ | ------------------------- | ------------------------- | --------------------------------------------------- |
 | `--color-surface`        | `#f0f2f4` (`neutral-50`)  | `#16191d` (`neutral-900`) | Sayfa zemini                                        |
 | `--color-surface-raised` | `#ffffff`                 | `#21252c` (`neutral-800`) | Kart/panel zemini — sayfadan bir seviye "yükselti"  |
-| `--color-text`           | `#16191d` (`neutral-900`) | `#f0f2f4` (`neutral-50`)  | Birincil/gövde metni                                |
-| `--color-text-muted`     | `#5e6a7d` (`neutral-500`) | `#a8b0bd` (`neutral-300`) | İkincil/daha az önemli metin (meta bilgi, açıklama) |
+| `--color-text`           | `#16191d` (`neutral-900`) | `#ffffff` *(2026-08-18)*  | Birincil/gövde metni                                |
+| `--color-text-muted`     | `#5e6a7d` (`neutral-500`) | `#c7ced9` *(2026-08-18)*  | İkincil/daha az önemli metin (meta bilgi, açıklama) |
 
 ## 2. Kontrast Ölçüm Sonuçları
 
@@ -93,14 +93,14 @@ bırakılmadı.
 
 | Çift                                     | Açık tema     | Koyu tema     | Eşik  | Sonuç |
 | ---------------------------------------- | ------------- | ------------- | ----- | ----- |
-| `text` / `surface`                       | 15.71:1       | 15.71:1       | 4.5:1 | ✅    |
-| `text` / `surface-raised`                | 17.63:1       | 13.70:1       | 4.5:1 | ✅    |
-| `text-muted` / `surface`                 | 4.88:1        | 8.07:1        | 4.5:1 | ✅    |
-| `text-muted` / `surface-raised`          | 5.48:1        | 7.04:1        | 4.5:1 | ✅    |
-| `brand` metin/link / `surface`           | 5.26:1        | 6.04:1        | 4.5:1 | ✅    |
-| `brand` metin/link / `surface-raised`    | 5.90:1        | 5.26:1        | 4.5:1 | ✅    |
-| `brand-on` / `brand` (buton dolgusu)     | 5.90:1        | 6.04:1        | 4.5:1 | ✅    |
-| `brand` / `surface` (büyük başlık)       | 5.26:1        | 6.04:1        | 3:1   | ✅    |
+| `text` / `surface`                       | 15.71:1       | 17.63:1       | 4.5:1 | ✅    |
+| `text` / `surface-raised`                | 17.63:1       | 15.38:1       | 4.5:1 | ✅    |
+| `text-muted` / `surface`                 | 4.88:1        | 11.13:1       | 4.5:1 | ✅    |
+| `text-muted` / `surface-raised`          | 5.48:1        | 9.71:1        | 4.5:1 | ✅    |
+| `brand` metin/link / `surface`           | 5.26:1        | 6.36:1        | 4.5:1 | ✅    |
+| `brand` metin/link / `surface-raised`    | 5.90:1        | 5.55:1        | 4.5:1 | ✅    |
+| `brand-on` / `brand` (buton dolgusu)     | 5.90:1        | 6.36:1        | 4.5:1 | ✅    |
+| `brand` / `surface` (büyük başlık)       | 5.26:1        | 6.36:1        | 3:1   | ✅    |
 | `success` / `surface` + `surface-raised` | 4.93 / 5.54:1 | 6.48 / 5.65:1 | 4.5:1 | ✅    |
 | `warning` / `surface` + `surface-raised` | 4.87 / 5.46:1 | 5.79 / 5.05:1 | 4.5:1 | ✅    |
 | `error` / `surface` + `surface-raised`   | 6.18 / 6.94:1 | 5.42 / 4.72:1 | 4.5:1 | ✅    |
@@ -109,6 +109,28 @@ bırakılmadı.
 yapıldı (repoya eklenmedi, geçiciydi). Kullanıcı bağımsız bir kontrast
 aracıyla da doğrulayacağını belirtti; küçük yuvarlama farkları (±0.01-0.02)
 dışında sonuç değişmemesi beklenir.
+
+**Güncelleme (2026-08-18) — koyu mod canlandırıldı:** Kullanıcı, yeni
+eklenen ziyaretçi açık/koyu tema switch'iyle (bkz.
+`components/site/ThemeToggle.tsx`) koyu modu ilk kez gerçekten
+kullanınca `--color-text`, `--color-text-muted` ve `--color-brand`'ın
+"soluk/donuk" durduğunu bildirdi — bu, önceki satırlardaki değerler
+(text `#f0f2f4`, text-muted `neutral-300`/`#a8b0bd`, brand `#6998e2`)
+WCAG eşiğini rahat geçse de göz kararıyla "en canlı" seçenek
+olmayabilirdi. Üç token `lib/theme/contrast.ts`'in AYNI formülüyle
+yeniden hesaplanarak canlandırıldı: `text`→`#ffffff`,
+`text-muted`→`#c7ced9` (artık `neutral-300`'e bağlı değil, kendi
+doğrudan değeri var — neutral ölçeği sabit/temadan bağımsız kaldığı
+için ayrı tutuldu), `brand`→`#5b9bff` (Modern Koyu preset'i de aynı
+gerekçeyle `#24a8a4`→`#2bd1c9`). Üçü de kontrastı DÜŞÜRMEDİ, tam
+tersine yükseltti (yukarıdaki tablo güncel değerleri gösteriyor) —
+"daha canlı" ile "WCAG'i düşürme" arasında bir ödünleşim yoktu, sadece
+daha önce gereğinden ihtiyatlı seçilmiş tonlar aynı anda hem
+canlandırıldı hem kontrastı arttı. Ayrıca `components/site/Footer.tsx`
+(önceden sabit `bg-neutral-900`, temadan bağımsız) ve 6 görsel
+placeholder bileşeni (sabit `bg-neutral-300`) tema-duyarlı token'lara
+(`bg-surface-raised`/`bg-surface`) çevrildi — detay:
+`docs/KARAR-GUNLUGU.md`, "koyu mod canlandırma".
 
 **Kapsam dışı bırakılan:** `info` semantik rengi (yönerge sadece 3 semantik
 renk — başarı/uyarı/hata — istedi) ve kenarlık (border) token'ları için

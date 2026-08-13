@@ -187,8 +187,13 @@ function isThemePresetKey(value: unknown): value is ThemePresetKey {
  * her zaman check constraint'in izin verdiği kadar güvenilir olmayabilir.
  * Migration uygulanmamışsa veya Supabase'e erişilemiyorsa kök layout'u
  * asla çökertmez, güvenli varsayılana düşer.
+ *
+ * `cache()` ile sarmalı (2026-08-18, açık/koyu tema switch'i eklenirken) —
+ * hem `app/layout.tsx` (FOUC-önleyici script için ışık+koyu ikisi de
+ * hesaplanıyor) hem `app/(site)/layout.tsx` (Navbar'daki ThemeToggle için)
+ * aynı istekte çağırıyor, tek sorguya iniyor.
  */
-export async function getSiteThemeSettings(): Promise<SiteThemeSettings> {
+export const getSiteThemeSettings = cache(async (): Promise<SiteThemeSettings> => {
   try {
     const supabase = createServiceRoleClient();
     const tenantId = await getActiveTenantId();
@@ -236,7 +241,7 @@ export async function getSiteThemeSettings(): Promise<SiteThemeSettings> {
   } catch {
     return FALLBACK_THEME_SETTINGS;
   }
-}
+});
 
 function isHeroVariant(value: unknown): value is HeroVariant {
   return value === "a" || value === "b";

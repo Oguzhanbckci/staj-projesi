@@ -4,6 +4,8 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { LinkButton } from "@/components/ui/LinkButton";
+import { ThemeToggle } from "@/components/ui/ThemeToggle";
+import type { SiteThemeSettings } from "@/lib/theme/resolve";
 import { MobileMenu } from "./MobileMenu";
 
 export interface NavLink {
@@ -18,6 +20,8 @@ export interface NavbarProps {
   links: NavLink[];
   contactHref: string;
   contactLabel?: string;
+  /** Açık/koyu tema switch'i için — bkz. components/site/ThemeToggle.tsx. */
+  themeSettings: SiteThemeSettings;
 }
 
 // Sayfa kaydırıldığında görünüm değişir (şeffaftan dolgulu zemine) —
@@ -32,6 +36,7 @@ export function Navbar({
   links,
   contactHref,
   contactLabel = "İletişim",
+  themeSettings,
 }: NavbarProps) {
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -79,24 +84,29 @@ export function Navbar({
             </li>
           ))}
         </ul>
-        <div className="hidden lg:block">
-          <LinkButton href={contactHref} size="sm">
-            {contactLabel}
-          </LinkButton>
+        <div className="flex items-center gap-3">
+          {/* Her zaman görünür (mobilde de) — tema tercihi hamburger menüsü
+              açılmadan da erişilebilir olmalı. */}
+          <ThemeToggle settings={themeSettings} />
+          <div className="hidden lg:block">
+            <LinkButton href={contactHref} size="sm">
+              {contactLabel}
+            </LinkButton>
+          </div>
+          <button
+            ref={toggleButtonRef}
+            type="button"
+            aria-expanded={menuOpen}
+            aria-controls="mobile-menu"
+            onClick={() => setMenuOpen(true)}
+            className="rounded-md p-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand lg:hidden"
+          >
+            <span className="sr-only">Menüyü aç</span>
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M4 6h16M4 12h16M4 18h16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+            </svg>
+          </button>
         </div>
-        <button
-          ref={toggleButtonRef}
-          type="button"
-          aria-expanded={menuOpen}
-          aria-controls="mobile-menu"
-          onClick={() => setMenuOpen(true)}
-          className="rounded-md p-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand lg:hidden"
-        >
-          <span className="sr-only">Menüyü aç</span>
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-            <path d="M4 6h16M4 12h16M4 18h16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-          </svg>
-        </button>
       </nav>
       <MobileMenu
         id="mobile-menu"

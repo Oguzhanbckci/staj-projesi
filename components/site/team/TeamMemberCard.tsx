@@ -8,7 +8,7 @@ export function TeamMemberCard({ fullName, role, bio, photoPath }: TeamMember) {
 
   return (
     <Card className="p-6 text-center">
-      <div className="relative mx-auto h-24 w-24 overflow-hidden rounded-full bg-neutral-300">
+      <div className="relative mx-auto h-24 w-24 overflow-hidden rounded-full bg-surface">
         {photoUrl && (
           <Image
             src={photoUrl}

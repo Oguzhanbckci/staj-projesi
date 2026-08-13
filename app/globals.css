@@ -59,7 +59,15 @@
 }
 
 [data-theme="dark"] {
-  --color-brand: #6998e2;
+  /* 2026-08-18: marka rengi + metin tonları canlandırıldı (kullanıcı
+     bulgusu: eski değerler koyu modda "soluk" duruyordu). --color-brand
+     artık lib/theme/presets.ts'teki #5b9bff ile aynı (bu sadece DB
+     erişilemezse devreye giren güvenli varsayılan, bkz. o dosyadaki
+     yorum). --color-text/--color-text-muted artık neutral ölçeğine
+     (değişmez) bağlı DEĞİL, kendi doğrudan tanımlı değerleri var —
+     ikisi de eskisinden daha yüksek kontrastlı (17.63:1 / 11.13:1,
+     lib/theme/contrast.ts formülüyle doğrulandı). */
+  --color-brand: #5b9bff;
   --color-brand-on: #16191d;
 
   --color-success: #34b268;
@@ -68,8 +76,8 @@
 
   --color-surface: var(--color-neutral-900);
   --color-surface-raised: var(--color-neutral-800);
-  --color-text: var(--color-neutral-50);
-  --color-text-muted: var(--color-neutral-300);
+  --color-text: #ffffff;
+  --color-text-muted: #c7ced9;
 
   --background: var(--color-surface);
   --foreground: var(--color-text);

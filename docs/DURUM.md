@@ -15,7 +15,23 @@ geçmişi) oku. Yeni bir müşteri kurulumu yapılacaksa `KURULUM.md`'ye
 (sıfırdan kurulum, geliştirici için), panelin günlük kullanımı için
 `MUSTERİ-KILAVUZU.md`'ye (teknik olmayan okuyucu için) bakılır.
 
-**Son güncelleme:** 2026-08-18 — Önceki oturumun "madde 0"ı (commit/push
+**Son güncelleme:** 2026-08-18 (üçüncü-beşinci oturumlar) — Ziyaretçi
+açık/koyu tema switch'i (site tüm sayfalarda + panel + giriş sayfası,
+Next.js'in resmi FOUC-önleme deseniyle) kuruldu; kullanıcı bulgusuyla
+koyu mod paleti canlandırıldı (metin/marka rengi WCAG kontrastı
+YÜKSELTİLEREK, Footer + 6 görsel placeholder tema-duyarlı hale
+getirildi); panel başlık hizası ve `ThemeToggle`'daki gerçek bir
+hydration hatası (`useSyncExternalStore`'a geçilerek) düzeltildi;
+İstatistikler bölümündeki ortalama/boşluk/font sorunu (sabit
+grid-cols(4) ama 3 kayıt olduğu için grup sola kayıyordu) flex+
+justify-center'a çevrilerek düzeltildi; iletişim formunun telefon
+alanı sadece-rakam + uzunluk sınırına kavuştu (ülke kodu seçici
+denenip kullanıcı geri bildirimiyle geri alındı). Tüm detay:
+`KARAR-GUNLUGU.md`, "üçüncü/dördüncü/beşinci oturum". `npm run build`/
+`lint`/`test:unit` kullanıcı tarafından doğrulandı, hepsi temiz —
+commit'lenmeyi bekliyor.
+
+**Önceki güncelleme (aynı gün, ilk-ikinci oturumlar):** Önceki oturumun "madde 0"ı (commit/push
 + canlı doğrulama) fiilen tamamlanmış bulundu: `git status` temiz,
 `origin/main` güncel, panel `noindex` meta etiketi canlıda `curl` ile
 doğrulandı. Ardından kullanıcı isteğiyle **mentör tarzı, koda dayalı,
@@ -38,15 +54,30 @@ hiç içerik düzenleme ekranı yoktu) — kullanıcıya bildirilip
 "Hizmetler/Referanslar/Ekip'i tamamla, Hero/Hakkımızda'yı ayrı bırak"
 seçildi. 5 bucket'ın hepsi migration'a eklendi, 3 tabloya (Hizmetler/
 Referanslar/Ekip) Projeler'deki desenle birebir aynı yükleme UI'ı
-kuruldu. Detay: `KARAR-GUNLUGU.md`, "ikinci oturum". **Migration henüz
-Supabase'e uygulanmadı, kod henüz `npm run build`/`lint` ile
-doğrulanmadı, commit'lenmedi.**
+kuruldu. Migration uygulandı, kullanıcı gerçek tarayıcıda uçtan uca
+doğruladı, commit'lendi/push'landı. Aynı oturumda görsel boyut sınırı
+da 5MB'dan **10MB**'a çıkarıldı. Detay: `KARAR-GUNLUGU.md`, "ikinci
+oturum".
 
 İncelemede ayrıca daha büyük, henüz ele alınmamış bir boşluk ortaya
 çıktı: panel PRD'nin tanımladığı gibi gerçekten çok-kiracılı değil —
 yeni tenant oluşturma/seçme arayüzü yok, tek bir sabit tenant'a kilitli
 (bkz. "Sıradaki adım" madde 6, artık daha yüksek öncelikli olarak
-yeniden çerçevelendi).
+yeniden çerçevelendi). **Bu bulgu bu oturumda ele alınmadı, hâlâ açık.**
+
+**Aynı gün, üçüncü oturum — ziyaretçi açık/koyu tema switch'i + koyu
+mod paleti canlandırma:** Kullanıcı yeni bir özellik istedi: Navbar'da
+(tüm site sayfalarında), panelde ve giriş sayfasında güneş/ay ikonlu
+bir açık/koyu tema switch'i. `next/dist/docs/.../preventing-flash-
+before-hydration.md`'deki resmi Next.js deseniyle kuruldu (FOUC yok,
+`localStorage`'da kalıcı). Ardından kullanıcı koyu moddaki bazı
+renklerin "soluk" durduğunu bildirdi — inceleme 2 gerçek bug buldu
+(`Footer.tsx` temadan bağımsız sabit koyu renkteydi, 6 görsel
+placeholder'ı sabit `bg-neutral-300` kullanıyordu) ve `--color-text`/
+`--color-text-muted`/`--color-brand`'ın koyu mod değerleri WCAG
+kontrastı YÜKSELTEREK canlandırıldı. Detay: `KARAR-GUNLUGU.md`,
+"üçüncü oturum". **Kod henüz `npm run build`/`lint` ile doğrulanmadı,
+yeni palet tarayıcıda henüz teyit edilmedi, commit'lenmedi.**
 
 **Önceki güncelleme (2026-08-17):** **Vercel'e ilk yayın yapıldı**
 (`staj-projesi-olive.vercel.app`), canlıda 2 gerçek hata bulunup
@@ -1421,32 +1452,35 @@ işaretliyor, daha kesin bir ikinci katman. Detay: `SEO-PERFORMANS.md`.
 
 ## Sıradaki adım
 
-0. **(Öncelikli, hemen)** `lib/security/contactRateLimit.ts`'teki IP hız
-   sınırı düzeltmesi (2026-08-18, bkz. `KARAR-GUNLUGU.md`) ve
-   `contactRateLimit.test.ts` henüz `npm run lint`/`npm test` ile
-   doğrulanmadı, commit'lenmedi — bir sonraki terminal oturumunda önce
-   bunlar çalıştırılıp sonuç yorumlanmalı, sonra commit+push yapılmalı.
-   ~~Panel noindex + kanonik yönlendirme commit/push/canlı doğrulama~~ —
-   2026-08-18'de bu maddenin fiilen tamamlanmış olduğu görüldü (git
-   temizdi, canlıda `curl` ile doğrulandı).
-0b. **(Yüksek öncelik, yeni bulundu — 2026-08-18 mentör incelemesi)**
-   Panel gerçekte çok-kiracılı değil: yeni tenant oluşturma, tenant
-   seçme/listeleme, demo katalog import (PRD madde 3.2) hiç yok — panel
-   `getActiveTenantId()` üzerinden tek bir sabit tenant'a (Akme İnşaat)
-   kilitli. Bu, madde 6'daki "host-header çözümlemesi" ile aynı kökten
-   ama ondan daha büyük bir boşluk — teknik bir ayrıntı değil, ürünün
-   "tek panel = platformun tüm yönetim merkezi" vaadinin eksik kalan
-   çekirdeği. Kullanıcı bu oturumda diğer bulgular arasından önce IP hız
-   sınırı açığını seçti, bu madde ertelendi — bir sonraki oturumda
-   öncelik olarak yeniden sorulmalı.
+0. ~~IP hız sınırı düzeltmesi + testi doğrulanmalı, commit'lenmeli~~ —
+   2026-08-18'de tamamlandı: `npm test`/`npm run build`/`lint` yeşil,
+   commit'lendi, push'landı. **Ek olay:** commit mesajlarındaki
+   `Co-Authored-By` satırı kullanıcının GitHub Contributors listesinde
+   istemeden görünmesine yol açtığı fark edildi — kullanıcının açık
+   talebiyle (a) geçmiş 2 commit `git reset --hard` + `cherry-pick` +
+   `push --force-with-lease` ile trailer'sız yeniden yazıldı (yeni
+   hash'ler: `083c408`, `992fe9f`), (b) **bundan sonra commit/push'u AI
+   çalıştırmayacak, sadece komutları verecek**, Co-Authored-By satırı da
+   bir daha eklenmeyecek. Detay: `KARAR-GUNLUGU.md`, "üçüncü bir olay".
+0b. **(Yüksek öncelik, henüz ele alınmadı — 2026-08-18 mentör
+   incelemesi)** Panel gerçekte çok-kiracılı değil: yeni tenant
+   oluşturma, tenant seçme/listeleme, demo katalog import (PRD madde
+   3.2) hiç yok — panel `getActiveTenantId()` üzerinden tek bir sabit
+   tenant'a (Akme İnşaat) kilitli. Bu, madde 6'daki "host-header
+   çözümlemesi" ile aynı kökten ama ondan daha büyük bir boşluk —
+   teknik bir ayrıntı değil, ürünün "tek panel = platformun tüm
+   yönetim merkezi" vaadinin eksik kalan çekirdeği.
 1. ~~Diğer 5 bucket için bucket+RLS+yükleme akışı~~ — 2026-08-18'de
-   kısmen tamamlandı: 5 bucket'ın hepsi migration'a eklendi (henüz
-   Supabase'e uygulanmadı, bkz. madde 0), Hizmetler/Referanslar/Ekip
-   için Projeler'deki desenle BİREBİR aynı yükleme UI'ı kuruldu.
-   **Hero ve Hakkımızda hâlâ açık** — bu ikisinin panelde HİÇ içerik
-   düzenleme ekranı yok (sadece Sayfa Düzeni'nde görünürlük/sıra
-   yönetiliyor), bucket kurulsa da bağlanacak bir form yok; ayrı,
-   daha büyük bir görev (yeni panel ekranı inşa etmek gerekiyor).
+   Hizmetler/Referanslar/Ekip için TAMAMLANDI: 5 bucket + RLS uygulandı,
+   Projeler'deki desenle birebir aynı yükleme UI'ı kuruldu, kullanıcı
+   gerçek tarayıcıda uçtan uca doğruladı, commit'lendi/push'landı. Aynı
+   oturumda görsel boyut sınırı da 5MB'dan **10MB**'a çıkarıldı
+   (`MAX_IMAGE_SIZE_BYTES`) — kaliteli DSLR/drone fotoğraflarını
+   kapsasın diye. **Hero ve Hakkımızda hâlâ açık** — bu ikisinin
+   panelde HİÇ içerik düzenleme ekranı yok (sadece Sayfa Düzeni'nde
+   görünürlük/sıra yönetiliyor), bucket kurulsa da bağlanacak bir form
+   yok; ayrı, daha büyük bir görev (yeni panel ekranı inşa etmek
+   gerekiyor).
 2. ~~Vitest/Playwright kur~~ — 2026-08-17'de tamamlandı, `npm test` 3x
    yeşil doğrulandı (bkz. `TEST-STRATEJISI.md` madde 10-12). Kapsanmayan
    alanlar (madde 12) için ayrı bir öncelik kararı bekliyor: bileşen

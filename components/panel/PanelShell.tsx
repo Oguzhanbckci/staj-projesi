@@ -6,6 +6,8 @@ import { X, Menu as MenuIcon } from "lucide-react";
 import { useDialogBehavior } from "@/lib/hooks/useDialogBehavior";
 import { Button } from "@/components/ui/Button";
 import { SkipLink } from "@/components/ui/SkipLink";
+import { ThemeToggle } from "@/components/ui/ThemeToggle";
+import type { SiteThemeSettings } from "@/lib/theme/resolve";
 import { PANEL_NAV_ITEMS } from "./navItems";
 
 // Genel bir "her nav öğesi rozet alabilir" sistemi bilerek KURULMADI
@@ -65,11 +67,13 @@ export function PanelShell({
   userEmail,
   signOutAction,
   unreadMessagesCount,
+  themeSettings,
   children,
 }: {
   userEmail: string;
   signOutAction: () => Promise<void>;
   unreadMessagesCount: number;
+  themeSettings: SiteThemeSettings;
   children: ReactNode;
 }) {
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
@@ -131,12 +135,19 @@ export function PanelShell({
           >
             <MenuIcon size={20} aria-hidden="true" />
           </button>
-          <span className="hidden text-base text-text-muted sm:inline">{userEmail}</span>
-          <form action={signOutAction}>
-            <Button type="submit" variant="ghost" size="sm">
-              Çıkış Yap
-            </Button>
-          </form>
+          {/* ml-auto: masaüstünde hamburger buton (lg:hidden) DOM'dan
+              tamamen kalktığında justify-between'in tek kalan bu öğeyi
+              sola yaslamasını engeller — kardeş sayısından bağımsız
+              olarak her zaman sağa yaslı kalır. */}
+          <div className="ml-auto flex items-center gap-3">
+            <ThemeToggle settings={themeSettings} />
+            <span className="hidden text-base text-text-muted sm:inline">{userEmail}</span>
+            <form action={signOutAction}>
+              <Button type="submit" variant="ghost" size="sm">
+                Çıkış Yap
+              </Button>
+            </form>
+          </div>
         </header>
         <main id="panel-main-content" tabIndex={-1} className="flex-1 p-4 sm:p-6 focus:outline-none">
           {children}

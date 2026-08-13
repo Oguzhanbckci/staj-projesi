@@ -45,7 +45,7 @@ export async function AboutSection() {
                 className="object-cover"
               />
             ) : (
-              <div className="h-full w-full bg-neutral-300" aria-hidden="true" />
+              <div className="h-full w-full bg-surface-raised" aria-hidden="true" />
             )}
           </div>
         </div>

@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { redirect } from "next/navigation";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { getUnreadMessagesCount } from "@/lib/supabase/panelQueries";
+import { getSiteThemeSettings } from "@/lib/supabase/queries";
 import { PanelShell } from "@/components/panel/PanelShell";
 
 // Bu ağacın tamamı oturuma bağlı, asla statik üretilemez — bunu açıkça
@@ -50,13 +51,17 @@ export default async function ProtectedPanelLayout({ children }: { children: Rea
   // seviyesinde çekilip PanelShell'e (kenar menüye) geçiriliyor, sadece
   // özet ekranında (page.tsx) DEĞİL — bu sayede HANGİ panel sayfasında
   // olursa olsun okunmamış sayısı menüde görünür.
-  const unreadMessagesCount = await getUnreadMessagesCount();
+  const [unreadMessagesCount, themeSettings] = await Promise.all([
+    getUnreadMessagesCount(),
+    getSiteThemeSettings(),
+  ]);
 
   return (
     <PanelShell
       userEmail={user.email ?? ""}
       signOutAction={signOutAction}
       unreadMessagesCount={unreadMessagesCount}
+      themeSettings={themeSettings}
     >
       {children}
     </PanelShell>

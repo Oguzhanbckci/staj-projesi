@@ -31,7 +31,7 @@ export function ProjectCard({
         onClick={() => onSelect(project)}
         className="flex h-full flex-col text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand"
       >
-        <div className={`relative bg-neutral-300 ${fill ? "flex-1" : "aspect-[4/3]"}`}>
+        <div className={`relative bg-surface ${fill ? "flex-1" : "aspect-[4/3]"}`}>
           {imageUrl && (
             <Image
               src={imageUrl}

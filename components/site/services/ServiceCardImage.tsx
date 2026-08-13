@@ -11,7 +11,7 @@ export function ServiceCardImage({ title, description, imagePath }: ServiceItem)
 
   return (
     <Card>
-      <div className="relative aspect-video bg-neutral-300">
+      <div className="relative aspect-video bg-surface">
         {imageUrl && (
           <Image
             src={imageUrl}

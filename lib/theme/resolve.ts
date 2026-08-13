@@ -9,6 +9,11 @@ import { FONT_FAMILY_OPTIONS, type FontFamilyKey } from "@/lib/theme/fonts";
 
 const HEX_COLOR_RE = /^#[0-9a-fA-F]{6}$/;
 
+// Ziyaretçinin açık/koyu tema tercihini sakladığı localStorage anahtarı —
+// hem app/layout.tsx'teki FOUC-önleyici inline script hem
+// components/site/ThemeToggle.tsx AYNI anahtarı kullanmalı.
+export const THEME_STORAGE_KEY = "site-theme";
+
 export interface SiteThemeSettings {
   themeMode: "light" | "dark";
   themePreset: ThemePresetKey;

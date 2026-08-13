@@ -29,14 +29,19 @@ interface ThemePreset {
 export const THEME_PRESETS: Record<ThemePresetKey, ThemePreset> = {
   "kurumsal-mavi": {
     label: "Kurumsal Mavi",
-    brand: { light: "#2561c1", dark: "#6998e2" },
+    // Koyu mod marka rengi 2026-08-18'de #6998e2 → #5b9bff'e canlandırıldı
+    // (kullanıcı bulgusu: eski ton koyu temada "soluk/donuk" duruyordu) —
+    // yeni ton hem daha doygun hem kontrastı YÜKSELTTİ (5.55-6.36:1,
+    // eskisinden daha güçlü), WCAG AA hâlâ geçiyor.
+    brand: { light: "#2561c1", dark: "#5b9bff" },
     brandOn: { light: "#ffffff", dark: "#16191d" },
     radius: { sm: "0.25rem", md: "0.5rem", lg: "0.75rem", xl: "1rem" },
     fontVariable: "var(--font-geist-sans)",
   },
   "modern-koyu": {
     label: "Modern Koyu",
-    brand: { light: "#166966", dark: "#24a8a4" },
+    // Aynı gerekçeyle #24a8a4 → #2bd1c9 (bkz. yukarıdaki not).
+    brand: { light: "#166966", dark: "#2bd1c9" },
     brandOn: { light: "#ffffff", dark: "#16191d" },
     radius: { sm: "0.375rem", md: "0.75rem", lg: "1.25rem", xl: "1.75rem" },
     fontVariable: "var(--font-manrope)",

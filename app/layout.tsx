@@ -2,7 +2,7 @@ import type { CSSProperties } from "react";
 import type { Metadata } from "next";
 import { Geist, Manrope, Inter, Poppins, Work_Sans } from "next/font/google";
 import { getSiteThemeSettings } from "@/lib/supabase/queries";
-import { resolveThemeTokens } from "@/lib/theme/resolve";
+import { resolveThemeTokens, THEME_STORAGE_KEY } from "@/lib/theme/resolve";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -64,17 +64,45 @@ export const metadata: Metadata = {
   description: "İnşaat firmaları için yönetilen kurumsal web sitesi hizmeti.",
 };
 
+// Açık/koyu tema switch'i (ThemeToggle, bkz. components/site/ThemeToggle.tsx)
+// için hem açık hem koyu değerleri BURADA (sunucuda) hesaplayıp aşağıdaki
+// engelleyici script'e gömüyoruz — next/dist/docs/01-app/02-guides/
+// preventing-flash-before-hydration.md#themes'teki resmi "Themes" deseni.
+// Script, tarayıcı HTML'i ayrıştırırken (React hydrate olmadan ÖNCE)
+// senkron çalışıp localStorage'daki ziyaretçi tercihini <html>'e uygular —
+// bu yüzden FOUC (yanlış temayla bir anlık görünüp sonra düzelme) olmaz.
+// `suppressHydrationWarning` gerekli çünkü script <html>'i React'in
+// hydrate etmeden önce değiştirebilir (bkz. aynı kılavuz, "Understanding
+// suppressHydrationWarning"). CSP'de script-src zaten 'unsafe-inline'
+// içeriyor (2026-08-17'de hydration hatası için eklenmişti) — nonce'a
+// gerek yok.
 export default async function RootLayout({ children }: LayoutProps<"/">) {
   const themeSettings = await getSiteThemeSettings();
-  const { dataTheme, styleVars } = resolveThemeTokens(themeSettings);
+  const light = resolveThemeTokens({ ...themeSettings, themeMode: "light" });
+  const dark = resolveThemeTokens({ ...themeSettings, themeMode: "dark" });
+  const active = themeSettings.themeMode === "dark" ? dark : light;
+
+  // "</script" gibi bir alt dizinin script'i erken kapatmasını engelleyen
+  // standart güvenlik önlemi (değerler zaten hex renk/px/font-var gibi
+  // kontrollü veriler, ama ucuz bir ek güvence).
+  const themeTokensJson = JSON.stringify({
+    light: light.styleVars,
+    dark: dark.styleVars,
+  }).replace(/</g, "\\u003c");
+
+  const themeScript = `(function(){try{var s=localStorage.getItem(${JSON.stringify(THEME_STORAGE_KEY)});if(s!=="light"&&s!=="dark")return;var d=${themeTokensJson};var t=d[s];if(!t)return;var h=document.documentElement;h.setAttribute("data-theme",s);for(var k in t){h.style.setProperty(k,t[k])}}catch(e){}})();`;
 
   return (
     <html
       lang="en"
-      data-theme={dataTheme}
-      style={styleVars as CSSProperties}
+      data-theme={active.dataTheme}
+      suppressHydrationWarning
+      style={active.styleVars as CSSProperties}
       className={`${geistSans.variable} ${manrope.variable} ${inter.variable} ${poppins.variable} ${workSans.variable} h-full antialiased`}
     >
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
+      </head>
       <body className="min-h-full flex flex-col">{children}</body>
     </html>
   );

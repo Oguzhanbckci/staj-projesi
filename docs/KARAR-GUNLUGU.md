@@ -3755,3 +3755,251 @@ satır çıkarıldı. **Yan etki:** `git reset --hard`, o anda commit'lenmemiş
 duran 10 MB değişikliğini de sildi (beklenen git davranışı, veri kaybı
 değil) — bu yüzden yukarıdaki "5 MB'dan 10 MB'a" değişikliği bu olaydan
 SONRA ikinci kez uygulandı.
+
+---
+
+## 2026-08-18 (aynı gün, üçüncü oturum) — Ziyaretçi açık/koyu tema switch'i (site+panel+giriş) + koyu mod paleti canlandırıldı
+
+**İstek:** Kullanıcı, ana sayfada Navbar'da (İletişim butonunun yanında)
+güneş/ay ikonlu bir açık/koyu tema switch'i istedi — sonra panel ve
+giriş sayfasında da aynı özelliği istedi, ardından koyu moda geçince
+bazı renklerin "soluk" durduğunu, "dikkat çekmediğini" bildirip
+(örnek: "açık temada siyah yazının koyu temada beyazlaşması gibi") tüm
+sayfalarda (site+panel+giriş) bu düzenlemenin yapılmasını istedi.
+
+**Mimari zorluk (uygulamadan önce netleştirildi):** Tema şu ana kadar
+TAMAMEN sunucu tarafında hesaplanıp `<html>`'e enjekte ediliyordu
+(`tenants.theme_mode`, panelden seçilen — bkz. 2026-08-08 "Tema
+mimarisi kuruldu"). Ziyaretçi tarafında çalışan bir switch eklemek üç
+şey gerektiriyordu: (1) hem açık hem koyu modun değerlerini ÖNCEDEN
+hesaplayıp istemciye vermek (marka rengi gibi bazı token'lar inline
+`style` ile enjekte edildiği için salt `data-theme` değiştirmek
+yetmiyordu), (2) ziyaretçinin seçimini `localStorage`'da saklamak, (3)
+sayfa yeniden açıldığında yanlış temayla bir an görünüp düzelmesini
+(FOUC) önlemek. Next.js'in kendi dokümanında (`node_modules/next/dist/
+docs/01-app/02-guides/preventing-flash-before-hydration.md`, "Themes"
+bölümü) TAM OLARAK bu senaryo için resmi bir desen bulundu — kod
+yazmadan önce okundu, birebir uygulandı (AGENTS.md'nin "bu Next.js'i
+tanımıyor olabilirsin, kod yazmadan önce docs'a bak" ilkesiyle tutarlı).
+
+**Kapsam sorusu (kullanıcıya soruldu):** Switch sadece ana sayfada mı,
+yoksa Navbar paylaşımlı olduğu için tüm site sayfalarında mı (ana
+sayfa, /ekip, /iletişim) görünsün? **Kullanıcı "tüm sayfalarda" seçti.**
+
+**Uygulanan (1. aşama — site switch'i):**
+- `lib/supabase/queries.ts` — `getSiteThemeSettings()` `cache()` ile
+  sarmalandı (artık hem kök layout hem site layout aynı istekte
+  çağırıyor, tek sorguya iniyor).
+- `lib/theme/resolve.ts` — `THEME_STORAGE_KEY` paylaşılan sabiti eklendi.
+- `app/layout.tsx` — hem açık hem koyu token'lar sunucuda hesaplanıp
+  (`resolveThemeTokens` iki kez çağrılarak) FOUC-önleyici bir
+  `<script dangerouslySetInnerHTML>`'e JSON olarak gömüldü (`</script`
+  enjeksiyonuna karşı `<` kaçışıyla). `<html>`'e `suppressHydrationWarning`
+  eklendi (script'in hydration'dan ÖNCE `<html>`'i değiştirmesi
+  beklenen/zararsız bir uyumsuzluk yaratıyor, Next.js dokümanının
+  önerdiği çözüm). CSP zaten `script-src 'unsafe-inline'` içerdiği için
+  (2026-08-17'deki hydration hatası düzeltmesinden) nonce gerekmedi.
+- `components/ui/ThemeToggle.tsx` (yeni, `components/site/`de başlayıp
+  panel de kullanmaya başlayınca `ui/`e taşındı) — güneş/ay ikonlu bir
+  switch (`role="switch"`, `aria-checked`), tıklanınca `localStorage`'a
+  yazıp `document.documentElement`'in hem `data-theme`'ini hem stil
+  değişkenlerini günceller. `useLayoutEffect` hem gerçek uygulamayı
+  yapıyor hem dev'de React Strict Mode'un script'in yazdığını
+  temizlemesini telafi ediyor (dokümanın "Re-applying attributes in
+  development" bölümü).
+- `components/site/Navbar.tsx` — switch İletişim butonunun yanına,
+  mobilde de HER ZAMAN görünür (hamburger menüsünün arkasına
+  gizlenmedi — tema kontrolü menü açmadan erişilebilir olmalı).
+
+**Uygulanan (2. aşama — panel + giriş, kullanıcının ek isteği):**
+`app/panel/(protected)/layout.tsx`, `components/panel/PanelShell.tsx`
+(başlıkta, Çıkış Yap'ın yanında) ve `app/panel/giris/page.tsx`
+(başlığın yanında) — aynı `ThemeToggle` bileşeni, aynı desen.
+
+**Uygulanan (3. aşama — koyu mod paleti canlandırma, kullanıcı
+bulgusu):** Kullanıcı hangi alanların soluk durduğunu netleştirmek için
+sorulan çoktan-seçmeli soruda DÖRDÜNÜ DE (placeholder kutular, marka
+rengi/butonlar, gövde metni, footer) işaretledi — genel bir "koyu mod
+yeterince canlı değil" izlenimi. Kod taraması 2 GERÇEK, önceden
+belgelenmemiş bug ortaya çıkardı:
+- **`components/site/Footer.tsx`** sabit `bg-neutral-900` (temadan
+  BAĞIMSIZ) kullanıyordu — yorumu "StatsSection'daki gibi" diyordu ama
+  bu yanlıştı, StatsSection zaten tema-duyarlı `bg-brand` kullanıyor.
+  Koyu modda footer, sayfanın kendi koyu zeminiyle (`--color-surface`,
+  AYNI hex) neredeyse birebir örtüşüp "kayboluyordu". `bg-surface-raised`/
+  `text-text`/`text-text-muted` token'larına çevrildi (her iki temada
+  da `surface`'ten bir adım ayrışıyor).
+- **6 görsel placeholder** (`ServiceCardImage`, `TeamMemberCard`,
+  `ProjectCard`, `ProjectDetailModal`, `AboutSection`, `HeroVariantB`)
+  sabit `bg-neutral-300` kullanıyordu — `--color-neutral-*` ölçeği
+  BİLEREK temadan bağımsız/sabit tutulduğu için (bkz.
+  `TASARIM-SISTEMI.md` madde 1.1), bu kutular koyu modda parlak/yersiz
+  duruyordu. `Card` (bg-surface-raised) içindekiler `bg-surface`'e
+  (girinti/"sunken" görünüm), `Card` DIŞINDAKİler (AboutSection,
+  HeroVariantB) `bg-surface-raised`'e (yükseltilmiş görünüm) çevrildi —
+  hangisinin doğru yön olduğu her bileşenin kendi ebeveyn zeminine göre
+  belirlendi.
+
+Ayrıca `--color-text`/`--color-text-muted`/`--color-brand`'ın koyu mod
+değerleri CANLANDIRILDI (WCAG kontrastı DÜŞÜRMEDEN, tam tersine
+yükselterek): `text` `#f0f2f4`→`#ffffff` (17.63:1), `text-muted`
+`neutral-300`/`#a8b0bd`→kendi bağımsız `#c7ced9`'u (11.13:1 — artık
+neutral ölçeğine bağlı değil), `brand` (Kurumsal Mavi)
+`#6998e2`→`#5b9bff` (6.36:1), `brand` (Modern Koyu)
+`#24a8a4`→`#2bd1c9` (9.29:1). Tüm hesaplamalar `lib/theme/contrast.ts`
+ile AYNI WCAG formülüyle bir Node script'iyle doğrulandı (bkz.
+sohbet geçmişi). `lib/theme/presets.ts` (gerçek/varsayılan davranış)
+ve `app/globals.css` (sadece DB erişilemezse devreye giren fallback)
+ikisi de güncellendi. `docs/TASARIM-SISTEMI.md`'deki kontrast tablosu
+ve token listesi yeni değerlerle güncellendi.
+
+**Yapılamayan/açık kalan:** Kod henüz `npm run build`/`lint` ile
+doğrulanmadı, commit'lenmedi. Yeni palet gerçek tarayıcıda kullanıcı
+tarafından henüz teyit edilmedi — bir sonraki adım bu.
+
+---
+
+## 2026-08-18 (aynı gün, dördüncü oturum) — Panel başlık hizası düzeltmesi, giriş sayfası sabit açık tema, iletişim formunda ülke kodu + rakam-only telefon
+
+**Panel başlık hizası (regresyon, hemen düzeltildi):** Üçüncü oturumdaki
+`ThemeToggle` eklemesi `PanelShell.tsx`'in başlığındaki grubu (switch +
+e-posta + Çıkış Yap) tek bir `<div>` içine sardı — masaüstünde hamburger
+buton `lg:hidden` ile DOM'dan tamamen kalkınca `justify-between`'in tek
+kalan bu öğeyi sola yasladığı görüldü (kullanıcı bulgusu: "yazılar
+solda duruyor"). `ml-auto` eklenerek düzeltildi — kardeş sayısından
+(1 ya da 2) bağımsız olarak her zaman sağa yaslı kalır.
+
+**Giriş sayfası her zaman sabit açık temayla açılsın (kullanıcı
+isteği):** Kullanıcıya iki seçenek sunuldu — "her zaman açık açılsın,
+switch kalsın" vs "sadece açık, switch tamamen kalksın". **Birincisi
+seçildi.** `ThemeToggle`'a yeni bir opsiyonel prop eklendi:
+`forceInitialMode` — verilirse localStorage'daki saklı tercihi YOK
+SAYAR, ilk render'ı hep o modla başlatır (switch yine normal çalışır,
+tıklanınca her zamanki gibi localStorage'a yazar — yani BİR SONRAKİ
+ziyarette YİNE açık başlar, çünkü bu script hiç localStorage okumuyor).
+`app/panel/giris/page.tsx`'e, kök layout'un script'inin hemen ardından
+çalışıp `<html>`'i koşulsuz açık moda zorlayan İKİNCİ bir engelleyici
+script eklendi ("son yazan kazanır" — aynı teknik, Next.js'in
+preventing-flash-before-hydration kılavuzu) — FOUC burada da yok.
+
+**İletişim formu: ülke kodu + sadece-rakam telefon (kullanıcı bulgusu +
+istek):** Kullanıcı iki şey fark etti: (1) telefon alanına harf
+girilebiliyordu, (2) rakam girişinde sınır yoktu (50-60 haneli bir dizi
+kabul ediliyordu) — WhatsApp'ın kayıt akışındaki "önce ülke seç, sonra
+numarayı yaz" desenini istedi.
+
+- **Yeni `lib/validation/countryCodes.ts`** — ~80 ülkelik bir çağrı kodu
+  listesi (tüm 195 değil, bu ürünün gerçekçi hedef kitlesi: Türkiye +
+  Avrupa + Orta Doğu/Körfez + büyük küresel ekonomiler), Türkiye
+  listenin başında ve varsayılan. Bayrak emojileri elle yapıştırılmadı
+  (75+ emojide kopyala-yapıştır hatası riski) — Regional Indicator
+  Symbol tekniğiyle ISO koddan PROGRAMATİK üretiliyor
+  (`countryFlagEmoji()`), yanlış ülke-bayrak eşleşmesi yapısal olarak
+  imkansız.
+- **`lib/validation/contact.ts`** — tek `phone` alanı `phoneCountry`
+  (kontrollü `z.enum`, listeden biri olmalı) + `phoneNumber` (sadece
+  rakam regex'i, 4-12 hane aralığı — `PHONE_MIN_DIGITS`/
+  `PHONE_MAX_DIGITS`) olarak ikiye ayrıldı. Eski regex
+  (`/^[0-9+()\s-]*$/`, 20 karakter üst sınırı) harf/sembolü
+  reddediyordu ama uzunluk sınırı (20) 50-60 haneli DEĞİL sadece
+  20 haneli bir diziyi geçiriyordu ve daha önemlisi TARAYICIDA hiçbir
+  canlı sınır yoktu (kullanıcı hatayı ancak gönder'e basınca görüyordu)
+  — asıl kullanıcı deneyimi sorunu buydu.
+- **`components/site/contact/ContactForm.tsx`** — iki alan yan yana
+  (`grid-cols-[8rem_1fr]`, ülke kodu dar/sabit + numara geri kalanı
+  doldurur). Numara alanında `onChange` ile CANLI filtre
+  (`replace(/\D/g,"").slice(0,PHONE_MAX_DIGITS)`) — artık harf hiç
+  YAZILAMIYOR, 12 haneden fazlası hiç kabul edilmiyor (React state
+  gerektirmeyen, doğrudan DOM değerini düzelten hafif bir desen —
+  `defaultValue`/uncontrolled input ile uyumlu). `maxLength` HTML
+  özniteliği + `inputMode="numeric"` (mobilde sayısal klavye) ek
+  katmanlar.
+- **`components/site/contact/actions.ts`** — sunucuda `phoneCountry` +
+  `phoneNumber` tek bir `sender_phone` string'inde birleştiriliyor
+  (ör. `"+90 5321234567"`), numara boşsa (opsiyonel) `null`.
+- **`lib/validation/contact.test.ts`** — yeni alan şekline güncellendi,
+  2 yeni regresyon testi eklendi (50-60 haneli dizi reddi, 4 haneden
+  kısa reddi, bilinmeyen ülke kodu reddi).
+
+**Yapılamayan/açık kalan:** Hiçbiri bu oturumda `npm run build`/`lint`
+ile doğrulanmadı, commit'lenmedi, gerçek tarayıcıda test edilmedi.
+
+**Aynı gün, ek bulgu ve düzeltme — gerçek bir hydration hatası:**
+Kullanıcı tarayıcıda "1 issue" hydration uyarısı bildirdi. Kök sebep
+bulundu: `ThemeToggle`'ın `useState` lazy initializer'ı
+`readStoredMode() ?? settings.themeMode` okuyordu — SUNUCUDA
+`readStoredMode()` her zaman `null` (localStorage yok), İSTEMCİDE
+hydration sırasında GERÇEK bir değer dönebiliyordu (`window` artık
+tanımlı) — DB varsayılanı ile ziyaretçinin saklı tercihi farklıysa,
+switch butonunun kendi render çıktısı (aria-checked, thumb pozisyonu)
+sunucu/istemci arasında uyuşmuyordu. Düzeltme: ilk `useState` artık
+SADECE `settings.themeMode` kullanıyor (sunucuyla her zaman birebir
+aynı, deterministik) — localStorage'a bakmak TAMAMEN
+`useLayoutEffect`'e taşındı (bu bir render çıktısı değil bir YAN ETKİ
+olduğu için hydration karşılaştırmasına hiç girmiyor), içindeki
+`setMode()` de boyama öncesi aynı senkron geçişte işlendiği için
+görünür bir flash da oluşmuyor. Kullanıcı düzeltmeyi doğruladı ("hata
+bildirimi yok").
+
+**Aynı gün, ek istek — İstatistikler bölümü ortalama sorunu:**
+Kullanıcı, sayfa genişledikçe istatistik rakamlarının ortalanmadığını,
+"ilerlemediğini" bildirdi. Kök sebep: `StatsSection.tsx` sabit
+`grid-cols-2 sm:grid-cols-4` kullanıyordu ama Akme'de **3** istatistik
+kaydı var (`supabase/migrations/20260810130000_add_stats_for_akme.sql`)
+— 4 sütunluk grid'de 3 öğe, 4. sütun boş kalıp grubu sola kaydırıyordu,
+özellikle geniş ekranda belirginleşiyordu. Düzeltme: `grid` yerine
+`flex flex-wrap justify-center` — kayıt sayısından ve ekran
+genişliğinden BAĞIMSIZ olarak grup her zaman ortalanır, dar ekranda
+satır satır sarar. Boşluk da `gap-6`'dan `gap-x-12 gap-y-8`'e
+genişletildi (kullanıcının "aralarındaki boşluğu ayarla" isteği).
+
+**Aynı gün, ek istek — telefon ülke kodu seçici kaldırıldı:**
+Kullanıcı, kapalı `<select>`'in seçili ülkenin TAM metnini (bayrak +
+isim + kod) göstermesinin kötü durduğunu belirtti, "sadece bayrak"
+istedi; bunun mümkün olmadığını (native `<select>` özel bir açılır
+menü olmadan bunu yapamaz) açıklayınca kullanıcının kendi önerdiği
+basit çözümü seçtik: **ülke kodu seçiciyi tamamen kaldır**, sadece
+rakam/uzunluk doğrulaması (asıl istenen düzeltme) kalsın. `lib/
+validation/countryCodes.ts` tamamen silindi (başka hiçbir yerde
+kullanılmıyordu), `contactFormSchema`'daki `phoneCountry` alanı
+kaldırıldı, `actions.ts` artık numarayı ülke koduyla birleştirmiyor
+(`sender_phone` = ham, sadece-rakam numara). Bu, aynı gün içinde
+kurulup sonra geri alınan bir özellik — dürüstçe kaydedildi, önceki
+kayıt (üçüncü/dördüncü oturum) silinmedi, sadece bu not eklendi.
+
+**Aynı gün, ikinci düzeltme — `ThemeToggle`'ın hydration çözümü lint
+hatası verdi, `useSyncExternalStore`'a geçildi:** `npm run lint`,
+biraz yukarıdaki `useLayoutEffect` içindeki `setMode()` çağrısını
+`react-hooks/set-state-in-effect` kuralıyla reddetti (React'in kendi
+gerekçesi: effect içinde senkron setState'in art arda render'a yol
+açması). Kod, React'in TAM OLARAK bu senaryo (harici bir kaynakla —
+localStorage — SSR-güvenli senkron kalma) için var olan resmi API'sine,
+`useSyncExternalStore`'a taşındı — `getServerSnapshot()` sunucuda/ilk
+hydration'da her zaman `null` döner (React bunu sunucuyla eşleştirmek
+için kullanır), `getSnapshot()` gerçek localStorage değerini okur,
+React ikisi arasındaki geçişi kendi iç mekanizmasıyla (hiç elle
+setState/effect gerekmeden) boyama öncesi senkron yapar. Aynı sekmedeki
+bir `localStorage.setItem()` tarayıcının `storage` olayını
+TETİKLEMEDİĞİ için (o sadece BAŞKA sekmelerde ateşlenir), `toggle()`
+kendi özel olayını (`site-theme-change`) de dispatch ediyor,
+`subscribe()` ikisini de dinliyor. `forceInitialMode`'un (giriş sayfası)
+switch tıklandıktan SONRA da geçerli kalması için ayrı, küçük bir
+`manualOverride` state'i eklendi (bu bir OLAY İŞLEYİCİSİNDE —
+`toggle()` — set ediliyor, bir effect'te DEĞİL, bu yüzden lint kuralını
+tetiklemiyor) — sayfa yeniden yüklendiğinde bileşen yeniden mount olup
+`manualOverride` sıfırlanıyor, `forceInitialMode` yeniden devreye giriyor.
+
+**Aynı gün, üçüncü düzeltme — İstatistikler boşluk/font ince ayarı:**
+Kullanıcı ortalama düzeltmesinden sonra iki şey daha fark etti: rakamlar
+"iç içe" (çok yakın) duruyordu ve etiket metni (`text-caption`, 13px)
+büyük kalın rakamların (`text-h2`) yanında çok küçük kalıyordu. İki
+adımda düzeltildi (kullanıcı ilk turda "yeterli değil" dedi, ikinci
+turda genişletildi): etiket `text-caption`→`text-base` (13px→16px) +
+`mt-1`→`mt-2`; yatay boşluk `gap-x-12`→`gap-x-16` (mobil) →
+`sm:gap-x-24`→`lg:gap-x-32` (ekran büyüdükçe artan, sabit değil) +
+`gap-y-8`→`gap-y-10`. Kullanıcı son halini onayladı ("iyi duruyor").
+Doğrulama: `npm run build`/`lint`/`test:unit` kullanıcı tarafından
+çalıştırıldı, hepsi temiz — bugünkü TÜM işler (tema switch'i, koyu mod
+paleti, panel/giriş düzeltmeleri, hydration/lint düzeltmeleri,
+istatistik ortalama+boşluk, telefon doğrulaması) artık commit'lenmeye
+hazır.

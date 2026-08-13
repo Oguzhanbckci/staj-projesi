@@ -7,6 +7,7 @@ import {
   getActiveTenantDomain,
   getPageSections,
   getSiteSettings,
+  getSiteThemeSettings,
 } from "@/lib/supabase/queries";
 import { getPublicImageUrl } from "@/lib/supabase/storage";
 import { buildSectionNavLinks } from "@/lib/sections/config";
@@ -52,7 +53,11 @@ export async function generateMetadata(): Promise<Metadata> {
 // cache() ile dedupe edilir, bkz. lib/supabase/queries.ts) türetiliyor —
 // ikisi hep senkron kalır.
 export default async function SiteLayout({ children }: { children: ReactNode }) {
-  const [sections, settings] = await Promise.all([getPageSections(), getSiteSettings()]);
+  const [sections, settings, themeSettings] = await Promise.all([
+    getPageSections(),
+    getSiteSettings(),
+    getSiteThemeSettings(),
+  ]);
   const navLinks = buildSectionNavLinks(sections);
   const tenantName = settings?.tenantName ?? "Firma";
   const logoUrl = settings?.logoPath ? getPublicImageUrl("branding", settings.logoPath) : null;
@@ -61,7 +66,13 @@ export default async function SiteLayout({ children }: { children: ReactNode }) 
     <>
       <SkipLink targetId="main-content" />
       <LocalBusinessJsonLd />
-      <Navbar logoText={tenantName} logoUrl={logoUrl} links={navLinks} contactHref="/iletisim" />
+      <Navbar
+        logoText={tenantName}
+        logoUrl={logoUrl}
+        links={navLinks}
+        contactHref="/iletisim"
+        themeSettings={themeSettings}
+      />
       <main id="main-content" tabIndex={-1} className="focus:outline-none">
         {children}
       </main>
