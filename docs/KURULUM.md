@@ -76,7 +76,7 @@ yoksa aşağıdaki adımların bir kısmında durup beklemeniz gerekir:
 
 **Opsiyonel (yoksa demo/yer tutucu değerlerle başlanır, panelden
 sonradan eklenir):**
-5. Firma logosu (PNG/JPEG/WEBP, en fazla 5 MB).
+5. Firma logosu (PNG/JPEG/WEBP, en fazla 10 MB).
 6. Marka rengi tercihi (hex kod, ör. `#2561c1`) — yoksa varsayılan
    "Kurumsal Mavi" önayarı kullanılır.
 7. Adres, telefon, çalışma saatleri.

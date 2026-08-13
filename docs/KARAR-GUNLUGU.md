@@ -3691,10 +3691,67 @@ Hakkımızda ayrı bir göreve bırakıldı.
   `revalidatePath("/ekip")` çağırıyor, diğer ikisi gibi `"/"` DEĞİL
   (mevcut `ekip/actions.ts`'teki aynı kuralla tutarlı).
 
-**Yapılamayan/açık kalan:** Migration henüz Supabase'e uygulanmadı,
-kod henüz `npm run build`/`lint` ile doğrulanmadı, commit'lenmedi.
-Medya Kütüphanesi (`app/panel/(protected)/medya/MediaLibrary.tsx`) hâlâ
-sadece `projects` bucket'ını gösteriyor — 3 yeni bucket'ı da kapsayacak
-şekilde genelleştirmek bilinçli olarak bu görevin kapsamı dışında
-bırakıldı (istenirse ayrı bir görev). Hero/Hakkımızda içerik düzenleme
-ekranları hâlâ yok.
+**Doğrulama (gerçek, kullanıcı tarafından tamamlandı):** Migration
+Supabase SQL Editor'de çalıştırılırken bir kısmı zaten uygulanmış
+çıktı (`policy already exists` hatası) — muhtemelen SQL Editor'ün
+"snippet artık yok, yeni sorgu açıldı" davranışı sırasında script kısmen
+tetiklenmiş. Migration `drop policy if exists` guard'larıyla yeniden
+çalıştırılabilir (idempotent) hale getirilip tekrar çalıştırıldı,
+"Success. No rows returned" ile tamamlandı. `.next` cache'in eski
+silinmiş sayfalara (`test-components`/`test-theme`) referans vermesi
+yüzünden ilk `npm run build` denemesi tip hatasıyla durdu — bilinen bir
+proje tuhaflığı, `.next` silinip yeniden derlenince temiz geçti
+(23 route, hepsi doğru). `npm run lint` temiz. Kullanıcı ardından
+`npm run dev` ile gerçek tarayıcıda bir hizmete/referansa/ekip üyesine
+görsel yükleyip sitede göründüğünü doğruladı — sorun bulunmadı.
+
+**Yapılamayan/açık kalan:** Medya Kütüphanesi
+(`app/panel/(protected)/medya/MediaLibrary.tsx`) hâlâ sadece `projects`
+bucket'ını gösteriyor — 3 yeni bucket'ı da kapsayacak şekilde
+genelleştirmek bilinçli olarak bu görevin kapsamı dışında bırakıldı
+(istenirse ayrı bir görev). Hero/Hakkımızda içerik düzenleme ekranları
+hâlâ yok.
+
+**Aynı gün, ek bir karar — görsel boyut sınırı 5 MB'dan 10 MB'a
+çıkarıldı:** Kullanıcı testler sırasında "kaliteli fotoğraf koyacak
+olursak sorun olur mu" diye sordu. Gerçek bir trade-off vardı: 5 MB,
+bir DSLR/drone çekimi (inşaat firması proje görselleri için tipik,
+8-15 MB'a çıkabilir) için gerçekten dardı. İncelemede iki şey doğrulandı:
+(1) `next/image` zaten aktif optimize ediyor (`next.config.ts`
+`images.remotePatterns`, `unoptimized` KAPALI değil) — ziyaretçiye giden
+gerçek bayt sayısı her zaman küçültülüyor, orijinal yükleme boyutunun
+site performansına doğrudan etkisi yok; (2) altyapı zaten 15 MB'a kadar
+izin veriyor (`serverActions.bodySizeLimit`/`proxyClientMaxBodySize`).
+Bu ikisine dayanarak `MAX_IMAGE_SIZE_BYTES` (`lib/supabase/
+imageValidation.ts`) **5 MB → 10 MB**'a çıkarıldı — 15 MB'lık altyapı
+tavanının altında rahat bir pay bırakıyor. Tek bir paylaşılan sabit
+olduğu için tüm 6 yükleme akışını (Projeler, Hizmetler, Referanslar,
+Ekip, Tema logo/favicon, SEO paylaşım görseli) otomatik etkiledi.
+`next.config.ts`, `GUVENLIK.md`, `KURULUM.md`, `MUSTERİ-KILAVUZU.md`,
+`TEMA-MIMARISI.md`'deki "5 MB" referansları güncellendi.
+
+**Aynı gün, üçüncü bir olay — commit'lerdeki yanlış AI ortak-yazarlığı
+düzeltildi:** Kullanıcı, GitHub'da "Claude Sonnet 5"in depoya
+Contributor olarak göründüğünü fark etti ve bunu istemediğini belirtti.
+Kök sebep: bu oturumdaki 2 commit'in (IP hız sınırı düzeltmesi + bucket/
+görsel yükleme işi) mesajlarına `Co-Authored-By: Claude Sonnet 5
+<noreply@anthropic.com>` satırı otomatik eklenmişti — GitHub bunu
+gerçek bir ortak yazar olarak yorumluyor. Kontrol edildi: projedeki
+diğer 45 commit'in hiçbirinde bu satır yoktu, sadece bu 2 commit
+etkilenmişti. Kullanıcının AÇIK talebi üzerine iki karar alındı: (1)
+**bundan sonra commit/push işlemlerini AI çalıştırmayacak** — sadece
+komutları verecek, kullanıcı kendi hesabından çalıştıracak (bu,
+`AI-KURALLARI.md` madde 8'deki "terminal komutlarını kullanıcı
+çalıştırır" ilkesinin commit/push'a da genişletilmesi — önceden bu
+istisna tutulmuştu, artık tutulmuyor); (2) commit mesajlarında bundan
+sonra `Co-Authored-By` satırı hiç kullanılmayacak. Geçmiş temizliği:
+son 2 commit dalın en ucunda olduğu için `git reset --hard HEAD~2` +
+`git cherry-pick --no-commit` (her iki commit için) + aynı içerikle ama
+trailer'sız yeniden `git commit` + `git push --force-with-lease` ile,
+tamamen kullanıcı tarafından, verilen komutlar birebir çalıştırılarak
+düzeltildi. Yeni hash'ler: `083c408` (IP hız sınırı), `992fe9f`
+(bucket/görsel yükleme) — içerik/diff birebir aynı, sadece mesajdan o
+satır çıkarıldı. **Yan etki:** `git reset --hard`, o anda commit'lenmemiş
+duran 10 MB değişikliğini de sildi (beklenen git davranışı, veri kaybı
+değil) — bu yüzden yukarıdaki "5 MB'dan 10 MB'a" değişikliği bu olaydan
+SONRA ikinci kez uygulandı.

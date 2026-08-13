@@ -83,7 +83,8 @@ ekleyin), formun altında "Proje Görseli" bölümü var:
    olarak görünür.
 
 **Kabul edilen dosyalar:** Sadece JPEG, PNG veya WEBP formatı, en fazla
-**5 MB**. Telefondan çekilmiş çok büyük bir fotoğraf (ör. 8-10 MB)
+**10 MB** — kaliteli bir fotoğraf makinesi/drone çekimini kapsayacak
+kadar geniş bir sınır. Yine de çok büyük bir dosya (ör. 15 MB+)
 seçerseniz, ekranda size boyutu ve sınırı gösteren net bir uyarı
 çıkar — bu durumda telefonunuzun galeri/paylaşım ekranında "küçük" veya
 "orta boyut" seçeneğini kullanarak tekrar deneyin.

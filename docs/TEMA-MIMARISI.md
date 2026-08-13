@@ -224,7 +224,7 @@ kaynak her zaman `contact_sections` idi) — 2026-08-15 migration'ında
 düşürüldü, karışıklık kaynağı ortadan kaldırıldı.
 
 **Logo/favicon yükleme**, Projeler'deki görsel yükleme deseninin
-(`lib/supabase/imageValidation.ts` — magic-byte tür kontrolü, 5MB sınır,
+(`lib/supabase/imageValidation.ts` — magic-byte tür kontrolü, 10MB sınır,
 benzersiz dosya adı, atomik temizlik) birebir tekrarı, sadece `"branding"`
 adında yeni bir Storage bucket'ında (`"projects"`in 5-policy RLS deseninin
 aynısı). Panel tarafında tek generic `BrandImageUploader.tsx` (markup

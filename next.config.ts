@@ -94,8 +94,8 @@ const nextConfig: NextConfig = {
     serverActions: {
       // Varsayılan 1MB — görsel yükleme Server Action'ı (bkz.
       // app/panel/(protected)/icerikler/projeler/imageActions.ts) için
-      // yetersiz. Bilerek UYGULAMA sınırından (5MB, bkz.
-      // lib/supabase/imageValidation.ts MAX_IMAGE_SIZE_BYTES) çok daha
+      // yetersiz. Bilerek UYGULAMA sınırından (10MB, bkz.
+      // lib/supabase/imageValidation.ts MAX_IMAGE_SIZE_BYTES) daha
       // yüksek tutuldu — red kararını HER ZAMAN bizim kodumuz versin
       // (net, Türkçe mesajla), Next.js'in ham gövde limiti değil (o
       // durumda kullanıcı jenerik bir framework hatası görürdü).

@@ -490,11 +490,14 @@ uygular:
    47 0D 0A 1A 0A`, WEBP `RIFF....WEBP`). Bu fonksiyon hem istemcide
    (anında geri bildirim) hem sunucuda (yetkili/gerçek doğrulama) AYNI
    şekilde çalışır — istemci tarafı asla güvenlik sınırı değildir.
-3. **Boyut sınırı: 5 MB**, aşılırsa somut/aksiyon öneren bir Türkçe
-   mesaj döner (`lib/supabase/imageValidation.ts`
+3. **Boyut sınırı: 10 MB** *(2026-08-18'de 5 MB'dan yükseltildi —
+   kaliteli DSLR/drone fotoğrafları 5 MB'ı kolayca aşabiliyordu, `next/
+   image` zaten ziyaretçiye giden boyutu otomatik optimize ettiği için
+   bu yükseltmenin site performansına bir etkisi yok)*, aşılırsa somut/
+   aksiyon öneren bir Türkçe mesaj döner (`lib/supabase/imageValidation.ts`
    `MAX_IMAGE_SIZE_BYTES`).
 4. **İki AYRI transport-katmanı sınırı var, ikisi de uygulama
-   sınırından (madde 3, 5 MB) yüksek tutulmalı — biri unutulursa
+   sınırından (madde 3, 10 MB) yüksek tutulmalı — biri unutulursa
    kullanıcı bizim güzel mesajımızı değil framework'ün ham hatasını
    görür.** `next.config.ts`:
    - `experimental.serverActions.bodySizeLimit: "15mb"` — Server

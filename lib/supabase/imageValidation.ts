@@ -47,11 +47,17 @@ export async function detectImageSignature(file: File): Promise<ImageSignature |
   return null;
 }
 
-// KISITLAR: "boyut sınırı koy". 5 MB — web için makul bir üst sınır
-// (next.config.ts'teki serverActions.bodySizeLimit bundan kasıtlı çok
-// daha yüksek tutuldu, bkz. o dosyadaki yorum — red kararını HER ZAMAN
-// bu sınır versin, Next.js'in ham gövde limiti değil).
-export const MAX_IMAGE_SIZE_BYTES = 5 * 1024 * 1024;
+// KISITLAR: "boyut sınırı koy". 10 MB — kaliteli bir DSLR/drone
+// fotoğrafını (inşaat firması proje görselleri için tipik, 8-15MB'a
+// çıkabilir) kapsayacak kadar geniş, ama next.config.ts'teki
+// serverActions.bodySizeLimit/proxyClientMaxBodySize'ın (15MB, bkz. o
+// dosyadaki yorum) altında rahat bir pay bırakıyor — red kararını HER
+// ZAMAN bu sınır versin, Next.js'in ham gövde limiti değil. next/image
+// zaten ziyaretçiye giden gerçek boyutu otomatik optimize ettiği için
+// (bkz. next.config.ts images.remotePatterns) bu sınırın site
+// performansına doğrudan bir etkisi yok, sadece Storage/yükleme
+// tarafında bir üst sınır.
+export const MAX_IMAGE_SIZE_BYTES = 10 * 1024 * 1024;
 
 export function formatMegabytes(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
