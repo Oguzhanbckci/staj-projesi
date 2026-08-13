@@ -3642,3 +3642,59 @@ yazmamıştı) bulamayacağı YENİ bir güvenlik açığı buldu. İleride "gü
 sonu eksik hatırlatma" (`feedback_gun_sonu_eksik_hatirlatma`)
 alışkanlığına ek olarak, önemli dönüm noktalarında (canlıya çıkış
 öncesi gibi) böyle bağımsız/koda-bakan bir tarama tekrarlanmalı.
+
+---
+
+## 2026-08-18 (aynı gün, ikinci oturum) — 5 Storage bucket'ı + 3 tabloya görsel yükleme akışı; kapsam bulgusu
+
+**Bağlam:** IP hız sınırı düzeltmesi commit'lenip push'landıktan sonra,
+kullanıcı mentör incelemesindeki bir sonraki adım olarak "5 eksik
+bucket + e-posta bildirimi"ni seçti. İki ayrı iş olarak ele alınmasına
+karar verildi, önce bucket'lar.
+
+**Kapsam bulgusu (uygulamaya başlamadan önce, kullanıcıya bildirildi):**
+`docs/DURUM.md`'nin "5 eksik bucket" maddesi kapsamı olduğundan küçük
+göstermişti. Gerçekte incelemede görüldü ki:
+- Sadece **Projeler**'de gerçek bir görsel yükleme akışı var
+  (`ProjectImageUploader.tsx` + `imageActions.ts`).
+- **Hizmetler/Referanslar/Ekip**: DB kolonu (`image_path`/`logo_path`/
+  `photo_path`) var ama panel formlarında (`ServiceForm.tsx` vb.)
+  görsel alanı/yükleyici HİÇ yoktu.
+- **Hero/Hakkımızda**: Panelde bu ikisi için hiçbir içerik düzenleme
+  ekranı yok (Sayfa Düzeni sadece görünürlük/sıra/varyant yönetiyor) —
+  bucket kurulsa bile bağlanacak bir form yok, tamamen ayrı/daha büyük
+  bir görev (yeni panel ekranı inşa etmek).
+
+Kullanıcıya 4 seçenek sunuldu (sadece bucket'lar / Hizmetler-
+Referanslar-Ekip'i de tamamla / Hero-Hakkımızda dahil hepsini yap / bu
+işi bırak) — **"Önce Hizmetler/Referanslar/Ekip"** seçildi, Hero/
+Hakkımızda ayrı bir göreve bırakıldı.
+
+**Uygulanan:**
+- `supabase/migrations/20260818120000_create_remaining_storage_buckets.sql`
+  — 5 bucket'ın hepsi (`services`/`hero`/`about`/`testimonials`/`team`),
+  `projects` bucket'ıyla birebir aynı 5-policy RLS deseninde. Hero/
+  Hakkımızda'nın bucket'ları da dahil edildi (ucuz/mekanik, ileride form
+  eklendiğinde tekrar migration yazmaya gerek kalmasın diye) — ama
+  panel tarafında henüz kullanılmıyorlar.
+- `lib/supabase/panelQueries.ts` — `ServiceDetail.imagePath`,
+  `TestimonialDetail.logoPath`, `TeamMemberDetail.photoPath` eklendi
+  (3 `select`/`getXById` güncellendi).
+- `app/panel/(protected)/icerikler/{hizmetler,referanslar,ekip}/
+  imageActions.ts` + `{Service,Testimonial,TeamMember}ImageUploader.tsx`
+  — `ProjectImageUploader.tsx`/`imageActions.ts` ile BİREBİR aynı desen
+  (aynı doğrulama/temizlik/yetkilendirme), sadece bucket/tablo/kolon adı
+  farklı. 3 `[id]/page.tsx` düzenleme sayfasına bağlandı.
+- **Bulunan bir ayrıntı:** Ekip 2026-08-13'ten beri `page_sections`'a
+  bağlı değil, ayrı bir sayfa (`/ekip`) — bu yüzden
+  `uploadTeamMemberImageAction`/`deleteTeamMemberImageAction`
+  `revalidatePath("/ekip")` çağırıyor, diğer ikisi gibi `"/"` DEĞİL
+  (mevcut `ekip/actions.ts`'teki aynı kuralla tutarlı).
+
+**Yapılamayan/açık kalan:** Migration henüz Supabase'e uygulanmadı,
+kod henüz `npm run build`/`lint` ile doğrulanmadı, commit'lenmedi.
+Medya Kütüphanesi (`app/panel/(protected)/medya/MediaLibrary.tsx`) hâlâ
+sadece `projects` bucket'ını gösteriyor — 3 yeni bucket'ı da kapsayacak
+şekilde genelleştirmek bilinçli olarak bu görevin kapsamı dışında
+bırakıldı (istenirse ayrı bir görev). Hero/Hakkımızda içerik düzenleme
+ekranları hâlâ yok.

@@ -123,6 +123,7 @@ export interface ServiceDetail {
   description: string | null;
   icon: string | null;
   isPublished: boolean;
+  imagePath: string | null;
 }
 
 // Düzenleme sayfasının formu doldurmak için ihtiyaç duyduğu tam kayıt
@@ -137,7 +138,7 @@ export async function getServiceById(id: string): Promise<ServiceDetail | null> 
 
     const { data, error } = await supabase
       .from("services")
-      .select("id, title, description, icon, is_published")
+      .select("id, title, description, icon, is_published, image_path")
       .eq("id", id)
       .eq("tenant_id", tenantId)
       .maybeSingle();
@@ -150,6 +151,7 @@ export async function getServiceById(id: string): Promise<ServiceDetail | null> 
       description: typeof data.description === "string" ? data.description : null,
       icon: typeof data.icon === "string" ? data.icon : null,
       isPublished: Boolean(data.is_published),
+      imagePath: typeof data.image_path === "string" ? data.image_path : null,
     };
   } catch (err) {
     console.error("getServiceById sorgu hatası:", err);
@@ -375,6 +377,7 @@ export interface TestimonialDetail {
   quote: string;
   rating: number | null;
   isPublished: boolean;
+  logoPath: string | null;
 }
 
 // getServiceById ile aynı desen. `rating` DB'de var ama ziyaretçi
@@ -389,7 +392,7 @@ export async function getTestimonialById(id: string): Promise<TestimonialDetail 
 
     const { data, error } = await supabase
       .from("testimonials")
-      .select("id, author_name, author_title, quote, rating, is_published")
+      .select("id, author_name, author_title, quote, rating, is_published, logo_path")
       .eq("id", id)
       .eq("tenant_id", tenantId)
       .maybeSingle();
@@ -403,6 +406,7 @@ export async function getTestimonialById(id: string): Promise<TestimonialDetail 
       quote: String(data.quote),
       rating: typeof data.rating === "number" ? data.rating : null,
       isPublished: Boolean(data.is_published),
+      logoPath: typeof data.logo_path === "string" ? data.logo_path : null,
     };
   } catch (err) {
     console.error("getTestimonialById sorgu hatası:", err);
@@ -522,6 +526,7 @@ export interface TeamMemberDetail {
   role: string;
   bio: string | null;
   isPublished: boolean;
+  photoPath: string | null;
 }
 
 export async function getTeamMemberById(id: string): Promise<TeamMemberDetail | null> {
@@ -532,7 +537,7 @@ export async function getTeamMemberById(id: string): Promise<TeamMemberDetail | 
 
     const { data, error } = await supabase
       .from("team_members")
-      .select("id, full_name, role, bio, is_published")
+      .select("id, full_name, role, bio, is_published, photo_path")
       .eq("id", id)
       .eq("tenant_id", tenantId)
       .maybeSingle();
@@ -545,6 +550,7 @@ export async function getTeamMemberById(id: string): Promise<TeamMemberDetail | 
       role: String(data.role),
       bio: typeof data.bio === "string" ? data.bio : null,
       isPublished: Boolean(data.is_published),
+      photoPath: typeof data.photo_path === "string" ? data.photo_path : null,
     };
   } catch (err) {
     console.error("getTeamMemberById sorgu hatası:", err);

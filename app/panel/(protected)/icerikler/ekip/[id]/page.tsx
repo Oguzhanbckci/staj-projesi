@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { getTeamMemberById } from "@/lib/supabase/panelQueries";
 import { TeamMemberForm } from "../TeamMemberForm";
+import { TeamMemberImageUploader } from "../TeamMemberImageUploader";
 
 export default async function EditTeamMemberPage({
   params,
@@ -20,6 +21,7 @@ export default async function EditTeamMemberPage({
       <div className="mt-6">
         <TeamMemberForm member={member} />
       </div>
+      <TeamMemberImageUploader member={member} />
     </div>
   );
 }

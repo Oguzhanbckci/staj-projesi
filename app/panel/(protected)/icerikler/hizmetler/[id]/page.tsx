@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { getServiceById } from "@/lib/supabase/panelQueries";
 import { ServiceForm } from "../ServiceForm";
+import { ServiceImageUploader } from "../ServiceImageUploader";
 
 // Kayıt bulunamazsa (silinmiş, yanlış id, başka tenant'a ait) 404 —
 // ham bir hata sayfası yerine Next.js'in kendi not-found akışı.
@@ -22,6 +23,7 @@ export default async function EditServicePage({
       <div className="mt-6">
         <ServiceForm service={service} />
       </div>
+      <ServiceImageUploader service={service} />
     </div>
   );
 }

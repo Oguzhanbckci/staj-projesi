@@ -444,19 +444,34 @@ dayanır.
 filtresiyle — panelin Tema ekranındaki logo/favicon yüklemesi için
 (`site_settings.logo_path`/`favicon_path`).
 
-**Önemli, önceden dokümante edilmemiş bir bulgu (2026-08-14 araştırmasıyla
-ortaya çıktı):** `services.image_path`, `hero_sections.
-background_image_path`, `about_sections.image_path`,
-`testimonials.logo_path`, `team_members.photo_path` kolonları var ve
-ziyaretçi sitesindeki görüntüleme bileşenleri (`ServiceCardImage.tsx`,
-`HeroVariantA/B.tsx`, `AboutSection.tsx`, `TestimonialCard.tsx`,
-`TeamMemberCard.tsx`) zaten sırasıyla `"services"`, `"hero"`, `"about"`,
-`"testimonials"`, `"team"` adında bucket'lar bekliyor — **ama bu 5
-bucket'tan HİÇBİRİ henüz oluşturulmadı.** Bu tabloların `*_path`
-kolonlarına gerçek bir değer girilse bile (panelden değil, elle) görsel
-404 verir. Projeler ve (2026-08-15'te) logo/favicon için bu desende
-bucket+RLS+yükleme akışı kuruldu; diğer 5'i aynı desenle (bkz. madde 12)
-ileride ele alınmalı.
+**Kalan 5 bucket kısmen tamamlandı (2026-08-18 eklendi).** Mentör
+incelemesinde 2026-08-14'teki bulgu tekrar doğrulandı: `services.
+image_path`, `hero_sections.background_image_path`, `about_sections.
+image_path`, `testimonials.logo_path`, `team_members.photo_path`
+kolonları var, görüntüleme bileşenleri zaten `"services"`/`"hero"`/
+`"about"`/`"testimonials"`/`"team"` bucket'larını bekliyordu ama HİÇBİRİ
+oluşturulmamıştı. Migration
+(`supabase/migrations/20260818120000_create_remaining_storage_buckets.sql`)
+5 bucket'ın hepsini `"projects"` ile birebir aynı 5-policy desende
+ekliyor:
+
+| Bucket | Public | Kullanan tablo/kolon |
+|---|---|---|
+| `services` | evet | `services.image_path` |
+| `hero` | evet | `hero_sections.background_image_path` |
+| `about` | evet | `about_sections.image_path` |
+| `testimonials` | evet | `testimonials.logo_path` |
+| `team` | evet | `team_members.photo_path` |
+
+**Yükleme akışı (panel UI) sadece 3'ü için kuruldu:** Hizmetler,
+Referanslar, Ekip — `ProjectImageUploader.tsx`/`imageActions.ts` ile
+BİREBİR aynı desende (aynı doğrulama/temizlik/yetkilendirme kuralları),
+bkz. `app/panel/(protected)/icerikler/{hizmetler,referanslar,ekip}/`.
+**Hero ve Hakkımızda hâlâ kapsam dışı** — bu ikisi için panelde hiçbir
+içerik düzenleme ekranı yok (sadece Sayfa Düzeni görünürlük/sıra
+yönetiyor), bucket kurulsa da bağlanacak bir form yok; bu, ayrı ve daha
+büyük bir görev (bkz. `docs/DURUM.md`, "Sıradaki adım" madde 1).
+**Migration henüz gerçek Supabase projesine uygulanmadı.**
 
 ## 12. Dosya Yükleme Kuralları *(2026-08-14 eklendi)*
 

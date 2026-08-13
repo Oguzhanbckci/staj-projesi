@@ -26,8 +26,21 @@ iletişim formu IP hız sınırı (`lib/security/contactRateLimit.ts`),
 `x-forwarded-for` zincirinin İLK (sahtelenebilir) değerini
 kullanıyordu — SON (Vercel'in gerçekten gözlemlediği) değere
 düzeltildi, regresyon testi eklendi. Detay: `KARAR-GUNLUGU.md`,
-"2026-08-18". **Henüz `npm run lint`/`npm test` ile doğrulanmadı,
-commit'lenmedi** — bkz. aşağıdaki "Sıradaki adım" madde 0.
+"2026-08-18". Bu iş commit'lenip push'landı (`36ea9f6`), 42/42 test ve
+lint yeşil doğrulandı.
+
+**Aynı gün, ikinci oturum — 5 Storage bucket'ı + 3 tabloya görsel
+yükleme:** Kullanıcı mentör bulgularından "5 bucket + e-posta
+bildirimi"ni seçti. Uygulamaya başlamadan önce kapsamın beklenenden
+büyük olduğu görüldü (sadece Projeler'de gerçek yükleme akışı vardı,
+Hizmetler/Referanslar/Ekip'te form alanı bile yoktu, Hero/Hakkımızda'nın
+hiç içerik düzenleme ekranı yoktu) — kullanıcıya bildirilip
+"Hizmetler/Referanslar/Ekip'i tamamla, Hero/Hakkımızda'yı ayrı bırak"
+seçildi. 5 bucket'ın hepsi migration'a eklendi, 3 tabloya (Hizmetler/
+Referanslar/Ekip) Projeler'deki desenle birebir aynı yükleme UI'ı
+kuruldu. Detay: `KARAR-GUNLUGU.md`, "ikinci oturum". **Migration henüz
+Supabase'e uygulanmadı, kod henüz `npm run build`/`lint` ile
+doğrulanmadı, commit'lenmedi.**
 
 İncelemede ayrıca daha büyük, henüz ele alınmamış bir boşluk ortaya
 çıktı: panel PRD'nin tanımladığı gibi gerçekten çok-kiracılı değil —
@@ -1426,9 +1439,14 @@ işaretliyor, daha kesin bir ikinci katman. Detay: `SEO-PERFORMANS.md`.
    çekirdeği. Kullanıcı bu oturumda diğer bulgular arasından önce IP hız
    sınırı açığını seçti, bu madde ertelendi — bir sonraki oturumda
    öncelik olarak yeniden sorulmalı.
-1. Diğer 5 bucket (`services`/`hero`/`about`/`testimonials`/`team`) için
-   de aynı desenle bucket+RLS+yükleme akışı kurulmalı — şu an bu
-   tablolardaki `*_path` kolonlarına değer girilse bile görsel 404 verir.
+1. ~~Diğer 5 bucket için bucket+RLS+yükleme akışı~~ — 2026-08-18'de
+   kısmen tamamlandı: 5 bucket'ın hepsi migration'a eklendi (henüz
+   Supabase'e uygulanmadı, bkz. madde 0), Hizmetler/Referanslar/Ekip
+   için Projeler'deki desenle BİREBİR aynı yükleme UI'ı kuruldu.
+   **Hero ve Hakkımızda hâlâ açık** — bu ikisinin panelde HİÇ içerik
+   düzenleme ekranı yok (sadece Sayfa Düzeni'nde görünürlük/sıra
+   yönetiliyor), bucket kurulsa da bağlanacak bir form yok; ayrı,
+   daha büyük bir görev (yeni panel ekranı inşa etmek gerekiyor).
 2. ~~Vitest/Playwright kur~~ — 2026-08-17'de tamamlandı, `npm test` 3x
    yeşil doğrulandı (bkz. `TEST-STRATEJISI.md` madde 10-12). Kapsanmayan
    alanlar (madde 12) için ayrı bir öncelik kararı bekliyor: bileşen

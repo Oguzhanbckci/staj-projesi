@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { getTestimonialById } from "@/lib/supabase/panelQueries";
 import { TestimonialForm } from "../TestimonialForm";
+import { TestimonialImageUploader } from "../TestimonialImageUploader";
 
 export default async function EditTestimonialPage({
   params,
@@ -20,6 +21,7 @@ export default async function EditTestimonialPage({
       <div className="mt-6">
         <TestimonialForm testimonial={testimonial} />
       </div>
+      <TestimonialImageUploader testimonial={testimonial} />
     </div>
   );
 }
