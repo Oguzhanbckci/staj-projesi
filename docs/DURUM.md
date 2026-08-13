@@ -15,19 +15,37 @@ geçmişi) oku. Yeni bir müşteri kurulumu yapılacaksa `KURULUM.md`'ye
 (sıfırdan kurulum, geliştirici için), panelin günlük kullanımı için
 `MUSTERİ-KILAVUZU.md`'ye (teknik olmayan okuyucu için) bakılır.
 
-**Son güncelleme:** 2026-08-17 — **Vercel'e ilk yayın yapıldı**
+**Son güncelleme:** 2026-08-18 — Önceki oturumun "madde 0"ı (commit/push
++ canlı doğrulama) fiilen tamamlanmış bulundu: `git status` temiz,
+`origin/main` güncel, panel `noindex` meta etiketi canlıda `curl` ile
+doğrulandı. Ardından kullanıcı isteğiyle **mentör tarzı, koda dayalı,
+bağımsız bir tam proje incelemesi** yapıldı (3 paralel araştırma ajanı —
+dokümandaki açık maddeler, kod/doküman tutarlılığı, güvenlik/kod
+kalitesi). **Yeni ve önemli bir güvenlik açığı bulunup düzeltildi:**
+iletişim formu IP hız sınırı (`lib/security/contactRateLimit.ts`),
+`x-forwarded-for` zincirinin İLK (sahtelenebilir) değerini
+kullanıyordu — SON (Vercel'in gerçekten gözlemlediği) değere
+düzeltildi, regresyon testi eklendi. Detay: `KARAR-GUNLUGU.md`,
+"2026-08-18". **Henüz `npm run lint`/`npm test` ile doğrulanmadı,
+commit'lenmedi** — bkz. aşağıdaki "Sıradaki adım" madde 0.
+
+İncelemede ayrıca daha büyük, henüz ele alınmamış bir boşluk ortaya
+çıktı: panel PRD'nin tanımladığı gibi gerçekten çok-kiracılı değil —
+yeni tenant oluşturma/seçme arayüzü yok, tek bir sabit tenant'a kilitli
+(bkz. "Sıradaki adım" madde 6, artık daha yüksek öncelikli olarak
+yeniden çerçevelendi).
+
+**Önceki güncelleme (2026-08-17):** **Vercel'e ilk yayın yapıldı**
 (`staj-projesi-olive.vercel.app`), canlıda 2 gerçek hata bulunup
 düzeltildi (CSP hydration engeli, yanlış domain'le SEO 92→58). Düzeltme
 sonrası canlı uçtan uca testler 3/3 yeşil, kanonik adreste Lighthouse
 **mobil/masaüstü Performance 97-100, Accessibility 100, Best Practices
-96, SEO 92** doğrulandı (dördü de ≥90 hedefinin üzerinde). Ardından
-kanonik adrese otomatik yönlendirme (`proxy.ts`) eklenip GitHub'a
-push'landı — **ama bu son özellik henüz canlıda ayrıca test edilmedi**
-(Vercel'in otomatik yeniden yayını tetiklenmiş olmalı, doğrulanmadı).
-Panel için `noindex` meta etiketi (`app/panel/layout.tsx`) de eklendi
-ama **henüz commit'lenmedi** — bkz. aşağıdaki "Sıradaki adım" madde 0.
-Gün sonu dokümantasyon taraması yapıldı, tüm `docs/` dosyaları güncel
-(bkz. `KARAR-GUNLUGU.md`, "dokuzuncu oturum").
+96, SEO 92** doğrulandı (dördü de ≥90 hedefinin üzerinde). Kanonik
+adrese otomatik yönlendirme (`proxy.ts`) ve panel `noindex` meta
+etiketi eklendi — ikisi de bir sonraki oturumda commit'lenmiş/push'lanmış
+ve canlıda çalıştığı doğrulanmış olarak bulundu (yukarıya bakın). Gün
+sonu dokümantasyon taraması yapıldı (bkz. `KARAR-GUNLUGU.md`, "dokuzuncu
+oturum").
 
 ## Proje bağlamı
 
@@ -1390,15 +1408,24 @@ işaretliyor, daha kesin bir ikinci katman. Detay: `SEO-PERFORMANS.md`.
 
 ## Sıradaki adım
 
-0. **(Öncelikli, hemen)** `app/panel/layout.tsx` (panel `noindex`
-   özelliği) ve bu gün sonu dokümantasyon taramasındaki `docs/`
-   değişiklikleri henüz commit'lenmedi/push'lanmadı — bir sonraki
-   terminal oturumunda önce `git status` ile kontrol edip commit+push
-   yapılmalı. Ardından kanonik yönlendirmenin (proxy.ts, önceki commit)
-   ve panel `noindex`'in canlıda gerçekten çalıştığı doğrulanmalı
-   (kanonik: Vercel'in önizleme adresine gidip üretim adresine
-   yönlendiğini gör; noindex: sayfa kaynağında `<meta name="robots"
-   content="noindex,nofollow">` görünüyor mu bak).
+0. **(Öncelikli, hemen)** `lib/security/contactRateLimit.ts`'teki IP hız
+   sınırı düzeltmesi (2026-08-18, bkz. `KARAR-GUNLUGU.md`) ve
+   `contactRateLimit.test.ts` henüz `npm run lint`/`npm test` ile
+   doğrulanmadı, commit'lenmedi — bir sonraki terminal oturumunda önce
+   bunlar çalıştırılıp sonuç yorumlanmalı, sonra commit+push yapılmalı.
+   ~~Panel noindex + kanonik yönlendirme commit/push/canlı doğrulama~~ —
+   2026-08-18'de bu maddenin fiilen tamamlanmış olduğu görüldü (git
+   temizdi, canlıda `curl` ile doğrulandı).
+0b. **(Yüksek öncelik, yeni bulundu — 2026-08-18 mentör incelemesi)**
+   Panel gerçekte çok-kiracılı değil: yeni tenant oluşturma, tenant
+   seçme/listeleme, demo katalog import (PRD madde 3.2) hiç yok — panel
+   `getActiveTenantId()` üzerinden tek bir sabit tenant'a (Akme İnşaat)
+   kilitli. Bu, madde 6'daki "host-header çözümlemesi" ile aynı kökten
+   ama ondan daha büyük bir boşluk — teknik bir ayrıntı değil, ürünün
+   "tek panel = platformun tüm yönetim merkezi" vaadinin eksik kalan
+   çekirdeği. Kullanıcı bu oturumda diğer bulgular arasından önce IP hız
+   sınırı açığını seçti, bu madde ertelendi — bir sonraki oturumda
+   öncelik olarak yeniden sorulmalı.
 1. Diğer 5 bucket (`services`/`hero`/`about`/`testimonials`/`team`) için
    de aynı desenle bucket+RLS+yükleme akışı kurulmalı — şu an bu
    tablolardaki `*_path` kolonlarına değer girilse bile görsel 404 verir.

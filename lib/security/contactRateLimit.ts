@@ -7,19 +7,37 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 // Next.js build'i reddeder). İstemci-güvenli honeypot mantığı ayrı bir
 // dosyada: lib/security/contactHoneypot.ts — gerekçe orada.
 
-// Vercel (ve çoğu proxy/CDN) `x-forwarded-for`'u "istemci, proxy1, proxy2..."
-// sırasıyla ekler — ilk değer gerçek istemci IP'si. Yerel `next dev`'de bu
-// başlık genelde HİÇ gelmez (önünde bir proxy yok) — bu durumda `null`
-// dönülür, çağıran taraf (checkContactRateLimit) bunu "hız sınırını atla"
-// olarak yorumlar; geliştiriciyi kendi testinde yanlışlıkla kilitlemez.
+// `x-forwarded-for` zincirine her hop kendi gözlemlediği IP'yi SONA ekler
+// ("istemci-iddiası, proxy1-gördüğü, proxy2-gördüğü..."). İlk değer
+// istemcinin kendi gönderdiği (dolayısıyla sahtelenebilir) değerdir — bu
+// projenin önünde tek güvenilir hop Vercel'in edge ağı olduğu için, ondan
+// sonra eklenen SON değer istemcinin değiştiremeyeceği tek halka. Önceki
+// sürüm yanlışlıkla ilk değeri kullanıyordu; bir bot her istekte rastgele
+// bir x-forwarded-for göndererek hız sınırını sınırsız atlatabiliyordu.
+// Ayrı bir saf fonksiyona çıkarıldı ki next/headers mock'lamadan test
+// edilebilsin (bkz. contactRateLimit.test.ts).
+export function pickTrustedClientIp(
+  forwardedFor: string | null,
+  realIp: string | null
+): string | null {
+  if (forwardedFor) {
+    const ips = forwardedFor.split(",").map((ip) => ip.trim()).filter(Boolean);
+    const lastIp = ips[ips.length - 1];
+    if (lastIp) return lastIp;
+  }
+  return realIp;
+}
+
+// Yerel `next dev`'de `x-forwarded-for` genelde HİÇ gelmez (önünde bir proxy
+// yok) — bu durumda `null` dönülür, çağıran taraf (checkContactRateLimit)
+// bunu "hız sınırını atla" olarak yorumlar; geliştiriciyi kendi testinde
+// yanlışlıkla kilitlemez.
 export async function getClientIp(): Promise<string | null> {
   const headerList = await headers();
-  const forwardedFor = headerList.get("x-forwarded-for");
-  if (forwardedFor) {
-    const firstIp = forwardedFor.split(",")[0]?.trim();
-    if (firstIp) return firstIp;
-  }
-  return headerList.get("x-real-ip");
+  return pickTrustedClientIp(
+    headerList.get("x-forwarded-for"),
+    headerList.get("x-real-ip")
+  );
 }
 
 export const CONTACT_RATE_LIMIT_MAX_SUBMISSIONS = 3;

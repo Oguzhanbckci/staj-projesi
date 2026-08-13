@@ -3567,3 +3567,78 @@ uca test edilmesi, gerçek ürün görselleriyle yeniden Lighthouse ölçümü,
 bir özel alan adının bağlanması. Kullanıcı bugünkü çalışmayı burada
 kapatıp GitHub'a push'layacak, bir sonraki oturuma bu kayıttan devam
 edilecek.
+
+---
+
+## 2026-08-18 — Mentör tarzı tam proje incelemesi; IP hız sınırı atlatma açığı bulunup düzeltildi
+
+**Bağlam:** Kullanıcı yeni bir oturuma "kaldığım yerden devam" isteğiyle
+başladı. `docs/DURUM.md` madde 0'ın (gün sonu commit/push) fiilen zaten
+tamamlanmış olduğu doğrulandı (git temiz, `origin/main` güncel; canlı
+sitede panel `noindex` meta etiketi de ayrıca `curl` ile teyit edildi —
+dokümandaki "henüz doğrulanmadı" notu güncel değilmiş). Kullanıcı
+ardından `DURUM.md`'nin kendi "Sıradaki adım" listesindeki 4 seçenek
+yerine (bucket'lar, e-posta bildirimi, host-header tenant çözümlemesi,
+test kapsamı) **önce mentör tarzı, projenin tamamını kapsayan bağımsız
+bir inceleme** istedi.
+
+**Yöntem:** 3 paralel araştırma ajanı (Agent tool, `general-purpose`)
+görevlendirildi — (1) `docs/` genelindeki KENDİ İTİRAF ETTİĞİ açık
+maddelerin taranması, (2) gerçek kod durumunun DURUM.md/PRD.md
+iddialarıyla karşılaştırılması, (3) bağımsız bir güvenlik/kod kalitesi
+incelemesi (dokümana değil doğrudan koda bakarak). Üçü de birbirinden
+bağımsız çalıştı, sonuçlar birleştirilip kullanıcıya önem sırasıyla
+sunuldu.
+
+**Öne çıkan yeni bulgular (önceki oturumlarda hiç belgelenmemiş):**
+
+1. **[Kritik, düzeltildi] IP hız sınırı atlatma açığı** —
+   `getClientIp()` (`lib/security/contactRateLimit.ts`), `x-forwarded-for`
+   zincirindeki **ilk** değeri güvenilir istemci IP'si sanıyordu; oysa
+   standart davranışta ilk değer istemcinin kendi eklediği (sahtelenebilir)
+   değer, SON değer ise Vercel'in edge ağının gerçekten gözlemlediği IP.
+   Sonuç: honeypot'u zaten atlatan bir bot (forma hiç dokunmadan doğrudan
+   Server Action'a POST atan), her istekte rastgele bir sahte
+   `x-forwarded-for` göndererek 15dk/3-mesaj limitini sınırsız
+   atlatabiliyordu — iki spam koruması katmanının BİRLİKTE engellemesi
+   gereken tam senaryoydu. Bu, `docs/GUVENLIK.md` madde 14'ün "nasıl
+   atlatılır" bölümünde bile öngörülmemişti (orada sadece IP rotasyonu
+   yazıyordu).
+2. **[Yüksek, henüz ele alınmadı] Panel aslında çok-kiracılı değil.**
+   `PRD.md` madde 3.2, panelden yeni tenant oluşturma + demo katalog
+   import + herhangi bir tenant'ı seçip düzenleme bekliyor. Gerçekte
+   panelde tenant oluşturma/listeleme/seçme arayüzü hiç yok;
+   `getActiveTenantId()` tek bir sabit domain'e kilitli — panel şu an
+   sadece Akme İnşaat'ı yönetebiliyor. Bu, `DURUM.md`'nin "Sıradaki
+   adım" madde 6'sında teknik bir ayrıntı (host-header çözümlemesi)
+   gibi çerçevelenmişti; aslında ürünün "tek panel = platformun tüm
+   yönetim merkezi" vaadinin (bkz. 2026-08-06, "Panel mimarisi
+   düzeltildi") temel, eksik kalan çekirdeği.
+3. Önceden bilinen 4 madde (5 eksik Storage bucket'ı, iletişim formu
+   e-posta bildirimi yokluğu, sürükle-bırağın ok-butonlarıyla yapılması,
+   test kapsamı boşlukları) kod incelemesiyle TEKRAR doğrulandı — yeni
+   değil ama artık dosya:satır referanslarıyla kesinleşti (bkz. sohbet
+   geçmişi).
+
+**Karar:** Kullanıcı bulgular arasından **madde 1'i (IP hız sınırı
+açığı)** seçti, diğerleri (tenant yönetimi, bucket'lar, e-posta
+bildirimi, test kapsamı) şimdilik ertelendi — bir sonraki oturumda
+tekrar sorulacak.
+
+**Uygulanan düzeltme:** `pickTrustedClientIp()` adında saf bir fonksiyona
+çıkarılan ayrıştırma mantığı artık zincirin SON değerini kullanıyor,
+ilkini değil. Regresyon testi eklendi (`contactRateLimit.test.ts`, 6
+senaryo — özellikle "sahte ilk değer atlatmasın" testi). `docs/GUVENLIK.md`
+madde 14'e bu açığın bulunuşu/düzeltilişi dürüstçe kaydedildi. **Henüz
+`npm run lint`/`npm test` ile doğrulanmadı** — kullanıcının kendi
+terminalinde çalıştırması bekleniyor (bkz. `docs/AI-KURALLARI.md` madde 8,
+"terminal komutlarını kullanıcı çalıştırır").
+
+**Not (metodoloji, gelecekte hatırlanmalı):** Bu, projede ilk kez
+kullanılan bir yöntem — kod tabanını doğrudan tarayan, dokümana
+GÜVENMEYEN bağımsız bir ajan (bulgu 3), sadece dokümandaki iddiaları
+tekrar eden bir taramanın (bulgu no bulunamazdı, çünkü doküman bunu hiç
+yazmamıştı) bulamayacağı YENİ bir güvenlik açığı buldu. İleride "gün
+sonu eksik hatırlatma" (`feedback_gun_sonu_eksik_hatirlatma`)
+alışkanlığına ek olarak, önemli dönüm noktalarında (canlıya çıkış
+öncesi gibi) böyle bağımsız/koda-bakan bir tarama tekrarlanmalı.

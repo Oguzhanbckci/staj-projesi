@@ -690,6 +690,23 @@ sabırlı" bir bot (eşiğin altında kalacak şekilde ör. 20 dakikada bir
 mesaj) bu katmanı anlamlı şekilde zorlamaz — hedefli/kaynaklı bir
 saldırgana karşı TEK BAŞINA yeterli değil.
 
+**Gerçek bir güvenlik açığı bulunup düzeltildi (2026-08-18):** Mentör
+tarzı bir kod incelemesinde, `getClientIp()`'nin (`lib/security/
+contactRateLimit.ts`) `x-forwarded-for` başlığındaki **ilk** değeri
+"gerçek istemci IP'si" saydığı görüldü — bu tam tersiydi. Zincire her hop
+kendi gözlemlediği IP'yi SONA ekler; ilk değer istemcinin kendi
+gönderdiği (dolayısıyla sahtelenebilir) değerdir, bu projenin önünde tek
+güvenilir hop olan Vercel'in edge ağının gerçekten gözlemlediği IP ise
+SONDAKİ değerdir. Sonuç: formu render etmeden doğrudan Server Action'a
+POST atan bir bot (honeypot'un zaten etkisiz olduğu senaryo — bkz.
+Katman 1), her istekte rastgele bir `x-forwarded-for` göndererek
+15-dakika/3-mesaj limitini **sınırsız** atlatabiliyordu — iki katmanın
+birlikte engellemesi gereken tam senaryo. Ayrıştırma mantığı saf bir
+fonksiyona (`pickTrustedClientIp`) çıkarılıp SON değeri kullanacak
+şekilde düzeltildi, regresyon testi eklendi
+(`contactRateLimit.test.ts`). Henüz canlıda gerçek bir sahte-header
+denemesiyle doğrulanmadı — kod incelemesi + birim testle doğrulandı.
+
 **Yanlış pozitif / mesaj kaybı (KISITLAR):** Aynı IP'yi paylaşan birden
 fazla gerçek kullanıcı (kurumsal NAT, aynı ofis/kafe Wi-Fi'ı) teorik
 olarak birbirinin sınırını tüketebilir — bu YANLIŞ POZİTİF gerçek bir
