@@ -74,17 +74,23 @@ export function ContactForm() {
           görmemeli/odaklanmamalı: `aria-hidden` ekran okuyucudan,
           `tabIndex={-1}` klavye Tab sırasından, ekran-dışı konumlandırma
           (display:none/visibility:hidden DEĞİL — bazı botlar özellikle
-          bunları tarayıp atlıyor) görsel olarak gizler. `autoComplete="off"`
-          + "website" adı, tarayıcı otomatik doldurmasının burayı gerçek
-          bir alan sanıp doldurma riskini azaltır. */}
+          bunları tarayıp atlıyor) görsel olarak gizler.
+          `autoComplete="off"` + `data-lpignore`/`data-1p-ignore` +
+          nötr isim/etiket (2026-08-18'de "website"den değiştirildi —
+          bkz. contactHoneypot.ts'teki yorum, gerçek müşteri mesajları
+          tarayıcı otomatik doldurmasıyla sessizce kayboluyordu) —
+          Chrome'un/parola yöneticilerinin bunu gerçek bir alan sanıp
+          doldurma riskini azaltır. */}
       <div aria-hidden="true" className="absolute left-[-9999px] top-[-9999px]">
-        <label htmlFor={`${FIELD_ID_PREFIX}-website`}>Web siteniz</label>
+        <label htmlFor={`${FIELD_ID_PREFIX}-hp`}>Referans</label>
         <input
           type="text"
-          id={`${FIELD_ID_PREFIX}-website`}
+          id={`${FIELD_ID_PREFIX}-hp`}
           name={HONEYPOT_FIELD_NAME}
           tabIndex={-1}
           autoComplete="off"
+          data-lpignore="true"
+          data-1p-ignore="true"
         />
       </div>
 

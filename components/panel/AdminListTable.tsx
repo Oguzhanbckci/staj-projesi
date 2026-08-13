@@ -92,7 +92,9 @@ export function AdminListTable({
                 </div>
               </td>
               <td className="py-3 pr-4">
-                <div className="flex items-center gap-2">
+                {/* gap-4 (sabit 16px, ekran boyutundan bağımsız) — kullanıcı
+                    bulgusu: Düzenle/Sil çok yakın duruyordu. */}
+                <div className="flex items-center gap-4">
                   <LinkButton href={`${editBasePath}/${row.id}`} size="sm" variant="ghost">
                     Düzenle
                   </LinkButton>

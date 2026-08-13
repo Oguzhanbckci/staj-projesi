@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect, useRef } from "react";
+import { startTransition, useActionState, useEffect, useRef } from "react";
 import { markMessageReadAction, type MarkReadState } from "./actions";
 
 const initialState: MarkReadState = { success: true };
@@ -28,7 +28,14 @@ export function MarkMessageReadOnView({
   useEffect(() => {
     if (alreadyRead || hasTriggeredRef.current) return;
     hasTriggeredRef.current = true;
-    formAction(new FormData());
+    // React 19: useActionState'in dispatch'i bir <form action> veya bir
+    // olay işleyicisi DIŞINDA (burada bir effect içinde) çağrıldığında
+    // React'in kendisi otomatik transition'a sarmıyor — "isPending doğru
+    // güncellenmeyebilir" uyarısı veriyordu (kullanıcının terminal
+    // logunda görüldü, 2026-08-18). `startTransition` ile açıkça sarıldı.
+    startTransition(() => {
+      formAction(new FormData());
+    });
   }, [alreadyRead, formAction]);
 
   return null;

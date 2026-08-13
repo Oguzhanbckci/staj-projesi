@@ -1,0 +1,14 @@
+-- Panelde yeni mesaj geldiginde anlik bildirim (toast + okunmamis sayaci)
+-- icin Supabase Realtime'i contact_messages tablosunda acar. Sadece
+-- INSERT olaylari dinlenecek (bkz. components/panel/NewMessageNotifier.tsx)
+-- ama publication seviyesinde tum degisiklik turleri (INSERT/UPDATE/DELETE)
+-- acik kalir -- Supabase'in varsayilan/standart deseni budur, istemci
+-- tarafinda sadece INSERT'e abone olunarak filtrelenir.
+--
+-- GUVENLIK: Realtime, tablo RLS'ine tabidir -- contact_messages'ta anon'un
+-- HICBIR erisimi yok (bkz. GUVENLIK.md madde 1-2), bu yuzden anon key'li
+-- bir baglanti bu olaylari GORMEZ. Sadece giris yapmis (authenticated)
+-- panel kullanicisinin oturumu (RLS zaten tam SELECT izni veriyor) bu
+-- yayini dinleyebilir -- yeni bir erisim genisletmesi degil, mevcut RLS
+-- izninin Realtime kanalina da dogal olarak yansimasi.
+alter publication supabase_realtime add table public.contact_messages;

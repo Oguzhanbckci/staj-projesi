@@ -9,10 +9,27 @@
 //
 // KISITLAR: "gizli alan ekran okuyucudan da gizlensin ve odak almasın" —
 // gerçek gizleme components/site/contact/ContactForm.tsx'te (aria-hidden +
-// tabIndex=-1 + ekran dışına konumlandırma). Burada sadece alan adı ve
-// kontrol mantığı — "website" bilinçli seçildi: spam botları genelde tam
-// olarak bu isimdeki alanlara kendi reklam linklerini yazar.
-export const HONEYPOT_FIELD_NAME = "website";
+// tabIndex=-1 + ekran dışına konumlandırma).
+//
+// 2026-08-18 DÜZELTMESİ (kullanıcı bulgusu — gerçek mesajlar sessizce
+// kayboluyordu, "gönderim yok sayıldı" logu görüldü): Alan adı önceden
+// "website" idi, "spam botları genelde tam olarak bu isimdeki alanlara
+// reklam linki yazar" gerekçesiyle seçilmişti — ama bu isim (ve
+// ContactForm.tsx'teki "Web siteniz" etiketi) Chrome'un/parola
+// yöneticilerinin (LastPass, 1Password vb.) OTOMATİK DOLDURMA
+// sezgiselleriyle de birebir eşleşiyordu — `autocomplete="off"` bu
+// araçların çoğu tarafından yok sayılıyor. Sonuç: GERÇEK bir ziyaretçi
+// alanı hiç GÖRMESE/dokunmasa bile, tarayıcısı arka planda dolduruyordu
+// — form "başarılı" gösteriyordu ama mesaj DB'ye hiç yazılmıyordu
+// (bilerek "bot yakalandı" davranışı, bkz. actions.ts). Yanlış pozitif
+// (gerçek müşteri kaybı) bottan gelen bir mesajı kaçırmaktan çok daha
+// kötü — isim "website"den, hiçbir tanınır otomatik-doldurma
+// kategorisiyle eşleşmeyen nötr bir isme değiştirildi. Genel/rastgele
+// form-doldurma botlarına karşı koruma DEĞİŞMEDİ (onlar alan adından
+// bağımsız her boş alanı doldurur) — sadece "bilerek website'e link
+// yazan" dar bot türüne karşı koruma azaldı, kabul edilebilir bir
+// ödünleşim.
+export const HONEYPOT_FIELD_NAME = "iletisim_notu";
 
 // Bir bot'un (ya da form'u client-side JS olmadan taklit eden bir script'in)
 // gizli alanı doldurup doldurmadığını kontrol eder. Gerçek bir ziyaretçi

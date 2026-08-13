@@ -9,7 +9,13 @@ export interface DeleteActionState {
   formError?: string;
 }
 
-const initialState: DeleteActionState = { success: true };
+// initialState.success BİLEREK `false` (önceki sürümde `true` idi) —
+// 2026-08-18'de bulunan gerçek bir bug: `true` olunca "henüz hiç
+// gönderilmedi" durumuyla "gönderildi ve başarıyla silindi" durumu AYNI
+// görünüyordu, dialogOpen'ı (aşağıda) `state.success`'ten türetmek
+// imkansızdı. Artık ayırt edilebilir: pristine=false, başarısız=false
+// (formError dolu), başarılı=true (SADECE gerçek bir silme sonrası).
+const initialState: DeleteActionState = { success: false };
 
 export interface DeleteButtonProps {
   id: string;
@@ -18,36 +24,43 @@ export interface DeleteButtonProps {
   action: (prevState: DeleteActionState, formData: FormData) => Promise<DeleteActionState>;
 }
 
-// Hizmetler/Projeler/Referanslar/SSS/Ekip'in PAYLAŞTIĞI silme düğmesi —
-// geri alınamaz bir işlem olduğu için özel bir onay dialog'u açar (bkz.
-// ConfirmDeleteDialog — native window.confirm() DEĞİL). Dialog kapalıyken
-// sadece küçük, görsel olarak ayrışan (variant="danger") bir tetikleyici
-// buton render eder.
+// Hizmetler/Projeler/Referanslar/SSS/Ekip/Mesajlar'ın PAYLAŞTIĞI silme
+// düğmesi — geri alınamaz bir işlem olduğu için özel bir onay dialog'u
+// açar (bkz. ConfirmDeleteDialog — native window.confirm() DEĞİL).
+// Dialog kapalıyken sadece küçük, görsel olarak ayrışan (variant="danger")
+// bir tetikleyici buton render eder.
 //
-// Silme başarılı olunca dialog'u PROGRAMATİK olarak KAPATMIYORUZ (bu bir
-// effect içinde senkron setState gerektirirdi — React'in "effect'te
-// senkron setState" uyarısını tetikler). Bunun yerine Next.js'in Server
-// Action sonrası otomatik route yenilemesine güveniyoruz: silinen satır
-// listeden kalkınca DeleteButton'ın kendisi (dialog dahil) unmount olur.
-// Bu, KABUL KRİTERİ'nin istediği "net geri bildirim"i (satırın gerçekten
-// kaybolması) zaten sağlıyor. Hata durumunda satır/dialog YERİNDE kalır,
-// hata mesajı dialog içinde gösterilir.
+// 2026-08-18 DÜZELTMESİ (kullanıcı bulgusu — "Evet, Sil"e basınca pencere
+// otomatik kapanmıyor, sayfayı elle yenileyince kayboluyordu): Önceki
+// sürüm dialog'u PROGRAMATİK kapatmıyordu, sadece Next.js'in Server
+// Action sonrası "route'u yenile" davranışına güveniyordu — ama bu
+// davranış (bazı Server Action'larda revalidatePath/revalidateTag hiç
+// çağrılmadığında) HER ZAMAN tetiklenmeyebiliyor, kullanıcı bunu tam
+// olarak yaşadı. Çözüm bir `useEffect` + senkron `setState` DEĞİL
+// (`react-hooks/set-state-in-effect` lint kuralını tetikler, bkz.
+// ThemeToggle.tsx'teki aynı dersle) — `dialogOpen`, RENDER SIRASINDA
+// `open` (kullanıcının Sil/Vazgeç tıklamaları) ve `state.success`'ten
+// (useActionState'in kendi güncellemesi) doğrudan TÜRETİLİYOR: silme
+// başarılı olur olmaz (`state.success` `true` olur olmaz) dialog bir
+// sonraki render'da otomatik kapanır — ek bir effect/route-yenileme
+// varsayımı gerekmez.
 export function DeleteButton({ id, itemName, entityLabel, action }: DeleteButtonProps) {
   const [open, setOpen] = useState(false);
   const [state, formAction] = useActionState(action, initialState);
+  const dialogOpen = open && !state.success;
 
   return (
     <>
       <Button type="button" variant="danger" size="sm" onClick={() => setOpen(true)}>
         Sil
       </Button>
-      {open && (
+      {dialogOpen && (
         <ConfirmDeleteDialog
           id={id}
           itemName={itemName}
           entityLabel={entityLabel}
           action={formAction}
-          error={!state.success ? state.formError : undefined}
+          error={state.formError}
           onClose={() => setOpen(false)}
         />
       )}

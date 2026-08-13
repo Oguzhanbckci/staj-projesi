@@ -2,12 +2,13 @@
 
 import { useState, type ReactNode } from "react";
 import Link from "next/link";
-import { X, Menu as MenuIcon } from "lucide-react";
+import { ExternalLink, X, Menu as MenuIcon } from "lucide-react";
 import { useDialogBehavior } from "@/lib/hooks/useDialogBehavior";
 import { Button } from "@/components/ui/Button";
 import { SkipLink } from "@/components/ui/SkipLink";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import type { SiteThemeSettings } from "@/lib/theme/resolve";
+import { NewMessageNotifier } from "./NewMessageNotifier";
 import { PANEL_NAV_ITEMS } from "./navItems";
 
 // Genel bir "her nav öğesi rozet alabilir" sistemi bilerek KURULMADI
@@ -68,27 +69,60 @@ export function PanelShell({
   signOutAction,
   unreadMessagesCount,
   themeSettings,
+  tenantId,
   children,
 }: {
   userEmail: string;
   signOutAction: () => Promise<void>;
   unreadMessagesCount: number;
   themeSettings: SiteThemeSettings;
+  /** NewMessageNotifier'ın Realtime aboneliğini bu tenant'a filtrelemesi için. */
+  tenantId: string;
   children: ReactNode;
 }) {
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const closeMobileNav = () => setMobileNavOpen(false);
   const mobileNavRef = useDialogBehavior(mobileNavOpen, closeMobileNav);
 
+  // Okunmamış sayısı artık CANLI istemci state'i — sunucudan gelen
+  // `unreadMessagesCount` (mark-read/delete sonrası revalidatePath'in
+  // tetiklediği yeniden render'larda güncellenir) ile Realtime'ın anlık
+  // artışını (yeni mesaj geldiğinde, bkz. NewMessageNotifier) TEK bir
+  // sayaçta birleştiriyor. `useState(unreadMessagesCount)` TEK BAŞINA
+  // yeterli olmazdı — prop sonradan değişince (server yeniden render
+  // ettiğinde) lazy initializer bir daha ÇALIŞMAZ, sayaç sunucudaki
+  // gerçek değerden kopardı. Bunun yerine React'in kendi önerdiği "prop
+  // değişince state'i render SIRASINDA senkronla" deseni kullanılıyor
+  // (bir useEffect + setState DEĞİL — aynı ThemeToggle/DeleteButton
+  // dersi, `react-hooks/set-state-in-effect`'i tetiklemez).
+  const [unreadCount, setUnreadCount] = useState(unreadMessagesCount);
+  const [syncedCount, setSyncedCount] = useState(unreadMessagesCount);
+  if (unreadMessagesCount !== syncedCount) {
+    setSyncedCount(unreadMessagesCount);
+    setUnreadCount(unreadMessagesCount);
+  }
+
   return (
     <div className="flex min-h-full bg-surface">
+      <NewMessageNotifier tenantId={tenantId} setUnreadCount={setUnreadCount} />
       <SkipLink targetId="panel-main-content" />
       {/* Masaüstü: kalıcı kenar menüsü (bkz. lg: — Navbar'daki aynı
-          kırılma noktasıyla tutarlı, bkz. docs/KARAR-GUNLUGU.md 2026-08-11). */}
+          kırılma noktasıyla tutarlı, bkz. docs/KARAR-GUNLUGU.md 2026-08-11).
+          E-posta "Panel" başlığının hemen altında (kullanıcı isteği,
+          2026-08-18) — Çıkış Yap/Siteyi Görüntüle artık başlıkta, tema
+          switch'inin iki yanında. */}
       <aside className="hidden w-60 shrink-0 border-r border-neutral-300 bg-surface-raised p-4 lg:block">
-        <p className="px-3 text-h6 font-bold text-text">Panel</p>
+        <Link
+          href="/panel"
+          className="rounded-sm px-3 text-h6 font-bold text-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand"
+        >
+          Panel
+        </Link>
+        <p className="truncate px-3 text-caption text-text-muted" title={userEmail}>
+          {userEmail}
+        </p>
         <nav className="mt-6">
-          <NavList unreadMessagesCount={unreadMessagesCount} />
+          <NavList unreadMessagesCount={unreadCount} />
         </nav>
       </aside>
 
@@ -103,7 +137,13 @@ export function PanelShell({
           className="fixed inset-0 z-50 bg-surface-raised p-4 lg:hidden"
         >
           <div className="flex items-center justify-between px-3">
-            <p className="text-h6 font-bold text-text">Panel</p>
+            <Link
+              href="/panel"
+              onClick={closeMobileNav}
+              className="rounded-sm text-h6 font-bold text-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand"
+            >
+              Panel
+            </Link>
             <button
               type="button"
               onClick={closeMobileNav}
@@ -113,8 +153,11 @@ export function PanelShell({
               <X size={20} aria-hidden="true" />
             </button>
           </div>
+          <p className="truncate px-3 text-caption text-text-muted" title={userEmail}>
+            {userEmail}
+          </p>
           <nav className="mt-6">
-            <NavList onNavigate={closeMobileNav} unreadMessagesCount={unreadMessagesCount} />
+            <NavList onNavigate={closeMobileNav} unreadMessagesCount={unreadCount} />
           </nav>
         </div>
       )}
@@ -137,11 +180,23 @@ export function PanelShell({
           </button>
           {/* ml-auto: masaüstünde hamburger buton (lg:hidden) DOM'dan
               tamamen kalktığında justify-between'in tek kalan bu öğeyi
-              sola yaslamasını engeller — kardeş sayısından bağımsız
-              olarak her zaman sağa yaslı kalır. */}
+              sola yaslamasını engeller. Kullanıcı isteği (2026-08-18):
+              e-posta sidebar'a taşındı, "Siteyi Görüntüle" switch'in
+              SOLUNDA + "Çıkış Yap" switch'in SAĞINDA — dar ekranda
+              "Siteyi Görüntüle" metni gizlenip sadece ikon kalıyor
+              (aria-label ile erişilebilir kalır), taşmayı önlemek için. */}
           <div className="ml-auto flex items-center gap-3">
+            <a
+              href="/"
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="Siteyi Görüntüle"
+              className="flex items-center gap-1.5 text-base text-text-muted hover:text-brand focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand"
+            >
+              <ExternalLink size={18} aria-hidden="true" />
+              <span className="hidden sm:inline">Siteyi Görüntüle</span>
+            </a>
             <ThemeToggle settings={themeSettings} />
-            <span className="hidden text-base text-text-muted sm:inline">{userEmail}</span>
             <form action={signOutAction}>
               <Button type="submit" variant="ghost" size="sm">
                 Çıkış Yap

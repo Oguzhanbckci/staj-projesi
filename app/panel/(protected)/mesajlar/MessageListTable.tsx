@@ -1,7 +1,9 @@
 import Link from "next/link";
 import { ReadStatusBadge } from "@/components/panel/ReadStatusBadge";
+import { DeleteButton } from "@/components/panel/DeleteButton";
 import { getContactSubjectLabel } from "@/lib/validation/contact";
 import type { ContactMessageRow } from "@/lib/supabase/panelQueries";
+import { deleteMessageAction } from "./actions";
 
 // components/panel/AdminListTable.tsx ile AYNI tablo/başlık/hücre CSS
 // dili (görsel tutarlılık, panel gözden geçirmesi bulgusu) — ama
@@ -47,12 +49,22 @@ export function MessageListTable({ messages }: { messages: ContactMessageRow[] }
                 <ReadStatusBadge isRead={message.isRead} />
               </td>
               <td className="py-3 pr-4">
-                <Link
-                  href={`/panel/mesajlar/${message.id}`}
-                  className="rounded-sm font-semibold text-brand hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand"
-                >
-                  Görüntüle
-                </Link>
+                {/* gap-4 (sabit 16px) — AdminListTable'daki Düzenle/Sil
+                    aralığıyla tutarlı, bkz. o dosyadaki yorum. */}
+                <div className="flex items-center gap-4">
+                  <Link
+                    href={`/panel/mesajlar/${message.id}`}
+                    className="rounded-sm font-semibold text-brand hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand"
+                  >
+                    Görüntüle
+                  </Link>
+                  <DeleteButton
+                    id={message.id}
+                    itemName={`${message.senderName} — ${getContactSubjectLabel(message.subject)}`}
+                    entityLabel="mesaj"
+                    action={deleteMessageAction}
+                  />
+                </div>
               </td>
             </tr>
           ))}

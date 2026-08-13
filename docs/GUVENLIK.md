@@ -471,7 +471,12 @@ bkz. `app/panel/(protected)/icerikler/{hizmetler,referanslar,ekip}/`.
 içerik düzenleme ekranı yok (sadece Sayfa Düzeni görünürlük/sıra
 yönetiyor), bucket kurulsa da bağlanacak bir form yok; bu, ayrı ve daha
 büyük bir görev (bkz. `docs/DURUM.md`, "Sıradaki adım" madde 1).
-**Migration henüz gerçek Supabase projesine uygulanmadı.**
+
+**Migration Supabase'e uygulandı, kullanıcı 3 akışı (Hizmetler/
+Referanslar/Ekip) gerçek tarayıcıda uçtan uca doğruladı (2026-08-18) —
+5 bucket'ın hepsi artık gerçekten var, aşağıdaki madde 17'deki "5 bucket
+YOK" tespiti bu tarihten SONRA geçersiz (bkz. madde 17'nin sonundaki
+güncelleme notu).**
 
 ## 12. Dosya Yükleme Kuralları *(2026-08-14 eklendi)*
 
@@ -590,11 +595,11 @@ bakın.
 ### Katman 1 — Gizli tuzak alanı (honeypot)
 
 `lib/security/contactHoneypot.ts` (`isHoneypotFilled`) +
-`ContactForm.tsx`'teki `website` adlı gizli alan.
+`ContactForm.tsx`'teki gizli alan.
 
 ```ts
 // lib/security/contactHoneypot.ts
-export const HONEYPOT_FIELD_NAME = "website";
+export const HONEYPOT_FIELD_NAME = "iletisim_notu";
 
 export function isHoneypotFilled(formData: FormData): boolean {
   const value = formData.get(HONEYPOT_FIELD_NAME);
@@ -605,8 +610,16 @@ export function isHoneypotFilled(formData: FormData): boolean {
 ```tsx
 // ContactForm.tsx — gerçek ziyaretçi bunu ASLA görmez/odaklanmaz
 <div aria-hidden="true" className="absolute left-[-9999px] top-[-9999px]">
-  <label htmlFor="iletisim-website">Web siteniz</label>
-  <input type="text" id="iletisim-website" name="website" tabIndex={-1} autoComplete="off" />
+  <label htmlFor="iletisim-hp">Referans</label>
+  <input
+    type="text"
+    id="iletisim-hp"
+    name="iletisim_notu"
+    tabIndex={-1}
+    autoComplete="off"
+    data-lpignore="true"
+    data-1p-ignore="true"
+  />
 </div>
 ```
 
@@ -614,18 +627,40 @@ export function isHoneypotFilled(formData: FormData): boolean {
 tamamen çıkarır, `tabIndex={-1}` klavye Tab sırasından çıkarır,
 ekran-dışı konumlandırma (`display:none`/`visibility:hidden` DEĞİL —
 bazı botlar özellikle bunları tarayıp atlıyor) görsel olarak gizler.
-`autoComplete="off"` + "website" adı, tarayıcı otomatik doldurmasının
-false-positive riskini azaltır.
+
+**GERÇEK BİR OLAY (2026-08-18) — false-positive, gerçek müşteri
+mesajları sessizce kayboldu:** Alan adı önceden `"website"`, etiketi
+"Web siteniz" idi — bu satırların ALTINDA önceden "autoComplete=off +
+'website' adı false-positive riskini azaltır" YAZIYORDU, bu iddia
+YANLIŞ çıktı. Kullanıcı panelde yeni gönderilen mesajların hiç
+görünmediğini fark etti; sunucu logunda `submitContactForm: honeypot
+alanı dolu, gönderim yok sayıldı.` uyarısı bulundu — GERÇEK bir
+ziyaretçinin (kullanıcının kendisinin, test ederken) tarayıcısı bu
+alanı arka planda otomatik doldurmuştu. Kök sebep: Chrome/parola
+yöneticileri (LastPass, 1Password vb.) `autocomplete="off"`'u sıkça
+YOK SAYAR, "website"/"web sitesi" gibi tanınır isim+etiket
+kombinasyonlarını kendi otomatik-doldurma sezgiselleriyle eşleştirir.
+Düzeltme: alan adı `"iletisim_notu"`, etiketi "Referans" — hiçbir
+standart otomatik-doldurma kategorisiyle eşleşmeyen nötr bir isim —
++ `data-lpignore="true"`/`data-1p-ignore="true"` (LastPass/1Password'e
+özel "yok say" ipuçları) eklendi. **Ders:** bir honeypot alanının adı
+SADECE bot davranışı düşünülerek değil, gerçek tarayıcı/eklenti
+otomatik-doldurma sezgiselleri de düşünülerek seçilmeli — "website",
+"email", "phone", "name" gibi tanınır kelimeler yüksek risk taşıyor.
 
 **Ne kadar etkili / nasıl atlatılır (dürüstçe):** Formu programatik
 olarak (headless tarayıcı, script) her alanı dolduran "kaba kuvvet"
 botların büyük kısmını yakalar — bu botlar genelde DOM'daki her
 `<input>`'u görür görmez doldurur, ARIA/CSS'e bakmaz. **Atlatma yolu
-basit:** bir bot yazarı bu SİTEYİ özel olarak inceleyip "website" adlı
-alanı BOŞ bırakacak şekilde script'ini ayarlarsa (ya da genel kural
+basit:** bir bot yazarı bu SİTEYİ özel olarak inceleyip honeypot
+alanını BOŞ bırakacak şekilde script'ini ayarlarsa (ya da genel kural
 olarak "görmediğim/adı tanımadığım alanlara dokunma" stratejisi
 kullanan bir bot ise) bu katman hiç iş görmez. Yani: **jenerik/otomatik
 botlara karşı güçlü, SİTEYE ÖZEL hedeflenmiş bir bota karşı zayıf.**
+İsim değişikliği (2026-08-18) bu dengeyi hafifçe etkiledi: artık
+"website'e link yazan" DAR bot türüne karşı koruma biraz azaldı (adı
+tahmin etmesi gerekiyor), ama bu, gerçek müşteri kaybına karşı kabul
+edilebilir bir ödünleşim.
 
 **Yanlış pozitif / mesaj kaybı:** Tetiklenirse istek sessizce yok
 sayılır (DB'ye yazılmaz) ama kullanıcıya YİNE DE başarı mesajı
@@ -908,3 +943,43 @@ test-rls.mjs`, 6/6 geçti) TUTARLI — bugünkü denetim yeni bir SQL
 incelemesi, canlı DB'ye karşı yeni bir test çalıştırılmadı (madde 4'teki
 script hâlâ güncel/geçerli, yeniden çalıştırmaya gerek görülmedi çünkü
 şema/policy'ler o testten beri değişmedi).
+
+**Güncelleme (2026-08-18, aynı gün ikinci oturum) — "5 bucket YOK"
+tespiti artık geçersiz:** Yukarıdaki "5 bucket YOK" satırı bu madde
+YAZILDIKTAN SONRA (aynı gün, ikinci oturumda) geçersiz kılındı —
+`services`/`hero`/`about`/`testimonials`/`team` bucket'larının hepsi
+oluşturuldu, Supabase'e uygulandı ve kullanıcı tarafından gerçek
+tarayıcıda doğrulandı (bkz. madde 11'in sonu). Erişim deseni
+`projects`/`branding` ile BİREBİR AYNI (public=true + 5-policy: anon
+sadece select, authenticated tam CRUD) — bu maddenin yukarıdaki genel
+sonucunu ("anon sadece okur, hiç yazamaz") DEĞİŞTİRMİYOR, sadece
+kurulu bucket sayısını 2'den 7'ye çıkarıyor.
+
+## 18. Realtime Erişimi — Panelde Anlık Bildirim *(2026-08-18 eklendi)*
+
+Panel açıkken yeni bir iletişim mesajı geldiğinde sayfa yenilenmeden
+toast bildirimi + anlık okunmamış sayaç artışı için Supabase Realtime
+(`postgres_changes`, INSERT) eklendi (`components/panel/
+NewMessageNotifier.tsx`). Yeni migration: `supabase/migrations/
+20260818130000_enable_realtime_contact_messages.sql` — `contact_messages`
+tablosunu `supabase_realtime` publication'ına ekliyor.
+
+**Bunun yeni bir erişim genişletmesi OLMADIĞININ gerekçesi:** Supabase
+Realtime, bir tablo publication'a eklense bile **o tablonun kendi
+RLS'ine tabidir** — bir istemcinin belirli bir `postgres_changes`
+olayını GÖREBİLMESİ için, o olaya konu satırı normal bir `SELECT`
+sorgusuyla da okuyabiliyor olması gerekir. `contact_messages`'ta anon
+rolüne hiç `SELECT` policy'si yok (madde 2, madde 17) — yani **anon-key'li
+bir istemci bu Realtime kanalını hiçbir zaman göremez**, ne site
+ziyaretçisi ne de kimliksiz bir istemci. Aboneliği sadece giriş yapmış
+panel oturumu (`authenticated` rolü — zaten `contact_messages` üzerinde
+tam `SELECT` izinli, madde 2) açabiliyor; `NewMessageNotifier`, kanalı
+`tenant_id=eq.<aktif tenant>` filtresiyle daraltıyor (yine RLS'in
+üstüne, ek bir uygulama-seviyesi filtre — RLS zaten anon'u tamamen
+dışarıda bırakıyor).
+
+**Doğrulama durumu:** Migration bu oturumda YAZILDI ama **henüz gerçek
+Supabase projesine uygulanmadı** — uygulanana kadar Realtime aboneliği
+sessizce hiçbir olay almaz (hata vermez, sadece bildirim gelmez).
+İki-sekmeli canlı test de henüz yapılmadı. Bkz. `docs/DURUM.md`,
+"Sıradaki adım" madde 0c.
