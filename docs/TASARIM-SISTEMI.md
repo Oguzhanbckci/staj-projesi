@@ -10,7 +10,7 @@ yerde: **`app/globals.css`** (Tailwind CSS v4, CSS-first `@theme`
 konfigürasyonu — bkz. `MIMARI.md` madde 3). Bu dosya "neden", `globals.css`
 "nasıl"dır — biri değişirse diğeri güncel tutulmalı.
 
-**Son güncelleme:** 2026-08-15
+**Son güncelleme:** 2026-08-18 (yeni renk paleti denemesi — bkz. madde 1-2)
 
 ## 0. İlkeler
 
@@ -45,18 +45,25 @@ gereği "nötr griler marka rengine hafif eğilim taşısın" isteğini karşıl
 
 | Token                 | Hex       | Kullanım amacı                                                   |
 | --------------------- | --------- | ---------------------------------------------------------------- |
-| `--color-neutral-50`  | `#f0f2f4` | Açık tema sayfa zemini                                           |
-| `--color-neutral-100` | `#e2e5e9` | Açık tema hafif bölücü/arka plan tonu; koyu temada ikincil metin |
-| `--color-neutral-300` | `#a8b0bd` | Açık VE koyu temada ortak kenarlık/dekoratif çizgi tonu (sabit, temaya göre değişmez — `--color-text-muted` 2026-08-18'den beri bu tokene bağlı DEĞİL, bkz. madde 1.3) |
-| `--color-neutral-500` | `#5e6a7d` | Açık temada muted (üçüncül) metin                                |
-| `--color-neutral-700` | `#373e49` | Açık temada ikincil metin/dekoratif kenarlık                     |
-| `--color-neutral-800` | `#21252c` | Koyu tema kart/panel zemini (`surface-raised`)                   |
-| `--color-neutral-900` | `#16191d` | Açık temada birincil metin; koyu tema sayfa zemini               |
+| `--color-neutral-50`  | `#f0f2f4` | Dekoratif/panel amaçlı ham skala basamağı (bkz. not aşağıda)     |
+| `--color-neutral-100` | `#e2e5e9` | Dekoratif/panel amaçlı ham skala basamağı                        |
+| `--color-neutral-300` | `#e2e6eb` (açık) / `#303844` (koyu) *(2026-08-18)* | Kenarlık (`border-neutral-300`, ~40 dosyada) — **artık temaya göre DEĞİŞİR**, eskiden sabitti (bkz. madde 1.3 altındaki not) |
+| `--color-neutral-500` | `#5e6a7d` | Dekoratif/panel amaçlı ham skala basamağı                        |
+| `--color-neutral-700` | `#373e49` | Dekoratif/panel amaçlı ham skala basamağı                        |
+| `--color-neutral-800` | `#21252c` | Dekoratif/panel amaçlı ham skala basamağı                        |
+| `--color-neutral-900` | `#16191d` | Dekoratif/panel amaçlı ham skala basamağı; `--color-brand-on` (koyu) sabit değeri |
+
+**Not (2026-08-18):** `--color-surface`/`--color-surface-raised`/`--color-text`/
+`--color-text-muted` artık bu ham skalaya `var()` ile bağlı DEĞİL — kullanıcının
+yeni paletiyle kendi doğrudan hex değerlerini aldılar (madde 1.3). Skala hâlâ
+mevcut ve `app/globals.css`'te tanımlı (geriye dönük/dekoratif kullanım için),
+ama artık yüzey/metin token'larının kaynağı değil.
 
 | Token              | Açık tema | Koyu tema | Kullanım amacı                                                                     |
 | ------------------ | --------- | --------- | ---------------------------------------------------------------------------------- |
-| `--color-brand`    | `#2561c1` | `#5b9bff` *(2026-08-18: `#6998e2`'den canlandırıldı, bkz. madde 2 notu)* | Vurgu rengi — CTA buton, link, aktif durum. **Varsayılan**; tenant'a göre değişir. |
+| `--color-brand`    | `#2563a8` | `#3b82c4` *(2026-08-18: kullanıcının yeni tam palet denemesi — bkz. madde 2 notu "(3)" ve `KARAR-GUNLUGU.md`)* | Vurgu rengi ("Accent") — CTA buton, link, aktif durum. **Varsayılan**; tenant'a göre değişir. |
 | `--color-brand-on` | `#ffffff` | `#16191d` | `--color-brand` dolgusu üzerindeki metin/ikon rengi (buton etiketi)                |
+| `--color-hero`      | `#1e4278` | `#183b6b` *(2026-08-18, YENİ token)* | Hero bölümünün (`HeroVariantA.tsx`) görsel yoksa gösterilen zemin rengi — marka renginden BİLEREK ayrı, kullanıcının paletinde ayrı bir "Hero" alanı olduğu için. |
 | `--color-accent`    | `var(--color-surface-raised)` | `var(--color-surface-raised)` | İkincil/accent renk (2026-08-15) — `site_settings.secondary_color` boşken nötr, doluysa tenant'ın rengi. `Button`/`LinkButton` `accent` varyantı, Eylem Çağrısı butonu. |
 | `--color-accent-on` | `var(--color-text)` | `var(--color-text)` | `--color-accent` dolgusu üzerindeki metin rengi — WCAG-doğru hesaplanır (bkz. `docs/TEMA-MIMARISI.md` madde 6, `lib/theme/contrast.ts`) |
 
@@ -79,58 +86,73 @@ karışmaz.
 
 | Token                    | Açık tema                 | Koyu tema                 | Kullanım amacı                                      |
 | ------------------------ | ------------------------- | ------------------------- | --------------------------------------------------- |
-| `--color-surface`        | `#f0f2f4` (`neutral-50`)  | `#16191d` (`neutral-900`) | Sayfa zemini                                        |
-| `--color-surface-raised` | `#ffffff`                 | `#21252c` (`neutral-800`) | Kart/panel zemini — sayfadan bir seviye "yükselti"  |
-| `--color-text`           | `#16191d` (`neutral-900`) | `#ffffff` *(2026-08-18)*  | Birincil/gövde metni                                |
-| `--color-text-muted`     | `#5e6a7d` (`neutral-500`) | `#c7ced9` *(2026-08-18)*  | İkincil/daha az önemli metin (meta bilgi, açıklama) |
+| `--color-surface`        | `#f7f8fa`                 | `#171b21`                 | Sayfa zemini ("Sayfa")                              |
+| `--color-surface-raised` | `#ffffff`                 | `#242a33`                 | Kart/panel zemini ("Kart") — sayfadan bir seviye "yükselti" |
+| `--color-text`           | `#172033`                 | `#f1f4f7`                 | Birincil/gövde metni ("Başlık")                     |
+| `--color-text-muted`     | `#5f6b7a`                 | `#aeb7c2`                 | İkincil/daha az önemli metin ("Metin" — meta bilgi, açıklama) |
+
+**Not (2026-08-18):** Dördü de artık `--color-neutral-*` ham skalasına
+`var()` ile bağlı DEĞİL, kendi doğrudan hex değerleri var — kullanıcının
+verdiği yeni palet ("Sayfa"/"Kart"/"Başlık"/"Metin" adlarıyla) doğrudan
+uygulandı. Ayırmadan önce bu 4 rolün dışında `neutral-50/300/500/800/900`
+sınıflarının kod tabanında başka hiçbir yerde kullanılmadığı `grep` ile
+doğrulandı — ayırmanın yan etkisi yok.
 
 ## 2. Kontrast Ölçüm Sonuçları
 
 WCAG 2.1 relative-luminance formülüyle hesaplandı (sRGB → luminance →
 contrast ratio). Eşik: gövde metni ≥4.5:1, büyük başlık/UI dolgu metni
-≥3:1. **36 çiftin tamamı geçti**, en düşük marj 4.72:1 — hiçbiri sınırda
-bırakılmadı.
+≥3:1. **Aşağıdaki tablo, 2026-08-18'deki YENİ TAM PALET denemesinden
+SONRAKİ güncel durumu gösterir (3. ve son renk değişikliği, aynı gün —
+bkz. not "(3)" aşağıda)** — 2 çift *(2)* hâlâ 4.5:1'in altında (turuncudan
+kalma, aynı bağlamda mavi de altında), 1 çift YENİ *(3)* olarak
+4.5:1'in az altına düştü (koyu `error`/`surface-raised`).
 
 | Çift                                     | Açık tema     | Koyu tema     | Eşik  | Sonuç |
 | ---------------------------------------- | ------------- | ------------- | ----- | ----- |
-| `text` / `surface`                       | 15.71:1       | 17.63:1       | 4.5:1 | ✅    |
-| `text` / `surface-raised`                | 17.63:1       | 15.38:1       | 4.5:1 | ✅    |
-| `text-muted` / `surface`                 | 4.88:1        | 11.13:1       | 4.5:1 | ✅    |
-| `text-muted` / `surface-raised`          | 5.48:1        | 9.71:1        | 4.5:1 | ✅    |
-| `brand` metin/link / `surface`           | 5.26:1        | 6.36:1        | 4.5:1 | ✅    |
-| `brand` metin/link / `surface-raised`    | 5.90:1        | 5.55:1        | 4.5:1 | ✅    |
-| `brand-on` / `brand` (buton dolgusu)     | 5.90:1        | 6.36:1        | 4.5:1 | ✅    |
-| `brand` / `surface` (büyük başlık)       | 5.26:1        | 6.36:1        | 3:1   | ✅    |
-| `success` / `surface` + `surface-raised` | 4.93 / 5.54:1 | 6.48 / 5.65:1 | 4.5:1 | ✅    |
-| `warning` / `surface` + `surface-raised` | 4.87 / 5.46:1 | 5.79 / 5.05:1 | 4.5:1 | ✅    |
-| `error` / `surface` + `surface-raised`   | 6.18 / 6.94:1 | 5.42 / 4.72:1 | 4.5:1 | ✅    |
+| `text` / `surface`                       | 15.31:1       | 15.66:1       | 4.5:1 | ✅    |
+| `text` / `surface-raised`                | 16.27:1       | 13.08:1       | 4.5:1 | ✅    |
+| `text-muted` / `surface`                 | 5.11:1        | 8.52:1        | 4.5:1 | ✅    |
+| `text-muted` / `surface-raised`          | 5.43:1        | 7.12:1        | 4.5:1 | ✅    |
+| `brand` metin/link / `surface`           | 5.76:1        | 4.26:1        | 4.5:1 | ⚠️ *(2)* |
+| `brand` metin/link / `surface-raised`    | 6.12:1        | 3.56:1        | 4.5:1 | ⚠️ *(2)* |
+| `brand-on` / `brand` (buton dolgusu)     | 6.12:1        | 4.35:1        | 4.5:1 | ⚠️ *(2)* |
+| `brand` / `surface` (büyük başlık)       | 5.76:1        | 4.26:1        | 3:1   | ✅    |
+| `hero` metin (beyaz sabit, bkz. madde 1.1) | 9.97:1      | 11.19:1       | 4.5:1 | ✅    |
+| `success` / `surface` + `surface-raised` | 5.21 / 5.54:1 | 6.35 / 5.31:1 | 4.5:1 | ✅    |
+| `warning` / `surface` + `surface-raised` | 5.14 / 5.46:1 | 5.68 / 4.74:1 | 4.5:1 | ✅    |
+| `error` / `surface` + `surface-raised`   | 6.53 / 6.94:1 | 5.31 / 4.44:1 | 4.5:1 | ⚠️ *(3)* (sadece `surface-raised`) |
 
 **Not:** Hesaplama, AI tarafından yazılan tek seferlik bir Node script'iyle
 yapıldı (repoya eklenmedi, geçiciydi). Kullanıcı bağımsız bir kontrast
 aracıyla da doğrulayacağını belirtti; küçük yuvarlama farkları (±0.01-0.02)
 dışında sonuç değişmemesi beklenir.
 
-**Güncelleme (2026-08-18) — koyu mod canlandırıldı:** Kullanıcı, yeni
-eklenen ziyaretçi açık/koyu tema switch'iyle (bkz.
-`components/site/ThemeToggle.tsx`) koyu modu ilk kez gerçekten
-kullanınca `--color-text`, `--color-text-muted` ve `--color-brand`'ın
-"soluk/donuk" durduğunu bildirdi — bu, önceki satırlardaki değerler
-(text `#f0f2f4`, text-muted `neutral-300`/`#a8b0bd`, brand `#6998e2`)
-WCAG eşiğini rahat geçse de göz kararıyla "en canlı" seçenek
-olmayabilirdi. Üç token `lib/theme/contrast.ts`'in AYNI formülüyle
-yeniden hesaplanarak canlandırıldı: `text`→`#ffffff`,
-`text-muted`→`#c7ced9` (artık `neutral-300`'e bağlı değil, kendi
-doğrudan değeri var — neutral ölçeği sabit/temadan bağımsız kaldığı
-için ayrı tutuldu), `brand`→`#5b9bff` (Modern Koyu preset'i de aynı
-gerekçeyle `#24a8a4`→`#2bd1c9`). Üçü de kontrastı DÜŞÜRMEDİ, tam
-tersine yükseltti (yukarıdaki tablo güncel değerleri gösteriyor) —
-"daha canlı" ile "WCAG'i düşürme" arasında bir ödünleşim yoktu, sadece
-daha önce gereğinden ihtiyatlı seçilmiş tonlar aynı anda hem
-canlandırıldı hem kontrastı arttı. Ayrıca `components/site/Footer.tsx`
-(önceden sabit `bg-neutral-900`, temadan bağımsız) ve 6 görsel
-placeholder bileşeni (sabit `bg-neutral-300`) tema-duyarlı token'lara
-(`bg-surface-raised`/`bg-surface`) çevrildi — detay:
-`docs/KARAR-GUNLUGU.md`, "koyu mod canlandırma".
+**(2) 2026-08-18, koyu mod marka rengi mavi kaldı (turuncudan kalma
+durum, yeni palette de aynı aralıkta) — dürüstçe işaretlendi:** Aynı gün
+koyu moddaki marka rengi ÖNCE `#c36628` (turuncu, "koyu zeminde mavi çok
+boğuyor" geri bildirimiyle) oldu, SONRA kullanıcı tamamen yeni bir palet
+verip bunu kendi isteğiyle `#3b82c4` (mavi, ama eski `#5b9bff`'ten farklı
+— daha doygun) ile geçersiz kıldı. Yeni renk koyu `surface`/
+`surface-raised`'e karşı 4.26:1/3.56:1 veriyor — WCAG'in gövde-metni
+eşiğinin (4.5:1) az altında ama büyük-metin/UI-bileşeni eşiğini (3:1,
+WCAG 1.4.11/2.4.7) rahat geçiyor — turuncudaki (4.41/3.85) ile aynı
+büyüklük mertebesinde bir ödünleşim. Bu ÜÇ satırdaki kullanımların hepsi
+pratikte büyük/kalın metin bağlamında (buton etiketi, link, aktif durum
+vurgusu) — küçük gövde metni olarak kullanılmıyor, bu yüzden ⚠️ olarak
+işaretlendi (❌ değil). Kullanıcının açık, iki kez tekrarlanan tercihiyle
+kabul edildi, gizlenmedi. Detay: `KARAR-GUNLUGU.md`.
+
+**(3) 2026-08-18, YENİ — koyu `error`/`surface-raised` 4.5:1'in az altına
+düştü (4.44:1):** `--color-error` (`#e6656e`) hiç değişmedi, ama koyu
+`surface-raised` (`--color-neutral-800`/`#21252c` idi) kullanıcının yeni
+paletiyle `#242a33`'e değişince ikisi arasındaki oran 4.72:1'den 4.44:1'e
+düştü — 0.06 farkla eşiğin altında. Pratikte bu çift form validasyon
+hatası/silme onayı gibi kısa, genelde kalın/vurgulu metinlerde kullanılıyor
+(küçük gövde paragrafı değil), bu yüzden ⚠️ olarak işaretlendi; yine de
+diğer iki ⚠️'den farklı olarak bu YENİ bir bulgu, önceki bir kullanıcı
+kararının uzantısı değil — bilinçli biçimde işaretlenip kullanıcıya
+bildirildi, sessizce geçilmedi.
 
 **Kapsam dışı bırakılan:** `info` semantik rengi (yönerge sadece 3 semantik
 renk — başarı/uyarı/hata — istedi) ve kenarlık (border) token'ları için

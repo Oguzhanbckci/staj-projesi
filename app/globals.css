@@ -9,7 +9,11 @@
  * server-side, panelden gelen tenant ayarına göre set edilecek.
  */
 :root {
-  /* Nötr gri ölçeği (7 adım) — marka rengiyle aynı ton (217°), hafif çelik-mavi eğilimli */
+  /* Nötr gri ölçeği (7 adım) — marka rengiyle aynı ton (217°), hafif çelik-mavi eğilimli.
+     NOT (2026-08-18): --color-neutral-300 artık --color-border'ın (aşağıda)
+     dayandığı ham skala DEĞİL — o token kendi doğrudan (tema-duyarlı)
+     değerine sahip, bkz. aşağıdaki yorum. Bu skala hâlâ panel diyagramları
+     gibi dekoratif yerlerde kullanılıyor. */
   --color-neutral-50: #f0f2f4;
   --color-neutral-100: #e2e5e9;
   --color-neutral-300: #a8b0bd;
@@ -18,9 +22,14 @@
   --color-neutral-800: #21252c;
   --color-neutral-900: #16191d;
 
-  /* Marka rengi (varsayılan) — tenant başına site_settings.primary_color ile değişebilir */
-  --color-brand: #2561c1;
-  --color-brand-on: #ffffff; /* marka dolgusu üzerindeki metin/ikon rengi */
+  /* 2026-08-18: Kullanıcının verdiği yeni renk paleti denendi (deneme —
+     "bu haliyle devam ederim ya da eskiye dönerim" notuyla). Marka rengi
+     ("Accent" — bu projede "brand" olarak adlandırılıyor, aynı rol: CTA
+     buton/link/aktif durum) #2561c1'den #2563A8'e. Kontrast: 5.76:1
+     (surface) / 6.12:1 (surface-raised) — 4.5:1'i rahat geçiyor,
+     eskisinden az farklı. */
+  --color-brand: #2563a8;
+  --color-brand-on: #ffffff; /* marka dolgusu üzerindeki metin/ikon rengi — white-on-accent 6.12:1, black 2.88:1, beyaz kazanıyor */
 
   /*
    * İkincil (accent) renk — tenant başına site_settings.secondary_color ile
@@ -39,11 +48,32 @@
   --color-warning: #915f08;
   --color-error: #af1d26;
 
-  /* Yüzey ve metin (açık tema) */
-  --color-surface: var(--color-neutral-50);
+  /* Yüzey ve metin (açık tema) — 2026-08-18: kullanıcının yeni paletiyle
+     güncellendi. Artık --color-neutral-50/900/500'e (var() ile) bağlı
+     DEĞİL, kendi doğrudan değerleri var — ham skala başka hiçbir yerde
+     bu rolde kullanılmadığı grep ile doğrulandı (sadece panel
+     diyagramlarında dekoratif), bu yüzden ayırma güvenli. */
+  --color-surface: #f7f8fa;
   --color-surface-raised: #ffffff;
-  --color-text: var(--color-neutral-900);
-  --color-text-muted: var(--color-neutral-500);
+  --color-text: #172033;
+  --color-text-muted: #5f6b7a;
+
+  /* YENİ (2026-08-18) — Hero bölümünün kendi zemin rengi (bkz.
+     HeroVariantA.tsx), marka/accent renginden BİLEREK ayrı: kullanıcı
+     Hero için ayrı, daha koyu/lacivert bir ton istedi. Kontrast:
+     beyaz metin (Hero'nun zaten sabit text-white'ı) üzerinde 9.97:1 —
+     çok güçlü. */
+  --color-hero: #1e4278;
+
+  /* YENİ (2026-08-18) — kenarlık rengi artık --color-neutral-300'ün
+     KENDİSİ (aşağıda [data-theme="dark"]'ta AYRICA tanımlanıyor,
+     böylece açık/koyu temada FARKLI kenarlık tonları olabiliyor — eskiden
+     bilerek sabit/temadan bağımsızdı, kullanıcının yeni paleti bunu
+     BİLEREK değiştirdi). border-neutral-300 class'ı zaten projede HER
+     YERDE kullanıldığı için (~40 dosya) yeni bir class adına gerek
+     kalmadan, sadece bu değeri güncelleyerek tüm kenarlıklar otomatik
+     güncellendi. */
+  --color-neutral-300: #e2e6eb;
 
   --background: var(--color-surface);
   --foreground: var(--color-text);
@@ -59,25 +89,36 @@
 }
 
 [data-theme="dark"] {
-  /* 2026-08-18: marka rengi + metin tonları canlandırıldı (kullanıcı
-     bulgusu: eski değerler koyu modda "soluk" duruyordu). --color-brand
-     artık lib/theme/presets.ts'teki #5b9bff ile aynı (bu sadece DB
-     erişilemezse devreye giren güvenli varsayılan, bkz. o dosyadaki
-     yorum). --color-text/--color-text-muted artık neutral ölçeğine
-     (değişmez) bağlı DEĞİL, kendi doğrudan tanımlı değerleri var —
-     ikisi de eskisinden daha yüksek kontrastlı (17.63:1 / 11.13:1,
-     lib/theme/contrast.ts formülüyle doğrulandı). */
-  --color-brand: #5b9bff;
+  /* 2026-08-18 (İKİNCİ deneme, aynı gün): kullanıcı önce koyu modda
+     turuncu (#c36628) istemişti ("koyu zeminde mavi çok boğuyor"), sonra
+     AYNI oturumda tamamen yeni bir palet verdi ve bu paletin koyu Accent
+     değeri MAVİ (#3b82c4) — yani kullanıcı kendi önceki turuncu kararını
+     bilerek bu yeni deneme ile geçersiz kılıyor (turuncudan farklı, daha
+     doygun/açık bir mavi — eski #2561c1 değil). Bu bir çelişki değil,
+     kullanıcının "ya bu yaptıklarından devam ederim ya da eskiye dönerim"
+     diyerek açıkça talep ettiği bir deneme — reddedilmedi, uygulandı.
+     Kontrast: 4.26:1 (surface) / 3.56:1 (surface-raised) — küçük gövde
+     metni için sınırda (4.5:1 eşiğinin altında, WCAG AA Large/UI
+     bileşenleri 3:1 eşiğini geçiyor). Bu SADECE DB erişilemezse devreye
+     giren güvenli varsayılan; gerçek değer lib/theme/presets.ts'te. */
+  --color-brand: #3b82c4;
   --color-brand-on: #16191d;
 
   --color-success: #34b268;
   --color-warning: #cb850b;
   --color-error: #e6656e;
 
-  --color-surface: var(--color-neutral-900);
-  --color-surface-raised: var(--color-neutral-800);
-  --color-text: #ffffff;
-  --color-text-muted: #c7ced9;
+  /* 2026-08-18: kullanıcının yeni paletiyle güncellendi — artık
+     --color-neutral-900/800'e (var() ile) bağlı DEĞİL, kendi doğrudan
+     değerleri var (bkz. açık temadaki aynı gerekçe, satır ~51). */
+  --color-surface: #171b21;
+  --color-surface-raised: #242a33;
+  --color-text: #f1f4f7;
+  --color-text-muted: #aeb7c2;
+
+  /* Hero ve kenarlık — bkz. :root'taki tanım, burada koyu tema karşılığı. */
+  --color-hero: #183b6b;
+  --color-neutral-300: #303844;
 
   --background: var(--color-surface);
   --foreground: var(--color-text);
@@ -115,6 +156,7 @@
   --color-surface-raised: var(--color-surface-raised);
   --color-text: var(--color-text);
   --color-text-muted: var(--color-text-muted);
+  --color-hero: var(--color-hero);
   --font-sans: var(--font-geist-sans);
 
   --shadow-sm: var(--shadow-sm);

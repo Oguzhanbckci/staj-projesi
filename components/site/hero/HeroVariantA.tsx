@@ -28,7 +28,7 @@ export function HeroVariantA({
   return (
     <section
       id="hero"
-      className="relative flex min-h-[70vh] items-center justify-center overflow-hidden bg-brand"
+      className="relative flex min-h-[70vh] items-center justify-center overflow-hidden bg-hero"
     >
       {imageUrl && (
         <Image src={imageUrl} alt="" fill priority sizes="100vw" className="object-cover" />

@@ -52,7 +52,7 @@ DB'den enjekte edilebilen** token'lar:
 
 | Token | Kaynak | Varsayılan (statik, `globals.css`) | Runtime'da nereden gelir |
 |---|---|---|---|
-| `--color-brand` | `lib/theme/presets.ts` + `site_settings.primary_color` | `#2561c1` (açık) / `#6998e2` (koyu) | Preset veya tenant'ın özel rengi |
+| `--color-brand` | `lib/theme/presets.ts` + `site_settings.primary_color` | `#2563a8` (açık) / `#3b82c4` (koyu) *(2026-08-18, bkz. `TASARIM-SISTEMI.md`)* | Preset veya tenant'ın özel rengi |
 | `--color-brand-on` | `lib/theme/presets.ts` + hesaplanan | `#ffffff` (açık) / `#16191d` (koyu) | Preset veya `pickReadableTextColor()` (bkz. madde 6, "Kontrast Güvenliği") |
 | `--color-accent` | `site_settings.secondary_color` | `var(--color-surface-raised)` (nötr, "secondary" buton görünümüyle aynı) | Sadece `secondary_color` doluysa enjekte edilir |
 | `--color-accent-on` | hesaplanan | `var(--color-text)` | `secondary_color` doluysa `pickReadableTextColor()` |
@@ -71,7 +71,7 @@ bkz. `supabase/migrations/20260808120000_add_theme_preset_to_site_settings.sql`)
 
 | Preset | Marka (açık) | Marka (koyu) | Radius | Font |
 |---|---|---|---|---|
-| **Kurumsal Mavi** (`kurumsal-mavi`, varsayılan) | `#2561c1` | `#6998e2` | 4/8/12/16px (ölçülü) | Geist Sans |
+| **Kurumsal Mavi** (`kurumsal-mavi`, varsayılan) | `#2563a8` | `#3b82c4` | 4/8/12/16px (ölçülü) | Geist Sans |
 | **Modern Koyu** (`modern-koyu`) | `#166966` | `#24a8a4` | 6/12/20/28px (daha yuvarlak) | Manrope |
 
 Her iki preset'in marka rengi de açık **ve** koyu zeminde ≥4.5:1 (gövde) /

@@ -15,21 +15,62 @@ geçmişi) oku. Yeni bir müşteri kurulumu yapılacaksa `KURULUM.md`'ye
 (sıfırdan kurulum, geliştirici için), panelin günlük kullanımı için
 `MUSTERİ-KILAVUZU.md`'ye (teknik olmayan okuyucu için) bakılır.
 
-**Son güncelleme:** 2026-08-18 (üçüncü-beşinci oturumlar) — Ziyaretçi
+**Son güncelleme:** 2026-08-18 (beşinci oturum, YENİ) — Kullanıcının
+verdiği tamamen yeni bir açık+koyu renk paleti (Sayfa/Kart/Hero/Başlık/
+Metin/Accent/Border) **deneme olarak** projeye uygulandı — kullanıcının
+kendi çerçevesi: "ya bu haliyle devam ederim ya da eskiye dönerim".
+`--color-surface`/`-surface-raised`/`-text`/`-text-muted`/`-brand`
+kullanıcının değerleriyle güncellendi ve artık ham `--color-neutral-*`
+skalasına bağlı DEĞİL (kendi doğrudan değerleri var); YENİ `--color-hero`
+token'ı eklendi (`HeroVariantA.tsx`'in görselsiz zemin rengi, marka
+renginden ayrı); kenarlık rengi (`--color-neutral-300`) artık açık/koyu
+temada FARKLI (eskiden sabitti). **Bulunan ve kullanıcıya açıkça
+bildirilen bir çelişki:** yeni paletin koyu Accent'i MAVİ — kullanıcı
+bu oturumun başında (3. oturum) koyu marka rengini BİLEREK turuncuya
+çevirmişti ("koyu zeminde mavi çok boğuyor"); kullanıcı kendi yeni
+talebiyle bu kararı bilerek geçersiz kılıyor, AI soru sormadan harfiyen
+uyguladı ama çelişkiyi kodda/dokümanda gizlemedi. Kontrast yeniden
+hesaplandı: 2 çift hâlâ (turuncudaki gibi) 4.5:1'in az altında (koyu
+brand/surface — 3:1 UI eşiğini geçiyor), 1 YENİ çift az altına düştü
+(koyu error/surface-raised, 4.44:1) — dürüstçe işaretlendi. Detay:
+`KARAR-GUNLUGU.md`, "beşinci oturum"; `TASARIM-SISTEMI.md` madde 1-2
+tamamen güncellendi. `npm run build`/`lint` AI tarafından çalıştırılıp
+temiz doğrulandı — **kullanıcı henüz tarayıcıda görmedi, nihai karar
+(devam/eskiye dönüş) ona ait.**
+
+**Önceki güncelleme (aynı gün, üçüncü-dördüncü oturumlar):** Ziyaretçi
 açık/koyu tema switch'i (site tüm sayfalarda + panel + giriş sayfası,
 Next.js'in resmi FOUC-önleme deseniyle) kuruldu; kullanıcı bulgusuyla
 koyu mod paleti canlandırıldı (metin/marka rengi WCAG kontrastı
 YÜKSELTİLEREK, Footer + 6 görsel placeholder tema-duyarlı hale
-getirildi); panel başlık hizası ve `ThemeToggle`'daki gerçek bir
-hydration hatası (`useSyncExternalStore`'a geçilerek) düzeltildi;
-İstatistikler bölümündeki ortalama/boşluk/font sorunu (sabit
+getirildi, marka rengi kullanıcı tercihiyle turuncuya çevrildi — bu
+karar 5. oturumda kullanıcının kendi yeni talebiyle bilerek geçersiz
+kılındı, yukarı bakın); panel başlık hizası ve `ThemeToggle`'daki
+gerçek bir hydration hatası (`useSyncExternalStore`'a geçilerek)
+düzeltildi; İstatistikler bölümündeki ortalama/boşluk/font sorunu (sabit
 grid-cols(4) ama 3 kayıt olduğu için grup sola kayıyordu) flex+
 justify-center'a çevrilerek düzeltildi; iletişim formunun telefon
 alanı sadece-rakam + uzunluk sınırına kavuştu (ülke kodu seçici
-denenip kullanıcı geri bildirimiyle geri alındı). Tüm detay:
-`KARAR-GUNLUGU.md`, "üçüncü/dördüncü/beşinci oturum". `npm run build`/
+denenip kullanıcı geri bildirimiyle geri alındı); panel Mesajlar'a
+onaylı silme eklendi (gerçek bug: dialog otomatik kapanmıyordu —
+`state.success` başlangıcı `false`'a çekilerek düzeltildi); okunmamış
+mesaj sayacı artık CANLI (`revalidatePath(..., "layout")` + Supabase
+Realtime `postgres_changes` ile — panel açıkken yeni mesaj geldiğinde
+sayfa yenilenmeden toast bildirimi + anlık sayaç artışı, YENİ
+`components/ui/Toast.tsx`/`ToastContainer.tsx` + `components/panel/
+NewMessageNotifier.tsx`); **kritik bir üretim hatası bulunup
+düzeltildi:** honeypot alanının adı/etiketi ("website"/"Web siteniz")
+tarayıcı/şifre yöneticisi otomatik doldurma sezgileriyle çakışıp GERÇEK
+müşteri mesajlarını sessizce spam sayıyordu — **kullanıcının 2 gerçek
+test mesajı geri getirilemez şekilde kayboldu**, alan adı nötr bir
+değere (`iletisim_notu`) çevrilerek kalıcı olarak düzeltildi. Tüm
+detay: `KARAR-GUNLUGU.md`, "üçüncü/dördüncü oturum". `npm run build`/
 `lint`/`test:unit` kullanıcı tarafından doğrulandı, hepsi temiz —
-commit'lenmeyi bekliyor.
+Realtime migration'ı (`20260818130000_...`) henüz Supabase'e
+uygulanmadı, iki-sekmeli canlı test henüz yapılmadı, commit'lenmeyi
+bekliyor. Ayrıca ilgisiz ama gerçek bir bug flag'lendi (ele alınmadı):
+proje görselleri "projects/projects/..." şeklinde iki kez tekrarlanan
+bir Storage yolu 400 hatası veriyor.
 
 **Önceki güncelleme (aynı gün, ilk-ikinci oturumlar):** Önceki oturumun "madde 0"ı (commit/push
 + canlı doğrulama) fiilen tamamlanmış bulundu: `git status` temiz,
@@ -1462,6 +1503,18 @@ işaretliyor, daha kesin bir ikinci katman. Detay: `SEO-PERFORMANS.md`.
    hash'ler: `083c408`, `992fe9f`), (b) **bundan sonra commit/push'u AI
    çalıştırmayacak, sadece komutları verecek**, Co-Authored-By satırı da
    bir daha eklenmeyecek. Detay: `KARAR-GUNLUGU.md`, "üçüncü bir olay".
+0c. **(En yüksek öncelik — bir sonraki oturum buradan başlamalı,
+   2026-08-18 beşinci oturumun bittiği yer)**
+   - Yeni renk paletini (bkz. yukarıdaki "Son güncelleme") tarayıcıda
+     gör, devam et ya da eskiye dön kararını ver. Kod/doküman hazır,
+     commit'ler bekliyor — sadece bu karar kaldı.
+   - `supabase/migrations/20260818130000_enable_realtime_contact_messages.sql`
+     henüz Supabase'e (SQL Editor) UYGULANMADI — uygulanmadan Realtime
+     toast bildirimi çalışmaz. Uygulandıktan sonra iki sekmede (biri
+     `/iletisim`'den mesaj gönderiyor, diğeri `/panel/mesajlar`'da
+     açık) canlı test edilmeli.
+   - Aşağıdaki commit'ler henüz push'lanmadı — bu iki grup, ilgili
+     dosyaları kapsıyor (bkz. sohbetin sonundaki komutlar).
 0b. **(Yüksek öncelik, henüz ele alınmadı — 2026-08-18 mentör
    incelemesi)** Panel gerçekte çok-kiracılı değil: yeni tenant
    oluşturma, tenant seçme/listeleme, demo katalog import (PRD madde
@@ -1507,6 +1560,14 @@ işaretliyor, daha kesin bir ikinci katman. Detay: `SEO-PERFORMANS.md`.
    Console'a sitemap gönderimi, gerçek URL ile Zengin Sonuçlar Testi
    tekrarı, WhatsApp/LinkedIn paylaşım önizlemesi. Tam liste:
    `docs/SEO-PERFORMANS.md`, "Yayın Sonrası SEO Kontrol Listesi".
+9. **(2026-08-18'de kullanıcının terminal logunda görülüp flag'lenen,
+   henüz araştırılmamış bir bug)** Proje görselleri için
+   `.../storage/v1/object/public/projects/projects/<dosya>.jpg` gibi
+   "projects/" önekinin İKİ KEZ tekrarlandığı bir Storage yolu 400
+   hatası veriyor — muhtemelen `getPublicImageUrl()` çağrısına zaten
+   "projects/" önekli bir `image_path` veriliyor (bkz.
+   `lib/supabase/storage.ts`). Kaynak DB kaydı mı yoksa fonksiyon mu
+   hatalı, henüz belirlenmedi.
 
 ## Açık sorular
 

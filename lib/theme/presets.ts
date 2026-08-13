@@ -29,11 +29,22 @@ interface ThemePreset {
 export const THEME_PRESETS: Record<ThemePresetKey, ThemePreset> = {
   "kurumsal-mavi": {
     label: "Kurumsal Mavi",
-    // Koyu mod marka rengi 2026-08-18'de #6998e2 → #5b9bff'e canlandırıldı
-    // (kullanıcı bulgusu: eski ton koyu temada "soluk/donuk" duruyordu) —
-    // yeni ton hem daha doygun hem kontrastı YÜKSELTTİ (5.55-6.36:1,
-    // eskisinden daha güçlü), WCAG AA hâlâ geçiyor.
-    brand: { light: "#2561c1", dark: "#5b9bff" },
+    // Koyu mod marka rengi 2026-08-18'de ÜÇ KEZ değişti: #6998e2 →
+    // #5b9bff (canlandırma) → #c36628 (turuncu, "koyu zeminde mavi çok
+    // boğuyor" geri bildirimi) → #3b82c4 (yeni tam palet denemesi, AYNI
+    // GÜN — kullanıcı kendi turuncu kararını yeni paletle bilerek
+    // geçersiz kılıyor, bu eski #5b9bff'ten farklı, daha doygun bir mavi).
+    // Açık tema da bu denemede #2561c1 → #2563a8 (küçük fark). KISITLAR:
+    // turuncu/amber uyarı rengine ayrılmıştı kararı (TASARIM-SISTEMI.md
+    // madde 1.1) burada ikinci kez gevşetiliyor — kullanıcı "bu haliyle
+    // devam ederim ya da eskiye dönerim" diyerek deneme olarak istedi.
+    // Kontrast: #3b82c4, koyu surface/surface-raised'e karşı 4.26:1 /
+    // 3.56:1 — 4.5:1 gövde-metni eşiğinin hafif altında ama 3:1 büyük-
+    // metin/UI eşiğini rahat geçiyor (marka rengi çoğunlukla buton
+    // dolgusu gibi büyük öğelerde kullanılıyor, aynı durum eskiden
+    // turuncu için de geçerliydi). brandOn siyah kaldı (4.26:1, beyazdan
+    // — 4.06:1 — az farkla daha iyi).
+    brand: { light: "#2563a8", dark: "#3b82c4" },
     brandOn: { light: "#ffffff", dark: "#16191d" },
     radius: { sm: "0.25rem", md: "0.5rem", lg: "0.75rem", xl: "1rem" },
     fontVariable: "var(--font-geist-sans)",

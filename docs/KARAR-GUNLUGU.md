@@ -4003,3 +4003,325 @@ Doğrulama: `npm run build`/`lint`/`test:unit` kullanıcı tarafından
 paleti, panel/giriş düzeltmeleri, hydration/lint düzeltmeleri,
 istatistik ortalama+boşluk, telefon doğrulaması) artık commit'lenmeye
 hazır.
+
+**Aynı gün, "Siteyi Görüntüle" linki + panel başlığı sıkışıklığı →
+sidebar'a taşındı (KARAR VERİLDİ):** Kullanıcı, panelden siteye URL'i
+elle yazmadan geçebilmek istedi — `components/panel/PanelShell.tsx`'in
+başlığına, yeni sekmede açılan (panel oturumu/konumu kaybolmasın diye)
+bir "Siteyi Görüntüle ↗" linki eklendi. Bunun ardından kullanıcı
+başlığın (switch + e-posta + yeni link + Çıkış Yap) aşırı sıkışık
+durduğunu bildirdi. İki seçenek sunuldu: (A) e-posta/link/çıkış'ı
+sidebar'ın altına taşı, (B) sadece "Siteyi Görüntüle"yi ikon-only yap.
+Kullanıcı A/B farkını somut ASCII taslaklarıyla tekrar sorunca **A'yı
+seçti**. Uygulanan: yeni paylaşılan `SidebarFooter` bileşeni (NavList
+ile aynı paylaşım ilkesi — hem masaüstü `<aside>` hem mobil çekmece
+kullanıyor) — "Siteyi Görüntüle" + e-posta (`truncate` ile taşmaya
+karşı) + "Çıkış Yap", kenar menüsünün ALTINA (`flex flex-col` + nav'da
+`flex-1` — içerik kısa olsa bile footer'ı her zaman en alta yaslar).
+Başlıkta artık SADECE hamburger (mobil) + tema switch'i kalıyor.
+
+**Aynı gün, koyu mod marka rengi turuncuya çevrildi (kullanıcı
+tercihi):** Kullanıcı "koyu zeminde mavi çok boğuyor" diyerek koyu mod
+marka rengini (`#5b9bff`, bu oturumun az önceki canlandırmasından)
+kendi verdiği `#c36628` (turuncu) ile değiştirmek istedi — açık tema
+mavi (`#2561c1`) kalmaya devam ediyor, SADECE koyu mod değişti.
+Uygulamadan önce iki nokta AÇIKÇA belirtildi: (1) orijinal tasarım
+kararı turuncu/amber'i BİLEREK "uyarı" semantik rengine ayırmıştı,
+marka ile karışmasın diye (bkz. `TASARIM-SISTEMI.md` madde 1.1) — yeni
+marka rengi ile koyu mod uyarı rengi (`#cb850b`) görsel olarak
+yeterince ayrışıyor ama ikisi de turuncu ailesinde, sıfır risk değil;
+(2) yeni renk koyu zeminlere karşı 4.41:1/3.85:1 veriyor — 4.5:1
+gövde-metni eşiğinin altında ama 3:1 büyük-metin/UI eşiğini geçiyor
+(marka rengi kullanım yerlerinin hepsi büyük/kalın metin bağlamında).
+Kullanıcı ikisini de duyduktan sonra kendi rengiyle devam etmeyi
+seçti. Uygulanan: `lib/theme/presets.ts` ("kurumsal-mavi" preset'inin
+`brand.dark`'ı — "modern-koyu" turuncu kullanmıyor, dokunulmadı),
+`app/globals.css` (fallback), `docs/TASARIM-SISTEMI.md` (kontrast
+tablosu dürüstçe güncellendi — 3 çift artık ⚠️ işaretli, 36/36 iddiası
+kaldırıldı, gerekçe dipnotla açıklandı).
+
+**Aynı gün, ek bulgu — "iki modda da turuncu" şikayeti kod hatası
+DEĞİLDİ:** Yukarıdaki değişiklikten sonra kullanıcı hem açık hem koyu
+modda turuncu gördüğünü bildirdi — beklenen "açık=mavi, koyu=turuncu"
+değil. Kod incelemesi yerine önce DOĞRU soru soruldu (panelde özel bir
+marka rengi ayarlı mı) — **evet çıktı**: `resolveThemeTokens()`
+(`lib/theme/resolve.ts`), `site_settings.primary_color` doluysa bunu
+MOD FARKI GÖZETMEDEN (hem açık hem koyu için aynı hex) kullanıyor,
+preset'in mod-bazlı `brand.light`/`brand.dark` çiftini tamamen ezer —
+bu davranış zaten dokümante edilmişti (bkz. 2026-08-08, "Tema
+mimarisi kuruldu"), yeni bir bug değil. Kullanıcı muhtemelen daha önce
+panelin Tema Ayarları'nda bu rengi kendisi test amaçlı girmişti.
+Çözüm: kod değişikliği GEREKMEDİ — kullanıcı panelde
+`/panel/tema`'daki Marka Rengi alanının "Sıfırla" butonuna basıp
+kaydetti, override kalktı, preset'in mod-bazlı renkleri (açık=mavi,
+koyu=turuncu) devreye girdi. **Metodoloji notu:** kod tarafında hiçbir
+şey bozuk değildi — "önce ilgili ayarı kontrol et" sorusu, gereksiz bir
+kod kazı turundan daha hızlı doğru teşhis koydu.
+
+**Yapılamayan/açık kalan:** Bu oturumdaki hiçbir değişiklik henüz
+`npm run build`/`lint` ile doğrulanmadı, commit'lenmedi.
+
+**Aynı gün, panel başlığı yerleşimi TEKRAR değişti (kullanıcı ince
+ayarı):** Kullanıcı, sidebar'a taşıma sonrasında görünce farklı bir
+yerleşim istedi: e-posta "Panel" başlığının hemen altına (sidebar'ın
+ÜSTÜNE, öncekinin aksine — önceki oturumda sidebar'ın ALTINA
+taşınmıştı), "Siteyi Görüntüle" tema switch'inin SOLUNA, "Çıkış Yap"
+switch'in SAĞINA — yani başlık, e-posta hariç eskisi gibi 3 öğeyi
+(link+switch+çıkış) yeniden taşıyor, sadece e-posta kalıcı olarak
+sidebar'a taşındı. `SidebarFooter` bileşeni (bir önceki yerleşim için
+yazılmıştı) kaldırıldı — artık üç ayrı yerde kullanılan tek bir
+kalıp yok, e-posta `<aside>`/mobil çekmecede düz bir `<p>`, link/switch/
+çıkış header'da düz JSX. Dar ekranda "Siteyi Görüntüle" metni gizlenip
+sadece ikon kalıyor (`aria-label` ile erişilebilirlik korunuyor) —
+kullanıcı bunu istemedi ama taşmayı önlemek için AI'nin kendi kararı,
+konum/sıra değişmedi.
+
+**Aynı gün, Mesajlar'a silme eklendi:** Kullanıcı panelde bazı
+iletişim mesajlarını silebilmek istedi, onay istendi ("emin misin"
+tarzı). Sıfırdan yazılmadı — Hizmetler/Projeler/Referanslar/SSS/
+Ekip'in zaten PAYLAŞTIĞI `DeleteButton`/`ConfirmDeleteDialog`
+bileşenleri (native `window.confirm()` DEĞİL, kaydın gerçek adını
+gösteren erişilebilir bir dialog, "Vazgeç" varsayılan odakta) burada
+da aynen kullanıldı. Yeni `deleteMessageAction`
+(`app/panel/(protected)/mesajlar/actions.ts`) —
+`deleteServiceAction`'la BİREBİR aynı desen (requireAdminUser →
+tenant kontrolü → gerçek DB silme → Türkçe hata mesajı), tek fark:
+mesajlar herkese açık render edilmediği için `revalidatePath`
+çağrılmıyor (`markMessageReadAction`'daki aynı gerekçe). Sil butonu
+sadece LİSTE satırında ("Görüntüle"nin yanında) — diğer içerik
+türlerindeki yerleşimle tutarlı, detay sayfasında yok. Onay sonrası
+gerçek `delete` çalışır (soft-delete/gizleme değil) — kullanıcının
+"her yerden silsin" isteği buydu.
+
+**Aynı gün, gerçek bir bug bulundu ve düzeltildi — silme onay penceresi
+otomatik kapanmıyordu:** Kullanıcı "Evet, Sil"e basınca pencerenin
+kapanmadığını, satırın ancak sayfa elle yenilenince kaybolduğunu
+bildirdi. Kök sebep #1 — `components/panel/DeleteButton.tsx` (PAYLAŞILAN,
+Hizmetler/Projeler/Referanslar/SSS/Ekip/Mesajlar'ın HEPSİ etkileniyordu):
+`initialState.success` BİLEREK ama YANLIŞLIKLA `true` idi — "henüz hiç
+gönderilmedi" ile "gönderildi ve başarıyla silindi" durumları aynı
+görünüyordu, dialog'u `state.success`'ten türetmek imkansızdı; eski
+yorum bunun yerine Next.js'in Server Action sonrası "route'u otomatik
+yenile" davranışına güveniyordu. Düzeltme: `initialState.success`→
+`false`, `dialogOpen = open && !state.success` RENDER SIRASINDA
+türetiliyor (bir `useEffect`+senkron `setState` DEĞİL — aynı
+`react-hooks/set-state-in-effect` dersi, bkz. ThemeToggle.tsx) — silme
+başarılı olur olmaz dialog bir sonraki render'da otomatik kapanıyor.
+Kök sebep #2 — `deleteMessageAction`
+(`app/panel/(protected)/mesajlar/actions.ts`): `markMessageReadAction`'ın
+("panel force-dynamic, revalidatePath gerekmiyor") gerekçesi YANLIŞ
+KOPYALANMIŞTI — o gerekçe SADECE aynı sayfada kalan bir güncelleme
+için geçerliydi, bir SATIRI LİSTEDEN KALDIRAN silme için değil.
+`revalidatePath("/panel/mesajlar")` eklendi (diğer tüm silme
+eylemlerinin zaten yaptığı gibi, sadece hedef path'i kendi panel
+sayfası).
+
+**Aynı gün, buton arası boşluk artırıldı:** Kullanıcı "Sil"in "Düzenle"/
+"Görüntüle"ye çok yakın durduğunu, "ekran değişiminden etkilenmeyen,
+oranı sabit" bir mesafe istedi — `AdminListTable.tsx` ve
+`MessageListTable.tsx`'teki `gap-2`/`gap-3` (8px/12px, sabit rem
+tabanlı ama dar) `gap-4`'e (16px, ikisinde de aynı) çıkarıldı — Tailwind
+gap değerleri zaten ekran boyutuna göre DEĞİL kök font boyutuna göre
+ölçekleniyor, bu yüzden "responsive olsun" isteği ek bir breakpoint
+kuralı gerektirmedi, sadece sabit değeri büyütmek yeterliydi.
+
+**Aynı gün, üçüncü gerçek bug — okunmamış mesaj rozeti anlık
+güncellenmiyordu:** Kullanıcı bir mesajı görüntüleyince (otomatik
+okundu işaretleniyor) kenar menüsündeki rozet sayısının ancak sayfa
+elle yenilenince azaldığını bildirdi. Kök sebep, deleteMessageAction
+bug'ıyla (bkz. yukarısı) AYNI kökten ama farklı bir katmanda:
+okunmamış sayısı `app/panel/(protected)/layout.tsx`'te (mesaj
+sayfalarının ÜST katmanı) hesaplanıyor — `markMessageReadAction`'ın
+kod yazmadan önce okunan Next.js dokümanına göre
+(`node_modules/next/dist/docs/.../revalidatePath.md`, "Revalidating a
+Layout path") sadece bir SAYFAYI (`type: "page"`, varsayılan) değil
+bir LAYOUT'U (`type: "layout"`) hedeflemek gerekiyordu — aksi halde
+üst katmanın kendi veri çekmesi (rozet) hiç tetiklenmiyor. Hem
+`markMessageReadAction` hem (aynı gerekçeyle, silinen mesaj okunmamış
+olabileceği için) `deleteMessageAction`,
+`revalidatePath("/panel", "layout")` çağıracak şekilde güncellendi —
+tek çağrı hem layout'u (rozet) hem altındaki TÜM sayfaları (liste +
+detay) kapsıyor.
+
+**Aynı gün, küçük bir ekleme — "Panel" başlığı artık tıklanabilir:**
+Kullanıcı, sol üstteki "Panel" yazısına tıklayınca Özet ekranına
+(`/panel`) gitmesini istedi (önceden düz metindi). `components/panel/
+PanelShell.tsx`'te hem masaüstü `<aside>` hem mobil çekmecedeki "Panel"
+metni `next/link`'e çevrildi — mobil çekmecedeki versiyon NavList'teki
+`onNavigate` deseniyle tutarlı olarak tıklanınca çekmeceyi de kapatıyor
+(`closeMobileNav`).
+
+**Aynı gün, ÖNEMLİ bir bug bulundu ve düzeltildi — honeypot false
+positive, gerçek mesajlar sessizce kayboluyordu:** Kullanıcı panelde
+yeni gönderdiği 2 test mesajının hiç görünmediğini bildirdi ("dünkü
+mesajlar var ama yeni attıklarım yok"). Teşhis, tahmin/kod kazısı
+yerine kullanıcının kendi terminalindeki (`npm run dev`) canlı logunu
+okumakla yapıldı — `submitContactForm: honeypot alanı dolu, gönderim
+yok sayıldı.` satırı gerçek sebebi doğrudan gösterdi. Kök sebep:
+`lib/security/contactHoneypot.ts`'teki gizli tuzak alanının adı
+(`"website"`) ve `ContactForm.tsx`'teki etiketi ("Web siteniz"),
+tarayıcının/parola yöneticilerinin (Chrome, LastPass, 1Password)
+OTOMATİK DOLDURMA sezgiselleriyle birebir eşleşiyordu —
+`autocomplete="off"` bu araçların çoğu tarafından yok sayılıyor.
+Sonuç: gerçek bir ziyaretçi alanı hiç görmese/dokunmasa bile,
+tarayıcısı arka planda dolduruyordu → form "başarılı" gösteriyordu ama
+mesaj DB'ye HİÇ YAZILMIYORDU (honeypot'un bilerek "bot yakalandı"
+davranışı — sahte başarı, sessiz red). **Kullanıcının test ettiği 2
+mesaj kalıcı olarak kayboldu, kurtarılamaz** — kod düzeltildikten
+sonra yeniden göndermesi gerekiyor, bu açıkça belirtildi.
+
+**Düzeltme:** `HONEYPOT_FIELD_NAME` `"website"`→`"iletisim_notu"`,
+etiket "Web siteniz"→"Referans" — hiçbir standart otomatik-doldurma
+kategorisiyle eşleşmeyen nötr isimler. `data-lpignore="true"`/
+`data-1p-ignore="true"` (LastPass/1Password'e özel "yok say" ipuçları)
+eklendi. `docs/GUVENLIK.md` madde 14'teki "false-positive riskini
+azaltır" iddiası (bu YANLIŞ çıkmıştı) dürüstçe düzeltilip gerçek olay
+kaydedildi. **Ders (genel, gelecekte hatırlanmalı):** bir honeypot alan
+adı sadece "bot ne yazar" düşünülerek değil, "tarayıcı/eklenti bunu
+hangi TANINIR alan sanır" da düşünülerek seçilmeli — "website",
+"email", "phone", "name" gibi yaygın kelimeler yüksek risk taşıyor.
+
+**Doğrulama (kullanıcının paylaştığı gerçek terminal logu):** Düzeltme
+sonrası `submitContactForm` logunda honeypot uyarısı bir daha
+görünmedi, mesajlar gerçekten kaydoluyor (panelde mesaj detay sayfası
+başarıyla açıldı, `markMessageReadAction` çalıştı). Log ayrıca
+`deleteMessageAction`'ın `{"success":false}` GÖRÜNMESİNİ hata sandırdı
+— ama bu aslında fonksiyona geçilen İLK ARGÜMAN (`_prevState`, bkz.
+DeleteButton.tsx'teki yeni `initialState={success:false}`), dönüş
+değeri değil; gerçek bir hata değildi, yanlış okunmuş bir log satırıydı.
+
+**Aynı gün, büyük bir yeni özellik — Realtime bildirim (toast) +
+anlık okunmamış sayacı:** Kullanıcı, panel açıkken yeni bir mesaj
+geldiğinde SAYFA YENİLENMEDEN hem bir bildirim (toast) hem anlık
+sayaç artışı istedi ("ben anlık veri istiyorum"). Bu, revalidatePath
+tabanlı düzeltmelerden (yukarısı — hepsi KULLANICI TETİKLİ bir
+navigasyon/form gönderimi sonrası çalışır) TAMAMEN farklı bir sorun:
+panel AÇIKKEN, KULLANICI HİÇBİR ŞEY YAPMADAN, sunucu tarafında olan
+bir değişikliğin (bir ZİYARETÇİNİN gönderdiği yeni mesaj) tarayıcıya
+PUSH edilmesi gerekiyor — Server Action/revalidatePath bunu çözemez
+(sadece kullanıcının KENDİ eylemlerinden sonra çalışır). Doğru araç:
+**Supabase Realtime** (WebSocket üzerinden Postgres değişikliği
+yayını).
+
+- **Yeni migration**
+  (`supabase/migrations/20260818130000_enable_realtime_contact_messages.sql`)
+  — `contact_messages`'ı `supabase_realtime` publication'ına ekliyor.
+  **GÜVENLİK:** Realtime, tablonun KENDİ RLS'ine tabidir — anon'un bu
+  tabloya hiç erişimi olmadığı için (bkz. GUVENLIK.md madde 1-2)
+  anon-key'li bir bağlantı bu olayları hiç GÖREMEZ; sadece giriş yapmış
+  (authenticated, zaten tam SELECT izinli) panel oturumu dinleyebilir —
+  yeni bir erişim genişletmesi değil, mevcut RLS izninin doğal bir
+  uzantısı.
+- **Yeni `components/ui/Toast.tsx` + `ToastContainer.tsx`** — genel
+  amaçlı, paylaşılan bildirim kartı (kullanıcı isteği: "tasarımı ortak
+  olsun"). Sadece tasarım token'ları (bg-surface-raised, text-text vb.)
+  kullanıyor, hardcoded renk yok — "tema değişince o da değişebilsin"
+  isteği EK KOD gerektirmedi, zaten otomatik (bkz. Button/Card ile aynı
+  ilke). Sağ üstte sabit, 7 saniye sonra otomatik kapanır, manuel kapat
+  butonu var, tıklanınca ilgili mesaja gider (`next/link`).
+- **Yeni `components/panel/NewMessageNotifier.tsx`** — `PanelShell`'de
+  BİR KEZ mount edilir (her panel sayfasında aktif kalsın diye).
+  `postgres_changes` INSERT olayına `tenant_id` filtresiyle abone olur;
+  yeni satır gelince hem bir toast ekler hem `setUnreadCount`'u
+  (React'in state setter'ı — referansı stabil, `useEffect`'in bağımlılık
+  dizisinde gereksiz yeniden-abonelik tetiklemez) çağırır.
+- **`PanelShell.tsx`** — okunmamış sayısı artık CANLI istemci state'i.
+  Zorluk: `useState(unreadMessagesCount)` TEK BAŞINA yetmezdi — sunucu
+  prop'u SONRADAN değiştirdiğinde (mark-read/delete sonrası
+  revalidatePath'in tetiklediği yeniden render, bkz. yukarısı) lazy
+  initializer bir daha ÇALIŞMAZDI, sayaç sunucudaki gerçek değerden
+  kopardı. Çözüm: React'in kendi önerdiği "prop değişince state'i
+  RENDER SIRASINDA senkronla" deseni (bir `useEffect`+`setState` DEĞİL —
+  aynı `react-hooks/set-state-in-effect` dersi, bugün 3. kez karşımıza
+  çıktı: ThemeToggle, DeleteButton, şimdi bu). Sonuç: sunucu-senkron
+  değer İLE Realtime'ın anlık artışı TEK sayaçta doğru birleşiyor.
+  `app/panel/(protected)/layout.tsx`'e yeni `tenantId` prop'u eklendi
+  (`getActiveTenantId()`, zaten var olan fonksiyon).
+
+**Ayrıca aynı oturumda düzeltilen ilgisiz ama gerçek bir uyarı:**
+Kullanıcının paylaştığı terminal logunda "An async function with
+useActionState was called outside of a transition" React uyarısı
+görüldü — `MarkMessageReadOnView.tsx`'in `formAction`'ı bir `<form>`/
+olay işleyicisi DIŞINDA (bir `useEffect` içinde) çağırması,
+`startTransition` olmadan. `startTransition(() => formAction(...))`
+ile sarılarak düzeltildi.
+
+**Yapılamayan/açık kalan:** Migration henüz Supabase'e uygulanmadı,
+kod henüz `npm run build`/`lint` ile doğrulanmadı, gerçek tarayıcıda
+(iki sekme — biri /iletisim'den mesaj gönderiyor, diğeri /panel/
+mesajlar'da bekliyor) test edilmedi. Ayrıca terminal logunda ilgisiz
+ama gerçek bir bug daha görüldü: proje görselleri için "upstream image
+response failed ... projects/projects/akme-kule.jpg 400" — Storage
+yolunda "projects/" öneki İKİ KEZ tekrarlanmış görünüyor, bu oturumda
+ELE ALINMADI, kullanıcıya ayrıca bildirilecek.
+
+## 2026-08-18 (aynı gün, beşinci oturum) — Yeni bir renk paleti tamamen deneme olarak uygulandı
+
+**İstek:** Kullanıcı, gerekçe sormadan tam bir yeni açık+koyu renk
+paleti verdi (Sayfa/Kart/Hero/Başlık/Metin/Accent/Border, her ikisi için
+ayrı hex kodlarıyla) ve KENDİ deyimiyle bunun bir **deneme** olduğunu
+açıkça belirtti: "ona göre ya bu yaptıklarından devam ederim ya da
+eskiye dönerim". Yani bu commit'lenip pushlanacak ama nihai karar değil
+— görüp karar verecek.
+
+**Eşleme kararı (`docs/TASARIM-SISTEMI.md` madde 0.5 gereği önce burada
+gerekçelendirildi, sonra kodlandı):**
+
+| Kullanıcının adı | Proje token'ı        | Not |
+| ----------------- | --------------------- | --- |
+| Sayfa              | `--color-surface`      | |
+| Kart               | `--color-surface-raised` | |
+| Başlık             | `--color-text`          | |
+| Metin              | `--color-text-muted`    | |
+| Accent             | `--color-brand`         | Projede "accent" adı zaten başka bir token'a (`--color-accent`, tenant'ın ikincil rengi) ayrılmış — kullanıcının kastettiği "vurgu/CTA rengi" rolü aslında `--color-brand`. Karıştırılmadı. |
+| Border             | `--color-neutral-300`  | Ayrı bir `--color-border` token'ı hiç yok, `border-neutral-300` class'ı ~40 dosyada zaten kullanılıyor — yeni token yerine bu değeri güncellemek regresyonsuz. **BİLEREK bir davranış değişikliği:** bu değer eskiden açık/koyu ortak/sabitti, artık `[data-theme="dark"]`'ta AYRICA tanımlanıyor (temaya göre değişir) — kullanıcının paleti açık/koyu için FARKLI border verdiği için. |
+| Hero               | `--color-hero` (YENİ)  | Projede daha önce hiç karşılığı yoktu. `HeroVariantA.tsx`'in görsel yokken gösterdiği zemin, önceden `bg-brand` kullanıyordu (marka rengiyle aynı) — artık kendi token'ı var, `bg-hero`. `HeroVariantB.tsx` (iki kolonlu, görsel her zaman ayrı bir kutuda) bu token'ı KULLANMIYOR, değişmedi. |
+
+**Bulunan ve kullanıcıya bildirilmesi gereken çelişki:** Kullanıcı bu
+oturumun hemen başında (3. oturum, bkz. yukarısı) koyu moddaki marka
+rengini BİLEREK MAVİDEN turuncuya (`#c36628`) çevirmişti — gerekçesi
+"koyu zeminde mavi çok boğuyor". Şimdi verdiği yeni paletin koyu Accent
+değeri de MAVİ (`#3b82c4`, eski `#5b9bff`'ten farklı bir mavi). Bu iki
+istek birbiriyle çelişiyor. Kullanıcının kendi "deneme, sonra karar
+veririm" çerçevesi zaten bu tür bir geri dönüşü öngördüğü için AI soru
+sormadan, kullanıcının en son ve en açık talimatını (verdiği tam palet)
+harfiyen uyguladı — ama bu çelişki hem koda (bkz. `app/globals.css`
+satır ~92 yorumu, `lib/theme/presets.ts` yorumu) hem bu günlüğe hem
+`TASARIM-SISTEMI.md`'ye açıkça yazıldı, gizlenmedi.
+
+**Kontrast (WCAG 2.1, `lib/theme/contrast.ts` formülüyle, Node script
+ile hesaplandı):** Neredeyse tüm çiftler 4.5:1'i rahat geçiyor. İki
+istisna kalıcı hale geldi: `brand`/`surface` ve `brand`/`surface-raised`
+koyu modda (4.26:1 / 3.56:1) — turuncudaki (4.41/3.85) ile aynı
+mertebede bir ödünleşim, madde (2) olarak `TASARIM-SISTEMI.md`'de
+işaretli. YENİ bir bulgu: koyu `error`/`surface-raised` 4.72:1'den
+4.44:1'e düştü (`--color-surface-raised`in yeni değeri `--color-error`e
+biraz daha yakın) — 4.5:1'in 0.06 altında, madde (3) olarak ayrıca
+işaretlendi. Detay ve tam tablo: `TASARIM-SISTEMI.md` madde 2.
+
+**Kod değişiklikleri:**
+- `app/globals.css` — `:root` ve `[data-theme="dark"]`'ta `--color-brand`,
+  `--color-surface`, `--color-surface-raised`, `--color-text`,
+  `--color-text-muted`, `--color-neutral-300` (kenarlık) kullanıcının
+  değerleriyle güncellendi; YENİ `--color-hero` token'ı eklendi (her iki
+  temada), `@theme inline`'a kaydedildi. `--color-surface`/
+  `-surface-raised`/`-text`/`-text-muted` artık `--color-neutral-*` ham
+  skalasına `var()` ile bağlı DEĞİL (öncesinde `grep` ile bu 4 rolün
+  dışında ham skalanın hiç kullanılmadığı doğrulandı — ayırmanın yan
+  etkisi yok).
+- `components/site/hero/HeroVariantA.tsx` — `bg-brand` → `bg-hero`.
+- `lib/theme/presets.ts` — "Kurumsal Mavi" preset'inin `brand.light`/
+  `brand.dark` değerleri güncellendi (bu, DB'ye tenant kaydı yoksa
+  devreye giren varsayılan — gerçek/aktif değer `app/globals.css`'teki
+  `:root`/`[data-theme="dark"]`). "Modern Koyu" preset'ine dokunulmadı
+  (bu istek sadece "Kurumsal Mavi" ile ilgiliydi).
+- `docs/TASARIM-SISTEMI.md` — madde 1.1/1.3/2 tamamen güncellendi, yeni
+  `--color-hero` satırı eklendi, kontrast tablosu yeniden hesaplanan
+  değerlerle değiştirildi, iki dipnot ((2) güncellendi, (3) yeni)
+  eklendi.
+
+**Yapılamayan/açık kalan:** `npm run build`/`npm run lint` bu oturumda
+AI tarafından çalıştırılıp doğrulandı (ikisi de temiz) — ama kullanıcı
+henüz tarayıcıda GÖRMEDİ. Kullanıcının kendi çerçevesi gereği ("bu
+haliyle devam ederim ya da eskiye dönerim") nihai karar tarayıcıda
+görüldükten sonra kullanıcıya ait.
