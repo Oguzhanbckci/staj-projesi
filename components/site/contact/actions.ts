@@ -49,7 +49,7 @@ export async function submitContactForm(
   const raw = {
     fullName: String(formData.get("fullName") ?? ""),
     email: String(formData.get("email") ?? ""),
-    phone: String(formData.get("phone") ?? ""),
+    phoneNumber: String(formData.get("phoneNumber") ?? ""),
     subject: String(formData.get("subject") ?? ""),
     message: String(formData.get("message") ?? ""),
   };
@@ -99,11 +99,13 @@ export async function submitContactForm(
     };
   }
 
+  const senderPhone = result.data.phoneNumber || null;
+
   const { error } = await supabase.from("contact_messages").insert({
     tenant_id: tenantId,
     sender_name: result.data.fullName,
     sender_email: result.data.email,
-    sender_phone: result.data.phone || null,
+    sender_phone: senderPhone,
     sender_ip: clientIp,
     subject: result.data.subject,
     message: result.data.message,

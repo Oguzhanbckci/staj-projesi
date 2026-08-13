@@ -10,9 +10,20 @@ import {
   CONTACT_FIELD_LABELS,
   CONTACT_SUBJECTS,
   CONTACT_SUBJECT_LABELS,
+  PHONE_MAX_DIGITS,
 } from "@/lib/validation/contact";
 import { submitContactForm, type ContactFormState } from "./actions";
 import { HONEYPOT_FIELD_NAME } from "@/lib/security/contactHoneypot";
+
+// FormData/uncontrolled input'la (defaultValue) uyumlu, hafif bir "yazarken
+// filtrele" deseni — React state gerektirmez, doğrudan DOM değerini
+// düzeltir. Rakam olmayan her karakteri siler VE uzunluğu sunucudaki AYNI
+// üst sınırla (PHONE_MAX_DIGITS) keser — kullanıcı artık harf ya da
+// 50-60 haneli anlamsız bir dizi YAZAMAZ, sunucu doğrulaması bunun
+// arkasındaki gerçek/yetkili katman (bkz. lib/validation/contact.ts).
+function handlePhoneNumberChange(event: React.ChangeEvent<HTMLInputElement>) {
+  event.target.value = event.target.value.replace(/\D/g, "").slice(0, PHONE_MAX_DIGITS);
+}
 
 // "use server" dosyasından (actions.ts) sadece fonksiyon export
 // edilebilir — düz bir sabit nesne (initial state) oradan import edilirse
@@ -112,14 +123,23 @@ export function ContactForm() {
         defaultValue={state.values.email}
         error={state.errors.email}
       />
+      {/* 2026-08-18: ülke kodu <select>'i kaldırıldı — native <select>
+          kapalıyken her zaman seçili seçeneğin TAM metnini gösteriyor,
+          sadece bayrağı göstermek özel bir açılır menü bileşeni
+          gerektirirdi (kullanıcı geri bildirimiyle bilinçli olarak
+          orantısız bulundu, bkz. KARAR-GUNLUGU.md). Sadece rakam/uzunluk
+          doğrulaması (asıl istenen düzeltme) korundu. */}
       <TextField
-        id={`${FIELD_ID_PREFIX}-phone`}
+        id={`${FIELD_ID_PREFIX}-phoneNumber`}
         label="Telefon (opsiyonel)"
-        name="phone"
+        name="phoneNumber"
         type="tel"
-        autoComplete="tel"
-        defaultValue={state.values.phone}
-        error={state.errors.phone}
+        inputMode="numeric"
+        autoComplete="tel-national"
+        maxLength={PHONE_MAX_DIGITS}
+        defaultValue={state.values.phoneNumber}
+        error={state.errors.phoneNumber}
+        onChange={handlePhoneNumberChange}
       />
       <SelectField
         id={`${FIELD_ID_PREFIX}-subject`}

@@ -231,7 +231,7 @@ bilgisini tutar. Ziyaretçinin doldurduğu form `contact_messages`'ta.
 | `tenant_id` | uuid, not null, → tenants.id | mesaj hangi siteden gönderildi |
 | `sender_name` | text, not null | |
 | `sender_email` | text, **nullable** | *(2026-08-14 eklendi)* yanıtlamak için — DB seviyesinde nullable ama uygulama katmanında (zod) zorunlu, bkz. `KARAR-GUNLUGU.md` |
-| `sender_phone` | text, nullable | |
+| `sender_phone` | text, nullable | *(2026-08-18)* Artık sadece rakam (4-12 hane) — form eskiden serbest metindi (harf/sembol de kabul ediyordu), şimdi `lib/validation/contact.ts`'teki `phoneNumber` alanı sadece rakama izin veriyor. Ülke kodu seçici denendi ama kaldırıldı (native `<select>`'in kapalıyken tam metin göstermesi istenmedi) |
 | `subject` | text, **nullable**, CHECK yok | *(2026-08-14 eklendi)* `lib/validation/contact.ts` `CONTACT_SUBJECTS` sabit listesinden biri — DB'de kısıtlanmadı, tek doğruluk kaynağı kod |
 | `message` | text, not null | |
 | `is_read` | boolean, not null, default false | *(2026-08-12 eklendi)* panelde okundu işaretlendi mi — panel menüsü/özet ekranındaki "okunmamış mesaj" sayısı bu alandan |

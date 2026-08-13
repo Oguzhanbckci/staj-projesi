@@ -4,7 +4,7 @@ import { contactFormSchema } from "./contact";
 const validPayload = {
   fullName: "Ayşe Yılmaz",
   email: "ayse@ornek.com",
-  phone: "0532 555 12 34",
+  phoneNumber: "5325551234",
   subject: "genel-bilgi",
   message: "Bu mesaj test amaçlı yazılmış, en az yirmi karakter uzunluğunda.",
 };
@@ -15,8 +15,8 @@ describe("contactFormSchema", () => {
     expect(result.success).toBe(true);
   });
 
-  it("telefon boş bırakılabilir (opsiyonel alan)", () => {
-    const result = contactFormSchema.safeParse({ ...validPayload, phone: "" });
+  it("telefon numarası boş bırakılabilir (opsiyonel alan)", () => {
+    const result = contactFormSchema.safeParse({ ...validPayload, phoneNumber: "" });
     expect(result.success).toBe(true);
   });
 
@@ -35,8 +35,18 @@ describe("contactFormSchema", () => {
     expect(result.success).toBe(false);
   });
 
-  it("telefonda harf/sembol olursa reddeder", () => {
-    const result = contactFormSchema.safeParse({ ...validPayload, phone: "abc-def-ghij" });
+  it("telefon numarasında harf/sembol olursa reddeder", () => {
+    const result = contactFormSchema.safeParse({ ...validPayload, phoneNumber: "abc-def-ghij" });
+    expect(result.success).toBe(false);
+  });
+
+  it("regresyon: 50-60 haneli anlamsız bir rakam dizisini reddeder (eski serbest-metin alanının izin verdiği gerçek sorun)", () => {
+    const result = contactFormSchema.safeParse({ ...validPayload, phoneNumber: "5".repeat(55) });
+    expect(result.success).toBe(false);
+  });
+
+  it("4 haneden kısa telefon numarasını reddeder", () => {
+    const result = contactFormSchema.safeParse({ ...validPayload, phoneNumber: "123" });
     expect(result.success).toBe(false);
   });
 

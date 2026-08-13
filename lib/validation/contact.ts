@@ -37,17 +37,31 @@ export function getContactSubjectLabel(subject: string | null): string {
     : subject;
 }
 
-// Telefon opsiyonel — boş string de geçerli sayılır (alan boş
-// bırakılabilir), ama bir şey girildiyse sadece rakam/boşluk/+()- kabul
-// edilir. Format zorunluluğu yok (ülke kodu, boşluklama serbest) — amaç
-// bariz hatalı girdiyi (harf/sembol) yakalamak, katı bir E.164 doğrulaması
-// dayatmak değil.
-const phoneField = z
+// 2026-08-18: Serbest metin telefon alanı SADECE RAKAM kabul edecek
+// şekilde sıkılaştırıldı (kullanıcı bulgusu — eski serbest alan hem harf
+// girişine hem sınırsız rakam girişine izin veriyordu, ör. 50-60 haneli
+// anlamsız bir dizi kabul ediliyordu). Ayrıca WhatsApp tarzı bir ülke
+// kodu `<select>`'i denendi ama kaldırıldı — native `<select>` kapalıyken
+// her zaman seçili seçeneğin TAM metnini gösteriyor, "sadece bayrak"
+// görünümü özel bir açılır menü gerektirirdi; kullanıcı bunu orantısız
+// bulup sadece rakam/uzunluk doğrulamasını istedi (bkz. KARAR-GUNLUGU.md).
+export const PHONE_MIN_DIGITS = 4;
+export const PHONE_MAX_DIGITS = 12;
+
+// Telefon numarası opsiyonel — boş string geçerli (alan boş bırakılabilir),
+// ama bir şey girildiyse SADECE rakam ve gerçekçi bir uzunlukta olmalı.
+// Harf/sembol veya 50-60 haneli anlamsız bir dizi artık reddedilir
+// (önceki serbest-metin deseninin izin verdiği, kullanıcının bulduğu
+// gerçek bir sorun).
+const phoneNumberField = z
   .string()
   .trim()
-  .max(20, { error: "Telefon numarası en fazla 20 karakter olabilir." })
-  .regex(/^[0-9+()\s-]*$/, {
-    error: "Telefon numarası sadece rakam ve + ( ) - boşluk içerebilir.",
+  .regex(/^[0-9]*$/, { error: "Telefon numarası sadece rakam içerebilir." })
+  .refine((value) => value === "" || value.length >= PHONE_MIN_DIGITS, {
+    error: `Telefon numarası en az ${PHONE_MIN_DIGITS} haneli olmalıdır.`,
+  })
+  .refine((value) => value.length <= PHONE_MAX_DIGITS, {
+    error: `Telefon numarası en fazla ${PHONE_MAX_DIGITS} haneli olabilir.`,
   })
   .optional()
   .or(z.literal(""));
@@ -65,7 +79,7 @@ export const contactFormSchema = z.object({
     .min(1, { error: "E-posta zorunludur." })
     .pipe(z.email({ error: "Geçerli bir e-posta adresi girin (ör. ad@ornek.com)." })),
 
-  phone: phoneField,
+  phoneNumber: phoneNumberField,
 
   subject: z.enum(CONTACT_SUBJECTS, {
     error: "Lütfen listeden bir konu seçin.",
@@ -86,7 +100,7 @@ export type ContactFormValues = z.infer<typeof contactFormSchema>;
 export const CONTACT_FIELD_LABELS: Record<keyof ContactFormValues, string> = {
   fullName: "Ad Soyad",
   email: "E-posta",
-  phone: "Telefon",
+  phoneNumber: "Telefon",
   subject: "Konu",
   message: "Mesaj",
 };
