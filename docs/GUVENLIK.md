@@ -819,7 +819,7 @@ panel) aşağıdaki HTTP yanıt başlıklarını ekliyor:
 
 | Başlık | Değer | Ne işe yarar |
 |---|---|---|
-| `Content-Security-Policy` | `default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' blob: data:; font-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; upgrade-insecure-requests` | Tarayıcının hangi kaynaktan script/stil/görsel/font yükleyebileceğini kısıtlar — XSS'in en etkili tek karşılığı (kötü niyetli bir script enjekte edilse bile çalışamaz/veri dışarı sızamaz). |
+| `Content-Security-Policy` | `default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' blob: data:; font-src 'self'; connect-src 'self' <supabase-url> <supabase-wss-url>; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; upgrade-insecure-requests` | Tarayıcının hangi kaynaktan script/stil/görsel/font/bağlantı açabileceğini kısıtlar — XSS'in en etkili tek karşılığı (kötü niyetli bir script enjekte edilse bile çalışamaz/veri dışarı sızamaz). `connect-src`teki iki Supabase origin'i (`NEXT_PUBLIC_SUPABASE_URL`'den türetilir, 2026-08-18'de eklendi) — aşağıya bakın. |
 | `X-Frame-Options` | `DENY` | Site başka bir sayfada `<iframe>` içine gömülemez — clickjacking'e karşı (CSP'nin `frame-ancestors`'ı ile aynı işi eski tarayıcılar için de yapan yedek katman). |
 | `X-Content-Type-Options` | `nosniff` | Tarayıcının `Content-Type` başlığını yok sayıp dosya içeriğini "tahmin etmesini" engeller — ör. bir görsel gibi yüklenen kötü niyetli bir dosyanın çalıştırılabilir sanılmasını önler. |
 | `Referrer-Policy` | `strict-origin-when-cross-origin` | Bir bağlantıya tıklandığında hedef siteye tam URL yerine sadece kök alan adı gönderilir (ör. `/panel/mesajlar/gizli-id` değil, sadece site adresi) — sayfa içi hassas yol bilgisinin başka sitelere sızmasını azaltır. |
@@ -851,6 +851,30 @@ testleri (bir tıklamanın gerçek bir durum değişikliği ürettiğini
 doğrulayan) bunu hemen yakaladı — bu, "sadece görsel/kod incelemesi
 yeterli değil, gerçek etkileşim testi gerekir" ilkesinin somut bir
 kanıtı.
+
+**İkinci gerçek bir hata bulunup düzeltildi (2026-08-18, altıncı
+oturum) — aynı kategoride, farklı direktif:** `connect-src`, panelde
+YENİ eklenen Realtime bildirim özelliğinin (bkz. madde 18) tarayıcıdan
+doğrudan açtığı Supabase WebSocket bağlantısını sessizce
+ENGELLİYORDU. Kök neden, script-src hatasıyla BİREBİR aynı desende:
+`connect-src 'self'` yazılırken projenin o anki gerçeği ("tarayıcıdan
+Supabase'e hiç doğrudan istek atılmıyor") doğruydu, ama bu varsayım
+DAHA SONRA (`NewMessageNotifier.tsx` eklenince) geçersiz hale geldi ve
+CSP o değişiklikle birlikte GÜNCELLENMEDİ. Belirti de script-src
+hatasıyla benzer bir sinsilik taşıyordu: sayfa tamamen normal
+çalışıyordu (form gönderimi, mesaj listesi, silme — hepsi sunucu
+tarafı istekler olduğu için CSP'den etkilenmiyordu), sadece TEK bir
+özellik (anlık toast bildirimi) sessizce çalışmıyordu — konsolda `Refused
+to connect` CSP ihlali yerine Supabase SDK'sının kendi
+`CHANNEL_ERROR: transport failure` mesajı görünüyordu (CSP engeli
+`fetch`/`WebSocket` API'sine göre farklı şekillerde yüzeye çıkabiliyor).
+Kullanıcının kendi tarayıcısında iki-sekmeli canlı testle doğrulandı.
+Düzeltme: Supabase projesinin origin'i (`https://` VE `wss://` şeması,
+ikisi de aynı host) `NEXT_PUBLIC_SUPABASE_URL`'den türetilip
+`connect-src`e eklendi. **Ders (script-src hatasıyla aynı, ikinci kez
+teyit edildi):** CSP gibi "bileşenin ne yaptığına bağlı" güvenlik
+başlıkları tek seferlik değil, HER yeni istemci-taraflı ağ isteği
+ekleyen özellik değişikliğinde yeniden gözden geçirilmeli.
 
 **Neden `preload` yok (HSTS):** HSTS preload listesine girmek
 tarayıcılara GÖMÜLÜR ve geri almak aylar sürebilir — proje henüz

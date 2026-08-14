@@ -17,10 +17,23 @@ import type { NextConfig } from "next";
 // Supabase Storage'daki görseller `img-src`e host olarak eklenmedi çünkü
 // tarayıcı onlara HİÇ doğrudan istek atmıyor — next/image, Storage'dan
 // SUNUCU tarafında çekip aynı origin'den (`/_next/image?...`) sunuyor
-// (bkz. next.config.ts images.remotePatterns, kanıt: grep ile
-// createBrowserSupabaseClient'ın hiçbir yerde kullanılmadığı doğrulandı,
-// bkz. docs/GUVENLIK.md "Spam Koruması" bölümünün yanındaki sır taraması
-// notu). `connect-src` de bu yüzden sadece 'self'.
+// (bkz. next.config.ts images.remotePatterns).
+//
+// GERÇEK BİR HATA (2026-08-18, altıncı oturum) — bu yorumun eski hâli
+// "createBrowserSupabaseClient hiçbir yerde kullanılmıyor, connect-src
+// bu yüzden sadece 'self'" diyordu. Bu iddia `NewMessageNotifier.tsx`
+// (panelde anlık mesaj bildirimi — dördüncü oturumda eklendi) YAZILDIĞI
+// ANDA yanlış hale geldi ama connect-src GÜNCELLENMEDİ: o bileşen
+// `createBrowserSupabaseClient()` ile TARAYICIDAN DOĞRUDAN bir Supabase
+// Realtime WebSocket'i açıyor — `connect-src 'self'` bunu sessizce
+// engelliyordu (`CHANNEL_ERROR: transport failure`, kullanıcının kendi
+// tarayıcısında da doğrulandı — konsolda CSP ihlali olarak görünür).
+// Ders: CSP gibi "bir bileşenin ne yaptığına bağlı" güvenlik başlıkları,
+// o bileşenin varsayımı (burada: "hiç tarayıcıdan Supabase'e gitmiyoruz")
+// değiştiğinde YENİDEN gözden geçirilmeli — tek seferlik bir denetim
+// yetmez. Şimdi Supabase projesinin kendi origin'i (REST + Realtime
+// WebSocket, ikisi de aynı host) `NEXT_PUBLIC_SUPABASE_URL`'den türetilip
+// eklendi.
 //
 // `script-src`'te de 'unsafe-inline' GEREKLİ (2026-08-17'de canlı ortamda
 // bulunan gerçek bir hata ile öğrenildi) — Next.js App Router, hydration'ı
@@ -33,6 +46,13 @@ import type { NextConfig } from "next";
 // bu satır gözden kaçmıştı. Nonce'a geçmemenin gerekçesi (statik render)
 // script için de style için olduğu gibi aynen geçerli.
 const isDev = process.env.NODE_ENV === "development";
+// Supabase'in REST API'si VE Realtime WebSocket'i AYNI host'ta yaşar
+// (ör. https://xxx.supabase.co hem /rest/v1 hem /realtime/v1/websocket
+// yolu için) — bu yüzden tek bir origin'den hem https hem wss şemasını
+// türetmek yeterli. `NewMessageNotifier.tsx`'in tarayıcıdan doğrudan açtığı
+// Realtime kanalı buna ihtiyaç duyuyor (bkz. yukarıdaki yorum).
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+const supabaseWsUrl = supabaseUrl.replace(/^https:/, "wss:");
 const CSP_HEADER = [
   "default-src 'self'",
   `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ""}`,
@@ -43,7 +63,7 @@ const CSP_HEADER = [
   // bağlantısı için ws(s)://localhost gerekli — üretimde buna gerek yok,
   // sadece dev modda ekleniyor (bkz. next/dist/docs, "Development vs
   // Production Considerations" — aynı prensip, farklı direktif).
-  `connect-src 'self'${isDev ? " ws://localhost:* wss://localhost:*" : ""}`,
+  `connect-src 'self' ${supabaseUrl} ${supabaseWsUrl}${isDev ? " ws://localhost:* wss://localhost:*" : ""}`,
   "object-src 'none'",
   "base-uri 'self'",
   "form-action 'self'",
