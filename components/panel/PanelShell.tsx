@@ -2,14 +2,24 @@
 
 import { useState, type ReactNode } from "react";
 import Link from "next/link";
-import { ExternalLink, X, Menu as MenuIcon } from "lucide-react";
+import { usePathname } from "next/navigation";
+import { X, Menu as MenuIcon } from "lucide-react";
 import { useDialogBehavior } from "@/lib/hooks/useDialogBehavior";
-import { Button } from "@/components/ui/Button";
 import { SkipLink } from "@/components/ui/SkipLink";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
+import { Tooltip } from "@/components/ui/Tooltip";
 import type { SiteThemeSettings } from "@/lib/theme/resolve";
 import { NewMessageNotifier } from "./NewMessageNotifier";
+import { UserMenu } from "./UserMenu";
 import { PANEL_NAV_ITEMS } from "./navItems";
+
+// "/panel" tam eşleşmeli (aksi halde her alt sayfa yanlışlıkla "Özet"ü de
+// aktif gösterirdi); diğer öğeler kendi alt rotalarını da kapsar (ör.
+// "/panel/mesajlar/123" hâlâ "Mesajlar"ı aktif göstermeli).
+function isNavItemActive(pathname: string, href: string): boolean {
+  if (href === "/panel") return pathname === "/panel";
+  return pathname === href || pathname.startsWith(`${href}/`);
+}
 
 // Genel bir "her nav öğesi rozet alabilir" sistemi bilerek KURULMADI
 // (tek bir öğe — Mesajlar — için gereksiz soyutlama, bkz.
@@ -23,18 +33,30 @@ function NavList({
   onNavigate?: () => void;
   unreadMessagesCount: number;
 }) {
+  const pathname = usePathname();
+
   return (
     <ul className="space-y-1">
       {PANEL_NAV_ITEMS.map((item) => {
         const Icon = item.icon;
+        const active = isNavItemActive(pathname, item.href);
         const showUnreadBadge = item.href === "/panel/mesajlar" && unreadMessagesCount > 0;
         return (
           <li key={item.href}>
             <Link
               href={item.href}
               onClick={onNavigate}
-              className="flex items-center gap-3 rounded-md px-3 py-2 text-base text-text hover:bg-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand"
+              aria-current={active ? "page" : undefined}
+              className={`relative flex items-center gap-3 rounded-md px-3 py-2 text-base transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand ${
+                active ? "bg-brand/10 font-semibold text-brand" : "text-text hover:bg-surface"
+              }`}
             >
+              {active && (
+                <span
+                  aria-hidden="true"
+                  className="absolute inset-y-1 left-0 w-1 rounded-full bg-brand"
+                />
+              )}
               <Icon size={18} aria-hidden="true" />
               <span className="flex-1">{item.label}</span>
               {showUnreadBadge && (
@@ -109,8 +131,8 @@ export function PanelShell({
       {/* Masaüstü: kalıcı kenar menüsü (bkz. lg: — Navbar'daki aynı
           kırılma noktasıyla tutarlı, bkz. docs/KARAR-GUNLUGU.md 2026-08-11).
           E-posta "Panel" başlığının hemen altında (kullanıcı isteği,
-          2026-08-18) — Çıkış Yap/Siteyi Görüntüle artık başlıkta, tema
-          switch'inin iki yanında. */}
+          2026-08-18) — ayrıca header'daki UserMenu'nün açılır panelinde
+          de tekrar görünüyor (kalıcı kimlik burada, hızlı eylemler orada). */}
       <aside className="hidden w-60 shrink-0 border-r border-neutral-300 bg-surface-raised p-4 lg:block">
         <Link
           href="/panel"
@@ -126,39 +148,53 @@ export function PanelShell({
         </nav>
       </aside>
 
-      {/* Mobil/tablet: açılır (drawer) menü — MobileMenu.tsx'teki aynı
-          odak tuzağı/Escape/scroll kilidi deseni (useDialogBehavior). */}
+      {/* Mobil/tablet: açılır (drawer/sheet) menü — MobileMenu.tsx'teki
+          aynı odak tuzağı/Escape/scroll kilidi deseni (useDialogBehavior).
+          Görsel cila: tam ekran yerine sağdan kayan dar bir panel +
+          arkasında tıklanabilir/bulanık bir zemin. Zemin `aria-hidden` ve
+          klavyeyle hiç erişilmiyor (odak tuzağı yalnızca panelRef'e bağlı
+          elemanları kapsıyor) — Escape/X ile kapanış aynen korunuyor,
+          zemine tıklamak da (fare/dokunma) yeni bir kapatma yolu ekliyor. */}
       {mobileNavOpen && (
-        <div
-          ref={mobileNavRef}
-          role="dialog"
-          aria-modal="true"
-          aria-label="Panel menüsü"
-          className="fixed inset-0 z-50 bg-surface-raised p-4 lg:hidden"
-        >
-          <div className="flex items-center justify-between px-3">
-            <Link
-              href="/panel"
-              onClick={closeMobileNav}
-              className="rounded-sm text-h6 font-bold text-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand"
-            >
-              Panel
-            </Link>
-            <button
-              type="button"
-              onClick={closeMobileNav}
-              className="rounded-md p-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand"
-            >
-              <span className="sr-only">Menüyü kapat</span>
-              <X size={20} aria-hidden="true" />
-            </button>
+        <div className="fixed inset-0 z-50 lg:hidden">
+          <button
+            type="button"
+            tabIndex={-1}
+            aria-hidden="true"
+            onClick={closeMobileNav}
+            className="animate-fade-in absolute inset-0 cursor-default bg-neutral-900/50 backdrop-blur-sm motion-reduce:animate-none"
+          />
+          <div
+            ref={mobileNavRef}
+            role="dialog"
+            aria-modal="true"
+            aria-label="Panel menüsü"
+            className="animate-slide-in-right absolute inset-y-0 right-0 w-72 max-w-[85vw] overflow-y-auto bg-surface-raised p-4 shadow-xl motion-reduce:animate-none"
+          >
+            <div className="flex items-center justify-between px-3">
+              <Link
+                href="/panel"
+                onClick={closeMobileNav}
+                className="rounded-sm text-h6 font-bold text-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand"
+              >
+                Panel
+              </Link>
+              <button
+                type="button"
+                onClick={closeMobileNav}
+                className="rounded-md p-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand"
+              >
+                <span className="sr-only">Menüyü kapat</span>
+                <X size={20} aria-hidden="true" />
+              </button>
+            </div>
+            <p className="truncate px-3 text-caption text-text-muted" title={userEmail}>
+              {userEmail}
+            </p>
+            <nav className="mt-6">
+              <NavList onNavigate={closeMobileNav} unreadMessagesCount={unreadCount} />
+            </nav>
           </div>
-          <p className="truncate px-3 text-caption text-text-muted" title={userEmail}>
-            {userEmail}
-          </p>
-          <nav className="mt-6">
-            <NavList onNavigate={closeMobileNav} unreadMessagesCount={unreadCount} />
-          </nav>
         </div>
       )}
 
@@ -169,39 +205,29 @@ export function PanelShell({
           kısıtlamıyor. `inert`, çekmece açıkken bu içeriği erişilebilirlik
           ağacından ve klavye/fare etkileşiminden tamamen çıkarır. */}
       <div className="flex min-h-full flex-1 flex-col" inert={mobileNavOpen}>
-        <header className="flex items-center justify-between border-b border-neutral-300 bg-surface-raised px-4 py-3 sm:px-6">
-          <button
-            type="button"
-            onClick={() => setMobileNavOpen(true)}
-            aria-label="Menüyü aç"
-            className="rounded-md p-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand lg:hidden"
-          >
-            <MenuIcon size={20} aria-hidden="true" />
-          </button>
+        <header className="sticky top-0 z-10 flex items-center justify-between border-b border-neutral-300 bg-surface-raised/90 px-4 py-3 backdrop-blur-sm sm:px-6">
+          <Tooltip label="Menü" side="bottom">
+            <button
+              type="button"
+              onClick={() => setMobileNavOpen(true)}
+              aria-label="Menüyü aç"
+              className="rounded-md p-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand lg:hidden"
+            >
+              <MenuIcon size={20} aria-hidden="true" />
+            </button>
+          </Tooltip>
           {/* ml-auto: masaüstünde hamburger buton (lg:hidden) DOM'dan
               tamamen kalktığında justify-between'in tek kalan bu öğeyi
-              sola yaslamasını engeller. Kullanıcı isteği (2026-08-18):
-              e-posta sidebar'a taşındı, "Siteyi Görüntüle" switch'in
-              SOLUNDA + "Çıkış Yap" switch'in SAĞINDA — dar ekranda
-              "Siteyi Görüntüle" metni gizlenip sadece ikon kalıyor
-              (aria-label ile erişilebilir kalır), taşmayı önlemek için. */}
+              sola yaslamasını engeller. "Siteyi Görüntüle" ve "Çıkış Yap"
+              artık UserMenu'nün açılır panelinde toplanıyor (görsel
+              cila geçişi, bkz. UserMenu.tsx) — tema switch'i tek tıkla
+              erişilebilir kalsın diye dışarıda bırakıldı, sık kullanılan
+              bir eylem bir menüye gömülmedi. */}
           <div className="ml-auto flex items-center gap-3">
-            <a
-              href="/"
-              target="_blank"
-              rel="noopener noreferrer"
-              aria-label="Siteyi Görüntüle"
-              className="flex items-center gap-1.5 text-base text-text-muted hover:text-brand focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand"
-            >
-              <ExternalLink size={18} aria-hidden="true" />
-              <span className="hidden sm:inline">Siteyi Görüntüle</span>
-            </a>
-            <ThemeToggle settings={themeSettings} />
-            <form action={signOutAction}>
-              <Button type="submit" variant="ghost" size="sm">
-                Çıkış Yap
-              </Button>
-            </form>
+            <Tooltip label="Tema değiştir" side="bottom">
+              <ThemeToggle settings={themeSettings} />
+            </Tooltip>
+            <UserMenu userEmail={userEmail} signOutAction={signOutAction} />
           </div>
         </header>
         <main id="panel-main-content" tabIndex={-1} className="flex-1 p-4 sm:p-6 focus:outline-none">

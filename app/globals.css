@@ -207,3 +207,80 @@ body {
      --font-sans hiç tanımlı değilse devreye giren bir yedek. */
   font-family: var(--font-sans), Arial, Helvetica, sans-serif;
 }
+
+/*
+ * Küçük giriş/geçiş animasyonları — panel/giriş sayfası görsel cilası
+ * (bkz. UserMenu.tsx, TextScramble.tsx, app/panel/giris/page.tsx). Her
+ * kullanım yerinde `motion-reduce:animate-none` ile birlikte uygulanır
+ * (bkz. ThemeToggle.tsx'teki aynı ilke — `prefers-reduced-motion`
+ * kullanıcıları için anında/hareketsiz son duruma atlar).
+ */
+@keyframes fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(0.5rem);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes scale-in {
+  from {
+    opacity: 0;
+    transform: scale(0.96) translateY(-0.25rem);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@keyframes slide-in-right {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+@keyframes caret-blink {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0;
+  }
+}
+
+.animate-fade-in-up {
+  animation: fade-in-up 0.5s ease-out both;
+}
+
+.animate-fade-in {
+  animation: fade-in 0.2s ease-out both;
+}
+
+.animate-scale-in {
+  animation: scale-in 0.15s ease-out both;
+}
+
+.animate-caret-blink {
+  animation: caret-blink 1s step-end infinite;
+}
+
+.animate-slide-in-right {
+  animation: slide-in-right 0.25s ease-out both;
+}

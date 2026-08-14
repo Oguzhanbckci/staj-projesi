@@ -1,9 +1,12 @@
-import { useId, type InputHTMLAttributes } from "react";
+import { useId, type InputHTMLAttributes, type ReactNode } from "react";
 
 export interface TextFieldProps extends InputHTMLAttributes<HTMLInputElement> {
   label: string;
   error?: string;
   helpText?: string;
+  /** Opsiyonel — verilmezse alan öncekiyle birebir aynı render olur (bkz.
+   *  giriş sayfasındaki e-posta alanı, lucide-react ikonuyla). */
+  leadingIcon?: ReactNode;
 }
 
 // Etiket <label htmlFor> ile alana bağlı; hata/yardım metni aria-describedby
@@ -14,6 +17,7 @@ export function TextField({
   label,
   error,
   helpText,
+  leadingIcon,
   id,
   className = "",
   ...rest
@@ -28,13 +32,20 @@ export function TextField({
       <label htmlFor={fieldId} className="text-caption font-semibold text-text">
         {label}
       </label>
-      <input
-        id={fieldId}
-        aria-invalid={!!error}
-        aria-describedby={[helpId, errorId].filter(Boolean).join(" ") || undefined}
-        className={`w-full rounded-md border bg-surface-raised px-3 py-2 text-base text-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand ${error ? "border-error" : "border-neutral-300"} ${className}`}
-        {...rest}
-      />
+      <div className="relative">
+        {leadingIcon && (
+          <span aria-hidden="true" className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-text-muted">
+            {leadingIcon}
+          </span>
+        )}
+        <input
+          id={fieldId}
+          aria-invalid={!!error}
+          aria-describedby={[helpId, errorId].filter(Boolean).join(" ") || undefined}
+          className={`w-full rounded-md border bg-surface-raised py-2 text-base text-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand ${leadingIcon ? "pl-10 pr-3" : "px-3"} ${error ? "border-error" : "border-neutral-300"} ${className}`}
+          {...rest}
+        />
+      </div>
       {helpText && !error && (
         <p id={helpId} className="text-caption text-text-muted">
           {helpText}

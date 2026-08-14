@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { X } from "lucide-react";
 import { useDialogBehavior } from "@/lib/hooks/useDialogBehavior";
 import { LinkButton } from "@/components/ui/LinkButton";
 import type { NavLink } from "./Navbar";
@@ -31,41 +32,51 @@ export function MobileMenu({
   if (!open) return null;
 
   return (
-    <div
-      id={id}
-      ref={panelRef}
-      role="dialog"
-      aria-modal="true"
-      aria-label="Menü"
-      className="fixed inset-0 z-50 bg-surface p-6 lg:hidden"
-    >
+    <div className="fixed inset-0 z-50 lg:hidden">
+      {/* Bulanık/tıklanabilir zemin — PanelShell.tsx'teki aynı desen (bkz.
+          o dosyadaki yorum): aria-hidden + tabIndex=-1 gerçek bir <button>,
+          odak tuzağı sadece panelRef'e bağlı elemanları kapsıyor. */}
       <button
         type="button"
+        tabIndex={-1}
+        aria-hidden="true"
         onClick={onClose}
-        className="ml-auto block rounded-md p-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand"
+        className="animate-fade-in absolute inset-0 cursor-default bg-neutral-900/50 backdrop-blur-sm motion-reduce:animate-none"
+      />
+      <div
+        id={id}
+        ref={panelRef}
+        role="dialog"
+        aria-modal="true"
+        aria-label="Menü"
+        className="animate-slide-in-right absolute inset-y-0 right-0 w-72 max-w-[85vw] overflow-y-auto bg-surface p-6 shadow-xl motion-reduce:animate-none"
       >
-        <span className="sr-only">Menüyü kapat</span>
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-          <path d="M6 6l12 12M18 6L6 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-        </svg>
-      </button>
-      <ul className="mt-8 space-y-4">
-        {links.map((link) => (
-          <li key={link.href}>
-            <Link
-              href={link.href}
-              onClick={onClose}
-              className="text-h5 font-semibold text-text"
-            >
-              {link.label}
-            </Link>
-          </li>
-        ))}
-      </ul>
-      <div className="mt-8">
-        <LinkButton href={contactHref} size="lg" onClick={onClose} className="w-full">
-          {contactLabel}
-        </LinkButton>
+        <button
+          type="button"
+          onClick={onClose}
+          className="ml-auto block rounded-md p-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand"
+        >
+          <span className="sr-only">Menüyü kapat</span>
+          <X size={22} aria-hidden="true" />
+        </button>
+        <ul className="mt-8 space-y-4">
+          {links.map((link) => (
+            <li key={link.href}>
+              <Link
+                href={link.href}
+                onClick={onClose}
+                className="text-h5 font-semibold text-text"
+              >
+                {link.label}
+              </Link>
+            </li>
+          ))}
+        </ul>
+        <div className="mt-8">
+          <LinkButton href={contactHref} size="lg" onClick={onClose} className="w-full">
+            {contactLabel}
+          </LinkButton>
+        </div>
       </div>
     </div>
   );

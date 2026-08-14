@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { Menu as MenuIcon } from "lucide-react";
 import { LinkButton } from "@/components/ui/LinkButton";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import type { SiteThemeSettings } from "@/lib/theme/resolve";
@@ -78,7 +79,12 @@ export function Navbar({
         <ul className="hidden gap-6 lg:flex">
           {menuLinks.map((link) => (
             <li key={link.href}>
-              <Link href={link.href} className="text-base text-text hover:text-brand">
+              {/* İnce, açılır bir alt çizgi — hover'da 0'dan tam genişliğe
+                  büyüyor (bkz. after: sözde öğesi). Salt görsel, JS yok. */}
+              <Link
+                href={link.href}
+                className="relative text-base text-text after:absolute after:-bottom-1 after:left-0 after:h-0.5 after:w-0 after:rounded-full after:bg-brand after:transition-all after:duration-200 after:content-[''] hover:text-brand hover:after:w-full motion-reduce:after:transition-none"
+              >
                 {link.label}
               </Link>
             </li>
@@ -102,9 +108,7 @@ export function Navbar({
             className="rounded-md p-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand lg:hidden"
           >
             <span className="sr-only">Menüyü aç</span>
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-              <path d="M4 6h16M4 12h16M4 18h16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-            </svg>
+            <MenuIcon size={22} aria-hidden="true" />
           </button>
         </div>
       </nav>
