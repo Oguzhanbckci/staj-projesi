@@ -258,9 +258,11 @@ ikincil/destekleyici.
 ## 8. Bileşen Envanteri
 
 `components/ui/` — sayfa/tema bağımsız, genel amaçlı UI bileşenleri (bkz.
-`AI-KURALLARI.md` madde 3). Hepsi Server Component (hiçbiri `"use client"`
-içermiyor — state/etkileşim gerektirmiyorlar, sadece markup + token
-class'ları üretiyorlar). Görsel doğrulama için geçici bir vitrin sayfası
+`AI-KURALLARI.md` madde 3). Çoğu Server Component; üç istisna (canlı
+istemci-tarafı davranış gerektirdiği için `"use client"` taşıyor, madde 9.9):
+`ColorPickerField` (2026-08-15), `PasswordField` ve `TextScramble` (ikisi de
+sekizinci oturum, panel/giriş sayfası görsel zenginleştirmesi). Görsel
+doğrulama için geçici bir vitrin sayfası
 (`app/test-components/page.tsx`) kullanılmıştı — teslim öncesi temizlik
 sırasında (2026-08-17) kaldırıldı, gerçek kullanım artık üretim
 bileşenlerinin (Hero/Hizmetler/Panel formları vb.) kendisinde görünür.
@@ -274,11 +276,15 @@ bileşenlerinin (Hero/Hizmetler/Panel formları vb.) kendisinde görünür.
 | `TextareaField` | `components/ui/TextareaField.tsx` | `label`, `error`, `helpText`, `rows`, + native `<textarea>` props | Çok satırlı metin (iletişim formu mesajı vb.) |
 | `SelectField` | `components/ui/SelectField.tsx` | `label`, `error`, `helpText`, `children` (native `<option>`'lar), + native `<select>` props | Sabit seçenekli seçim (konu, kategori vb.) |
 | `ColorPickerField` | `components/ui/ColorPickerField.tsx` | `label`, `name`, `value`, `onChange`, `error`, `helpText` | Renk seçimi (native `<input type="color">` + hex metin kutusu) — **`components/ui/`'daki ilk client bileşen** (madde 9.9 istisnası: canlı önizleme için gerçek state senkronizasyonu gerekiyor, 2026-08-15) |
+| `PasswordField` | `components/ui/PasswordField.tsx` | `label`, `error`, + native `<input>` props (`type` hariç) | Şifre alanı, göster/gizle butonlu — TextField'ın a11y desenini izler ama TextField'ı client'a çevirmemek için ayrı bir bileşen (madde 9.9 istisnası, ColorPickerField'la aynı gerekçe, sekizinci oturum) |
+| `Badge` | `components/ui/Badge.tsx` | `variant` (brand/neutral/accent/success), + native `<span>` props | Küçük pill/chip etiket — durum rozeti değil (bkz. `StatusBadge`/`ReadStatusBadge`, `components/panel/`), dekoratif/bilgilendirici kısa etiketler için (sekizinci oturum) |
+| `Tooltip` | `components/ui/Tooltip.tsx` | `label`, `side` (top/bottom), `children` | Salt CSS (group-hover/focus-within) araç ipucu, JS gerektirmez — ikon-sadece butonlarda görsel destek (ekran okuyucu için birincil kanal çağıranın kendi `aria-label`'ı, sekizinci oturum) |
+| `TextScramble` | `components/ui/TextScramble.tsx` | `text`, `className` | Metnin "çözülme" animasyonuyla belirmesi (client, `prefers-reduced-motion`'a saygılı, gerçek metin ayrı bir `sr-only` span'de anında mevcut) — giriş sayfası başlığında kullanılıyor (sekizinci oturum) |
 
 ## 9. Bileşen API Kuralları
 
 Bu proje için `components/ui/` altında yazılan her yeni bileşenin uyması
-gereken kurallar — madde 8'deki 6 bileşen bu kurallara göre yazıldı,
+gereken kurallar — madde 8'deki bileşenlerin hepsi bu kurallara göre yazıldı,
 yenileri de aynı kalıba uymalı:
 
 1. **Gerçek native HTML elementi kullanılır, taklit edilmez.** `Button`

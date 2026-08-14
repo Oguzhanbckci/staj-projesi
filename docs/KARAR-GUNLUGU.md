@@ -4520,3 +4520,122 @@ kütüphanenin arka planda "sonunda" doğru auth'u bağlayacağına
 güvenilmemeli.
 
 Bu konu artık kapalı — `docs/DURUM.md` madde 0c güncellendi.
+
+## 2026-08-18 (aynı gün, sekizinci oturum) — GitHub "claude" contributor kaydı araştırıldı; panel/giriş sayfası ve Navbar/Hero görsel olarak zenginleştirildi
+
+**Konu 1 — GitHub Contributors kaydı hâlâ "claude" gösteriyor, kök neden
+bulundu (kod tarafında değil):** Kullanıcı, repo sayfasının kenar
+çubuğundaki "Contributors" kutusunda ve profilindeki "Created 1 repository"
+etkinliğinin altındaki "Built by" satırında hâlâ `github.com/claude`
+(Anthropic'in resmi hesabı) göründüğünü bildirdi — üçüncü bir olayda
+(bkz. yukarısı) sadece 2 commit temizlenmişti. Kullanıcının onayıyla
+`git branch backup-oncesi` + `git filter-branch --msg-filter "grep -v -i
+'Co-Authored-By'" -- --all` çalıştırıldı — **sonuç: "Ref unchanged", yani
+mevcut `main`/`origin/main` geçmişindeki 55 commit'in HİÇBİRİNDE
+`Co-Authored-By` metni yok.** `git log --all --grep` ile de doğrulandı.
+
+Tarayıcıdan (`graphs/contributors` sayfası — sadece "Oguzhanbckci, 54/55
+commit" gösteriyor) ve GitHub Destek'in kendi (Copilot tabanlı) otomatik
+çözüm önerisinden teyit edildi: **bu, GitHub'ın belgelediği bilinen bir
+davranış** — bir force-push/geçmiş yeniden yazımından sonra contributor
+istatistiklerinin yenilenmesi ~24 saat sürebiliyor; hâlâ yanlışsa GitHub
+Destek'e yazılması öneriliyor. Yani sorun artık bu repodaki koddan/
+commit'lerden değil, **GitHub'ın kendi geçmiş (force-push öncesi) kaydından**
+kaynaklanıyor.
+
+**Yapılanlar:** GitHub Destek'te bir talep taslağı hazırlandı (kategori:
+Repositories > Veri havuzu özellikleri, konu: "Stale \"claude\" contributor
+entry from rewritten commit history") ama GÖNDERİLMEDİ — önce 24 saatlik
+bekleme penceresinin dolması bekleniyor. Bunun yerine **~24 saat sonrasına
+tek seferlik bir bulut ajanı (routine) zamanlandı** (`claude.ai/code/
+routines/trig_0142kwKQGVBw7PiZ9tS6tTPB`) — `graphs/contributors` ve repo
+sayfasını tekrar kontrol edip sonucu kullanıcıya bildirecek; hâlâ yanlışsa
+hazır taslağı hatırlatacak. **Açık kalan:** bu kontrolün sonucu bekleniyor.
+
+**Konu 2 — Panel, giriş sayfası ve Navbar/Hero görsel olarak zenginleştirildi
+(kullanıcı isteği: "tasarım basit/yüzeysel kalmış, div yazıp geçmişim
+gibi"):** Kullanıcı önce sadece giriş+panel dedi, sonra ziyaretçi sitesini
+(inşaat firması sayfası) de kapsadığını netleştirdi — kapsam ikiye bölündü,
+bu oturumda giriş+panel+Navbar/Hero tamamlandı, geri kalan bölümler
+(Hizmetler/Projeler/Referanslar/İstatistikler/SSS/CTA/Footer) **bilerek
+ertelendi**, bir sonraki oturuma bırakıldı (bkz. `docs/DURUM.md`).
+
+**Yeni paylaşılan bileşenler** (`components/ui/`, madde 8'e işlendi —
+`docs/TASARIM-SISTEMI.md`): `Badge` (pill/chip), `Tooltip` (salt CSS,
+group-hover/focus-within, JS yok), `TextScramble` (client, metin "çözülme"
+animasyonu, `prefers-reduced-motion`'a saygılı, gerçek metin ayrı bir
+`sr-only` span'de), `PasswordField` (client, göster/gizle butonlu —
+ColorPickerField'daki "TextField'ı client yapma, ayrı bileşen yaz"
+gerekçesiyle aynı). `TextField`'a geriye dönük uyumlu opsiyonel
+`leadingIcon` prop'u eklendi (~15 mevcut kullanım yeri etkilenmedi).
+`components/panel/UserMenu.tsx` (yeni, client) — panel header'ında avatar
+(baş harf) + açılır panel (e-posta, Siteyi Görüntüle, Çıkış Yap);
+`role="menu"` BİLİNÇLİ kullanılmadı (içerik bir komut listesi değil, tam
+ARIA menü deseni burada karşılıksız bir vaat olurdu) — sade
+aria-expanded/aria-controls "disclosure" deseni tercih edildi.
+
+**Giriş sayfası (`app/panel/giris/page.tsx`) iki kez yeniden tasarlandı:**
+İlk halinde split-screen (sol markalı panel + sağ beyaz form kartı)
+yapıldı; kullanıcı geri bildirimiyle ("iki ayrı blok yerine iç içe olsa
+daha güzel, ortada orantısız duruyor") **tek, "iç içe" kompozisyona**
+çevrildi — tüm sayfa `bg-hero` mavi zemin, form kartı bunun İÇİNE camsı/
+yarı saydam bir katman (`bg-white/10` + `backdrop-blur-xl`) olarak
+oturuyor, rijit sol/sağ bölünme yok. Bu, tek bir CSS tekniğiyle çözüldü:
+kartı saran div'de `style` ile `--color-text`/`--color-surface-raised`/
+`--color-neutral-300` token'ları YERELDE beyaz/camsı değerlere override
+edildi — TextField/PasswordField/Button/ThemeToggle gibi HİÇBİR paylaşılan
+bileşene dokunmadan, CSS custom property cascade'i sayesinde hepsi otomatik
+doğru renklere büründü (`[data-theme="dark"]`'ın globals.css'teki
+yaptığının yerel/küçük ölçekli hâli — `docs/TASARIM-SISTEMI.md`'ye not
+düşülmeli istenirse). Ayrıca native `<details>`/`<summary>` ile sıfır-JS
+bir "Giriş yapamıyor musunuz?" yardım notu eklendi (PRD'ye dayanan gerçek
+bilgi: panel hesabı Supabase Dashboard'dan açılır, kayıt formu yok).
+
+**GERÇEK BUG bulunup düzeltildi (test sırasında):** "Giriş Yap" butonunu
+sayfaya özel ters renklerle (beyaz zemin + mavi metin) göstermek için
+`Button`'a `className="bg-white text-brand"` verildi — ama Button'un
+`primary` varyantının kendi `bg-brand text-brand-on` sınıflarıyla AYNI CSS
+özelliğini (background-color, color) hedeflediği için Tailwind'in sınıf
+üretim sırası kazananı garanti etmedi: `bg-white` kazandı ama `text-brand`
+KAYBETTİ, sonuç beyaz zemin üzerinde beyaz (görünmez) metindi. Düzeltme:
+Tailwind v4'ün `!` (sonda, önemli-değiştirici) sözdizimiyle
+`bg-white! text-brand!` — kesin öncelik. **Ders:** bir paylaşılan
+bileşenin varsayılan renk sınıflarını className ile ezmeye çalışırken,
+AYNI CSS özelliğini hedefleyen bir çakışma varsa sıradan className sırası
+GÜVENİLMEMELİ, `!` değiştiricisi kullanılmalı.
+
+**Panel kabuğu (`PanelShell.tsx`):** kenar menüsünde artık aktif sayfa
+vurgulanıyor (`usePathname`, önceden hiç yoktu — gerçek bir eksiklikti);
+header artık `sticky` + hafif bulanık; ikon butonlarda `Tooltip`; mobil
+menü tam ekran kaplayan eski halinden, sağdan kayan bir çekmeceye
+(arkasında bulanık/tıklanabilir zemin) çevrildi — odak tuzağı/Escape/
+scroll kilidi (`useDialogBehavior`) aynen korundu. Zemin gerçek bir
+`<button tabIndex={-1} aria-hidden>` (a11y linter'ın "onClick'li statik
+element" uyarısını almamak için, sade bir `<div onClick>` değil).
+
+**Navbar/MobileMenu/Hero (ziyaretçi sitesi):** Navbar linklerine hover'da
+soldan sağa açılan ince bir alt çizgi (`after:` sözde öğesi, salt CSS);
+hamburger ikonu artık lucide-react (`Menu`), elle yazılmış SVG değil;
+`MobileMenu.tsx` PanelShell'deki AYNI sağdan-kayan-çekmece + bulanık-zemin
+desenine geçirildi (kod tekrarı ama bilinçli — TASARIM-SISTEMI.md madde
+9.8 ilkesiyle tutarlı, iki ayrı context). `HeroVariantA.tsx`: gerçek
+fotoğraf yokken (Storage'da hâlâ hiç görsel yok) düz `bg-hero` yerine
+dekoratif degrade + ince ızgara deseni (inşaat/plan çizimine hafif
+gönderme), butonlarda hover'da hafif yükselme, alt kenarda düz kesim
+yerine `AboutSection`'ın zeminine (`bg-surface-raised`) yumuşak geçen bir
+SVG dalga. **Not: Hero'da CTA butonu hâlâ görünmüyor — kod doğru
+(ctaText/ctaLink varsa render ediyor), demo verisinde bu alanlar boş,
+içerik eksikliği, kod hatası değil.**
+
+**`app/globals.css`'e eklenen yeni utility'ler:** `.animate-fade-in-up`,
+`.animate-fade-in`, `.animate-scale-in`, `.animate-slide-in-right`,
+`.animate-caret-blink` (henüz kullanılmıyor, TextScramble için hazırlandı
+ama karakter-bazlı imleç eklenmedi) — hepsi `motion-reduce:animate-none`
+ile birlikte kullanılıyor.
+
+**Doğrulama:** Her adım bu oturumda AI tarafından Chrome otomasyonuyla
+(`localhost:3000`, kullanıcının kendi `npm run dev`'i üzerinden) görsel
+olarak kontrol edildi — açık/koyu tema, panel çıkış/giriş akışı, UserMenu
+dropdown'ı, Hero'nun açık/koyu temada dalga geçişi. `npm run lint`/`build`
+kullanıcı tarafından HENÜZ çalıştırılmadı — bir sonraki oturumda teyit
+edilmeli. Hiçbir şey commit'lenmedi, oturum sonunda toplu commit'lenecek.

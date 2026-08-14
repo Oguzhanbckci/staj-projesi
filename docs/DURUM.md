@@ -15,9 +15,42 @@ geçmişi) oku. Yeni bir müşteri kurulumu yapılacaksa `KURULUM.md`'ye
 (sıfırdan kurulum, geliştirici için), panelin günlük kullanımı için
 `MUSTERİ-KILAVUZU.md`'ye (teknik olmayan okuyucu için) bakılır.
 
-**Son güncelleme:** 2026-08-18 (aynı gün, yedinci oturum, YENİ) — Altıncı
-oturumun sonunda açık bırakılan panel mesaj bildirimi sorunu çözüldü. Kök
-neden: `NewMessageNotifier.tsx`, Realtime kanalına istemci oturumu tarayıcıda
+**Son güncelleme:** 2026-08-18 (aynı gün, sekizinci oturum, YENİ) — İki ayrı
+konu işlendi. **(1) GitHub "claude" contributor sorunu araştırıldı:** mevcut
+commit geçmişinde (55 commit) `Co-Authored-By` izi kalmadığı `git
+filter-branch` denemesiyle doğrulandı (sonuç: "Ref unchanged", hiçbir şey
+değişmedi çünkü zaten temizdi) — sorun artık koddan değil, GitHub'ın
+force-push öncesi geçmişten kalma contributor önbelleğinden kaynaklanıyor
+(GitHub'ın kendi dokümantasyonu: yenilenmesi ~24 saat sürebilir, hâlâ
+yanlışsa Destek'e yazılmalı). Destek talebi taslağı hazır ama gönderilmedi;
+~24 saat sonrasına otomatik kontrol için bir bulut ajanı (routine)
+zamanlandı (`claude.ai/code/routines/trig_0142kwKQGVBw7PiZ9tS6tTPB`) —
+**sonucu bekleniyor.** **(2) Panel + giriş sayfası + Navbar/Hero görsel
+olarak zenginleştirildi** (kullanıcı geri bildirimi: "tasarım basit/
+yüzeysel kalmış, div yazıp geçmişim gibi"): 4 yeni paylaşılan bileşen
+(`Badge`, `Tooltip`, `TextScramble`, `PasswordField`), panel header'ında
+`UserMenu` (avatar+açılır panel), kenar menüsünde aktif sayfa vurgusu,
+panel VE site mobil menüsü artık sağdan kayan çekmece (tam ekran kaplayan
+eski halinden). Giriş sayfası kullanıcı geri bildirimiyle İKİ KEZ
+tasarlandı — ilk halinde split-screen (sol/sağ ayrı blok) yapıldı,
+kullanıcı "iç içe olsa daha güzel, ortada orantısız duruyor" dedi, son
+hali: tek "iç içe" mavi kompozisyon, form kartı camsı/yarı saydam bir
+katman olarak sayfanın İÇİNE oturuyor (yerel CSS custom property override
+tekniğiyle, TextField/Button gibi paylaşılan bileşenlere dokunmadan). Test
+sırasında gerçek bir Tailwind sınıf-önceliği hatası bulunup düzeltildi
+(buton metni beyaz zemin üzerinde beyaz kalıp görünmez oluyordu). Detay:
+`KARAR-GUNLUGU.md`, "sekizinci oturum". **Kapsam bilinçli ikiye bölündü:**
+ziyaretçi sitesinin geri kalanı (Hizmetler/Projeler/Referanslar/
+İstatistikler/SSS/CTA/Footer) HENÜZ ELE ALINMADI — bkz. aşağıda "Sıradaki
+adım", bir sonraki oturum buradan devam etmeli. `npm run lint`/`build`
+HENÜZ çalıştırılmadı, hiçbir şey commit'lenmedi — oturum sonunda toplu
+commit planlanıyor (bu notun kendisi commit'ten önce yazıldı, bir sonraki
+oturumda gerçekten commit'lenip lint/build'in temiz geçtiği teyit
+edilmeliyse burada hâlâ "commit'lenmedi" yazıyorsa dikkat).
+
+**Önceki güncelleme (aynı gün, yedinci oturum):** Altıncı oturumun sonunda
+açık bırakılan panel mesaj bildirimi sorunu çözüldü. Kök neden:
+`NewMessageNotifier.tsx`, Realtime kanalına istemci oturumu tarayıcıda
 (asenkron) yüklenmeden önce senkron abone oluyordu, bu yüzden ilk katılım
 "anon" rolüyle kuruluyor ve RLS tüm INSERT olaylarını SESSİZCE eliyordu
 (`CHANNEL_ERROR`/`TIMED_OUT` logu da hiç tetiklenmiyordu, kanal "SUBSCRIBED"
@@ -28,8 +61,12 @@ olmadan önce `supabase.auth.getSession()` bekleniyor,
 kuruluyor. Aynı işte `router.refresh()` eklenerek Mesajlar listesi (Server
 Component) de sayfa yenilenmeden güncel kalır hale getirildi. Kullanıcı
 iki-sekmeli gerçek tarayıcı testiyle doğruladı: ÇALIŞIYOR. Detay:
-`KARAR-GUNLUGU.md`, "yedinci oturum". `npm run lint`/`build` teyidi
-kullanıcıdan bekleniyor, henüz commit'lenmedi.
+`KARAR-GUNLUGU.md`, "yedinci oturum". **Düzeltme (sekizinci oturum):** bu
+madde önceden "henüz commit'lenmedi" diyordu — GitHub'da kontrol edildi,
+aslında commit'lenmiş (`fix: panel mesaj bildirimini gerçek zamanlı
+çalıştır` + `fix: CSP connect-src'e Supabase origin ekle`), `npm run lint`/
+`build` teyidi hâlâ kullanıcıdan bekleniyor ama commit durumu yanlış
+yazılmıştı, düzeltildi.
 
 **Önceki güncelleme (aynı gün, beşinci oturum):** Kullanıcının
 verdiği tamamen yeni bir açık+koyu renk paleti (Sayfa/Kart/Hero/Başlık/
@@ -1523,7 +1560,7 @@ işaretliyor, daha kesin bir ikinci katman. Detay: `SEO-PERFORMANS.md`.
    hash'ler: `083c408`, `992fe9f`), (b) **bundan sonra commit/push'u AI
    çalıştırmayacak, sadece komutları verecek**, Co-Authored-By satırı da
    bir daha eklenmeyecek. Detay: `KARAR-GUNLUGU.md`, "üçüncü bir olay".
-0c. **(En yüksek öncelik — bir sonraki oturum buradan başlamalı)**
+0c. **(ÇÖZÜLDÜ, sekizinci oturum — yeni en yüksek öncelik için 0d'ye bak)**
    ~~İki commit ("fix: panel mesaj silme ve okunmamis sayac hatalarini
    duzelt" `578ac58`, "feat: deneme icin yeni acik/koyu renk paletini
    uygula" `5582b2d`) push'landı, `git status` temiz, `origin/main` ile
@@ -1570,6 +1607,21 @@ işaretliyor, daha kesin bir ikinci katman. Detay: `SEO-PERFORMANS.md`.
    elle veriliyor; ayrıca Mesajlar listesi için `router.refresh()` eklendi.
    Kullanıcı iki-sekmeli gerçek tarayıcı testiyle doğruladı — **ÇALIŞIYOR**,
    bu madde kapandı. Detay: `KARAR-GUNLUGU.md`, "yedinci oturum".
+0d. **(En yüksek öncelik — bir sonraki oturum buradan başlamalı)** Ziyaretçi
+   sitesinin (inşaat firması sayfası) görsel zenginleştirmesi YARIM KALDI —
+   kullanıcı "tasarım basit/yüzeysel, div yazıp geçmişim gibi" dedi, kapsam
+   panel+giriş sayfası+Navbar/Hero (TAMAMLANDI, sekizinci oturum, bkz.
+   `KARAR-GUNLUGU.md`) ve ziyaretçi sitesinin geri kalanı (HENÜZ
+   BAŞLANMADI) olarak ikiye bölündü. Sırayla yapılacaklar: **Hizmetler →
+   Projeler → Referanslar/İstatistikler/SSS/CTA → Footer.** Yeni
+   `components/ui/` bileşenleri (Badge, Tooltip, TextScramble) ve
+   `app/globals.css`'teki yeni animasyon utility'leri (`.animate-fade-in-up`
+   vb.) zaten hazır, doğrudan kullanılabilir. Ayrıca fark edilen ama henüz
+   ele alınmayan bir sistemik boşluk: gerçek görsel olmadığında bazı
+   bölümler (ör. `AboutSection.tsx`'in görsel yer tutucusu) tamamen BOŞ
+   render oluyor (`bg-surface-raised` renginde, görünmez bir kutu) — Hero'da
+   yapılan degrade+ızgara deseni gibi paylaşılan bir "görsel yoksa" dekoratif
+   yer tutucu bileşeni bu turda tasarlanabilir.
 0b. **(Yüksek öncelik, henüz ele alınmadı — 2026-08-18 mentör
    incelemesi)** Panel gerçekte çok-kiracılı değil: yeni tenant
    oluşturma, tenant seçme/listeleme, demo katalog import (PRD madde
