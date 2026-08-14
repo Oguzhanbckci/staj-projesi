@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, type Dispatch, type SetStateAction } from "react";
+import { useRouter } from "next/navigation";
 import { createBrowserSupabaseClient } from "@/lib/supabase/client";
 import { ToastContainer } from "@/components/ui/ToastContainer";
 import { getContactSubjectLabel } from "@/lib/validation/contact";
@@ -36,6 +37,7 @@ export function NewMessageNotifier({
   setUnreadCount: Dispatch<SetStateAction<number>>;
 }) {
   const [toasts, setToasts] = useState<ToastData[]>([]);
+  const router = useRouter();
 
   useEffect(() => {
     // getActiveTenantId() teorik olarak null dönebilir (bkz.
@@ -45,36 +47,81 @@ export function NewMessageNotifier({
     if (!tenantId) return;
 
     const supabase = createBrowserSupabaseClient();
-    const channel = supabase
-      .channel(`contact-messages-${tenantId}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "INSERT",
-          schema: "public",
-          table: "contact_messages",
-          filter: `tenant_id=eq.${tenantId}`,
-        },
-        (payload) => {
-          const row = payload.new as ContactMessageInsertPayload;
-          setToasts((prev) => [
-            ...prev,
-            {
-              id: row.id,
-              title: "Yeni mesaj",
-              description: `${row.sender_name} — ${getContactSubjectLabel(row.subject)}`,
-              href: `/panel/mesajlar/${row.id}`,
-            },
-          ]);
-          setUnreadCount((count) => count + 1);
-        }
-      )
-      .subscribe();
+    let cancelled = false;
+    let channel: ReturnType<typeof supabase.channel> | undefined;
+
+    // GERÇEK BUG (yedinci oturumda bulundu, bkz. docs/KARAR-GUNLUGU.md): burada
+    // eskiden client oluşturulur oluşturulmaz senkron olarak subscribe()
+    // çağrılıyordu. createBrowserSupabaseClient() oturumu çerezden ASENKRON
+    // okur (bkz. lib/supabase/client.ts, @supabase/ssr); subscribe() bu
+    // okuma tamamlanmadan tetiklenince kanal Realtime'a "anon" rolüyle
+    // katılıyordu — contact_messages'ta anon'un HİÇ SELECT izni olmadığı
+    // için (bilerek öyle kurulmuş, bkz. GUVENLIK.md madde 1-2) INSERT
+    // olayları RLS tarafından SESSİZCE filtreleniyordu. subscribe() yine de
+    // "SUBSCRIBED" (hatasız) dönüyordu, bu yüzden CHANNEL_ERROR/TIMED_OUT
+    // logu da hiç tetiklenmiyordu — sorun görünmez kalıyordu.
+    // Düzeltme: abone olmadan ÖNCE oturumu bekleyip access_token'ı elle
+    // `supabase.realtime.setAuth()` ile Realtime soketine veriyoruz, böylece
+    // ilk katılım (join) baştan "authenticated" rolüyle oluyor.
+    async function subscribe() {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (cancelled) return;
+      if (session) {
+        supabase.realtime.setAuth(session.access_token);
+      }
+
+      channel = supabase
+        .channel(`contact-messages-${tenantId}`)
+        .on(
+          "postgres_changes",
+          {
+            event: "INSERT",
+            schema: "public",
+            table: "contact_messages",
+            filter: `tenant_id=eq.${tenantId}`,
+          },
+          (payload) => {
+            const row = payload.new as ContactMessageInsertPayload;
+            setToasts((prev) => [
+              ...prev,
+              {
+                id: row.id,
+                title: "Yeni mesaj",
+                description: `${row.sender_name} — ${getContactSubjectLabel(row.subject)}`,
+                href: `/panel/mesajlar/${row.id}`,
+              },
+            ]);
+            setUnreadCount((count) => count + 1);
+            // Mesajlar listesi (mesajlar/page.tsx) ve Özet ekranındaki
+            // sayılar Server Component'ten geliyor — router.refresh() bu
+            // ağacı sunucudan yeniden çeker, kullanıcı o an hangi panel
+            // sayfasındaysa (ör. /panel/mesajlar) sayfa hiç yenilenmeden
+            // yeni mesaj listeye düşer.
+            router.refresh();
+          }
+        )
+        .subscribe((status, err) => {
+          // Bağlantı kurulamazsa (ör. CSP/ağ engeli, CHANNEL_ERROR/TIMED_OUT)
+          // bildirim sessizce hiç gelmez — bu sessizliği teşhis edilebilir
+          // yapmak için konsola logla (2026-08-18, gerçek bir CSP hatası bu
+          // şekilde bulundu, bkz. KARAR-GUNLUGU.md).
+          if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
+            console.error("[NewMessageNotifier] Realtime bağlantısı kurulamadı:", status, err);
+          }
+        });
+    }
+
+    subscribe();
 
     return () => {
-      supabase.removeChannel(channel);
+      cancelled = true;
+      if (channel) {
+        supabase.removeChannel(channel);
+      }
     };
-  }, [tenantId, setUnreadCount]);
+  }, [tenantId, setUnreadCount, router]);
 
   function dismissToast(id: string) {
     setToasts((prev) => prev.filter((toast) => toast.id !== id));

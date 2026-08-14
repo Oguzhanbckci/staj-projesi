@@ -4325,3 +4325,198 @@ AI tarafından çalıştırılıp doğrulandı (ikisi de temiz) — ama kullanı
 henüz tarayıcıda GÖRMEDİ. Kullanıcının kendi çerçevesi gereği ("bu
 haliyle devam ederim ya da eskiye dönerim") nihai karar tarayıcıda
 görüldükten sonra kullanıcıya ait.
+
+## 2026-08-18 (aynı gün, altıncı oturum) — Yeni renk paleti kalıcı hale getirildi
+
+**Karar:** Kullanıcı, bir önceki oturumda commit'lenip push'lanan yeni
+renk paletini (bkz. "beşinci oturum") tarayıcıda inceledi ve **kalıcı
+olarak tutmaya karar verdi** — "devam ediyorum, bu palet kalsın".
+Deneme durumu resmen sona erdi; eski palete (kurumsal mavi + koyu
+turuncu) dönüş YOK. Kod tarafında ek bir değişiklik gerekmedi (palet
+zaten tam uygulanmış ve önceki oturumda commit'lenmişti) — sadece
+`docs/DURUM.md`'deki "Son güncelleme" ve "Sıradaki adım" madde 0c
+güncellenerek karar netleştirildi.
+
+**Aynı oturum, ikinci konu:** Kullanıcı, `20260818130000_enable_
+realtime_contact_messages.sql` migration'ını Supabase SQL Editor'de
+henüz ÇALIŞTIRMADIĞINI belirtti — AI kendisine adım adım nasıl
+uygulanacağını hatırlattı (bkz. sohbet). Kullanıcı ardından migration'ı
+SQL Editor'de çalıştırdığını bildirdi — `contact_messages` artık
+`supabase_realtime` publication'ında.
+
+**Aynı oturum, üçüncü konu — AI, Claude in Chrome ile iki-sekmeli canlı
+testi bizzat yaptı:** Kullanıcı `npm run dev`'i zaten çalıştırıyordu;
+AI kendisine panelde giriş yaptırdı (şifreyi AI GİRMEDİ — güvenlik
+kuralı gereği, kullanıcı kendi girdi), sonra bir sekmede `/panel/
+mesajlar`'ı açık tuttu, ikinci bir sekmede `/iletisim` formunu dolgu
+test verisiyle doldurup gönderdi.
+
+**Sonuç 1 (ÇALIŞIYOR):** Mesaj DB'ye doğru tenant'la kaydoldu, panel
+sayfası yenilenince "Okunmamış" olarak doğru göründü, okunmamış sayaç
+1→2 çıktı. Silme akışı da test edildi (test mesajı temizlendi) — onay
+penceresi doğru mesajı gösterdi, "Evet, Sil"den sonra pencere otomatik
+kapandı VE liste sayfa yenilenmeden anında güncellendi (daha önceki
+oturumlarda düzeltilen iki bug'ın hâlâ düzgün çalıştığının doğrulaması).
+
+**Sonuç 2 (o an DOĞRULANAMADI):** Sayfa yenilenmeden gelmesi gereken
+toast bildirimi ve anlık sayaç artışı GÖRÜLMEDİ. Geçici bir debug
+log'uyla (`NewMessageNotifier.tsx`'e eklenip test sonrası tamamen geri
+alındı — kalıcı kod değişikliği YOK) kök neden izlendi: `tenantId`
+doğru geliyor (`11111111-1111-1111-1111-111111111111`), ama
+`.subscribe()` `CHANNEL_ERROR: transport failure` döndürdü. Bunun
+üzerine AI, aynı tarayıcı sekmesinde ham bir `WebSocket`/`fetch`
+testiyle Supabase'in kendisine DEĞİL, **rastgele bir üçüncü parti
+API'ye (httpbin.org) bile** bağlanamadığını doğruladı — yani Claude in
+Chrome'un bu oturumdaki otomasyon tarayıcısı `localhost` DIŞINDA hiçbir
+dış bağlantıya izin vermiyor (muhtemelen bir sandbox/güvenlik kısıtı).
+AI bu yüzden bunu "gerçek hata değil, test ortamı sınırlaması olabilir"
+diye işaretleyip kullanıcıdan kendi tarayıcısında tekrar denemesini
+istedi.
+
+**Aynı oturum, dördüncü konu — kullanıcı AYNI sorunu kendi normal
+tarayıcısında da doğruladı, kök neden bulunup düzeltildi:** Kullanıcı
+"iletişim formundan mesajı gönderdiğimde panel sayfasına bildirimle
+düşmüyor, anlık sayaç da güncellenmiyor, sayfayı yenileyince düşüyor"
+dedi — yani test ortamı sınırlaması DEĞİL, gerçek bir hataydı. AI,
+`next.config.ts`'teki CSP başlığını inceleyerek kök nedeni buldu:
+`connect-src 'self'` — panelin Realtime bildirimi tarayıcıdan doğrudan
+`wss://<proje>.supabase.co`'ya bağlanmaya çalışıyor, ama bu origin
+`connect-src`te YOKTU, tarayıcı bağlantıyı SESSİZCE engelliyordu
+(uygulama tarafında `CHANNEL_ERROR: transport failure` olarak görünen
+şey aslında bir CSP ihlaliydi). Kanıt: `next.config.ts`'teki eski yorum
+"createBrowserSupabaseClient hiçbir yerde kullanılmıyor, connect-src bu
+yüzden sadece 'self'" diyordu — bu iddia `NewMessageNotifier.tsx`
+(dördüncü oturumda eklendi, tarayıcıdan doğrudan Supabase Realtime'a
+bağlanan İLK ve TEK kod) yazıldığı anda yanlış hale gelmişti ama
+`connect-src` o değişiklikle birlikte hiç güncellenmemişti.
+
+**Bu, 2026-08-17'de bulunan `script-src 'unsafe-inline'` eksikliğiyle
+BİREBİR AYNI KATEGORİDE bir hata** (bkz. `GUVENLIK.md` madde 15) —
+CSP'nin bir bileşenin davranışına bağlı bir direktifi, o bileşen
+DEĞİŞTİĞİNDE yeniden gözden geçirilmemiş. İki olay birlikte bir desen
+oluşturuyor: bu projede CSP, "yazıldığı an doğru, sonra sessizce
+eskiyen" bir güvenlik başlığı olma eğiliminde — ileride yeni bir
+istemci-taraflı ağ isteği (ör. üçüncü parti bir widget, başka bir
+gerçek zamanlı özellik) eklenirse `connect-src`/`script-src`/`img-src`
+YENİDEN kontrol edilmeli, "zaten bir kere doğru yazılmıştı" varsayımı
+kurulmamalı.
+
+**Düzeltme:** `next.config.ts`'e `NEXT_PUBLIC_SUPABASE_URL`'den türetilen
+`supabaseUrl` (https) ve `supabaseWsUrl` (aynısının wss şeması)
+eklendi, `connect-src`e ikisi birden dahil edildi — hem REST hem
+Realtime WebSocket aynı host'ta yaşadığı için tek bir env değişkeninden
+ikisi de türetilebiliyor, ayrı bir env değişkenine gerek kalmadı.
+`npm run build`/`lint` AI tarafından çalıştırılıp temiz doğrulandı.
+**Açık kalan (ilk yazımda):** `next.config.ts` bir yapılandırma dosyası —
+Next.js dev sunucusu bunu Fast Refresh ile YENİDEN OKUMAZ, kullanıcının
+`npm run dev`'i YENİDEN BAŞLATMASI gerekiyor, sonra iki-sekmeli test
+tekrar denenmeli.
+
+**Aynı oturum, beşinci konu — kullanıcı dev sunucusunu yeniden başlattı,
+CANLI GÜNCELLEME HÂLÂ ÇALIŞMIYOR ("sayfayı yenileyince sadece mesaj
+sayısı artıyor, bildirime dair bi şey yok"):** AI bu sefer, tarayıcıya
+hiç güvenmeden, gerçek internet erişimi olan bu makinede (Bash aracıyla,
+Claude in Chrome'un aksine) doğrudan Node.js script'leriyle Supabase
+Realtime'ı ADIM ADIM izole test etti — her adım bir öncekini geçersiz
+kılabilecek bir hipotezi eledi:
+
+1. **Servis rolüyle (RLS'i bypass eden), filtre ile, event=INSERT:**
+   İLK denemede olay ALINAMADI (15sn+3sn bekleme). Bu, "publication
+   çalışmıyor" ya da "filtre bozuk" hipotezlerini akla getirdi.
+2. **Servis rolüyle, FİLTRESİZ, event=`*`:** Olay ANINDA alındı — iki
+   kez tekrarlanıp doğrulandı. Bu, publication'ın ve temel WebSocket
+   bağlantısının ÇALIŞTIĞINI kanıtladı; adım 1'in başarısızlığı bir
+   yarış durumu/geçici gecikme olmalı (bağlantı SUBSCRIBED olduktan
+   hemen sonra filtre henüz sunucu tarafında tam kurulmamış olabilir).
+3. **Servis rolüyle, filtre İLE (uygulamadaki BİREBİR aynı filtre
+   string'i), event=INSERT, tekrar:** Bu sefer ANINDA alındı — filtrenin
+   kendisinin SAĞLAM olduğunu doğruladı, adım 1 gerçekten bir flake'ti.
+4. **GERÇEK bir `authenticated` rolü senaryosu** (service role KULLANMA
+   —RLS'i test etmek için gerçek anlamlı): service role ile GEÇİCİ bir
+   Supabase Auth kullanıcısı oluşturuldu (`auth.admin.createUser`),
+   anon key + bu geçici kullanıcıyla giriş yapıldı (gerçek kullanıcının
+   şifresine HİÇ dokunulmadı — ayrı, rastgele üretilmiş bir test
+   kullanıcısıydı), aynı filtreyle abone olundu, servis rolüyle bir satır
+   eklendi: olay ANINDA alındı. Bu, RLS/auth-token realtime'a doğru
+   yansıyor mu sorusunu da KESİN olarak "evet" ile kapattı.
+5. Paralel bir araştırma ajanı, kurulu `@supabase/supabase-js@2.112.2`/
+   `@supabase/realtime-js@2.112.2`/`@supabase/ssr@0.12.4` paketlerinin
+   GERÇEK kaynak kodunu okuyarak (node_modules içinden, dosya/satır
+   numarasıyla) doğruladı: JWT, `SupabaseClient` constructor'ında VE
+   `onAuthStateChange` ile otomatik `realtime.setAuth()`'a bağlanıyor,
+   `postgres_changes` için `{config:{private:true}}` GEREKMİYOR (o sadece
+   Broadcast/Presence için), `@supabase/ssr`'ın `createBrowserClient`'ı
+   `realtime`e hiç dokunmayan ince bir sarmalayıcı. Yani kütüphane
+   tarafında EKSİK bir adım YOK — kod olduğu gibi doğru.
+
+**Sonuç: backend (publication), RLS, filtre, kütüphane wiring'inin
+HEPSİ doğrulandı çalışıyor.** Sorun ya (a) kullanıcının test ettiği
+tarayıcı SEKMESİ dev sunucusu yeniden başladıktan sonra HİÇ yeniden
+yüklenmedi (CSP, sayfa YÜKLENDIĞI ANDA sabitlenir — sekme yeniden
+navigasyon görmeden eski CSP'yi uygulamaya devam eder, sunucunun kendisi
+yeniden başlamış olması yetmez), (b) kullanıcının GERÇEK tarayıcısında
+bir reklam engelleyici/gizlilik eklentisi üçüncü parti WebSocket'i
+engelliyor, ya da (c) hâlâ bilinmeyen bir istemci-taraflı sorun.
+**Düzeltme (kalıcı, teşhis amaçlı):** `NewMessageNotifier.tsx`'e,
+`.subscribe()`'un `CHANNEL_ERROR`/`TIMED_OUT` durumunda artık
+`console.error` ile loglama eklendi (önceden TAMAMEN sessizdi) — bir
+daha bu sınıf bir sorun yaşanırsa kullanıcının F12 konsolunda görünür
+olacak. `npm run build`/`lint` temiz.
+
+**Kullanıcıdan istenen:** `/panel/mesajlar` sekmesinde SERT yenileme
+(Ctrl+Shift+R) yapıp F12 konsolunu açık tutarak testi tekrarlaması —
+eğer bu sefer `[NewMessageNotifier] Realtime bağlantısı kurulamadı`
+loglanırsa hâlâ bir bağlantı sorunu var demektir (muhtemelen tarayıcı
+eklentisi); loglanmazsa VE hâlâ toast gelmezse, sorun `payload`'ın
+işlenmesinde ya da React state güncellemesinde olmalı — bir sonraki
+adım orası. Detay: `docs/DURUM.md` madde 0c, `docs/GUVENLIK.md` madde 15.
+
+## 2026-08-18 (aynı gün, yedinci oturum) — Panel mesaj bildirimi gerçek zamanlı çalışır hale getirildi
+
+Altıncı oturumun sonunda açık bırakılan konu (yukarıya bakın, "beşinci
+konu") çözüldü. Kullanıcı sert yenileme (Ctrl+Shift+R) + F12 konsolu
+açıkken testi tekrarladı: `CHANNEL_ERROR`/`TIMED_OUT` logu HİÇ görünmedi —
+kanal her zaman "SUBSCRIBED" olarak başarıyla kuruluyordu, yani sorun bir
+bağlantı hatası değil, tamamen SESSİZ bir RLS filtrelemesiydi.
+
+**Kök neden:** `NewMessageNotifier.tsx`, `createBrowserSupabaseClient()`
+ile istemciyi oluşturduğu ANDA senkron olarak `.channel(...).subscribe()`
+çağırıyordu. `@supabase/ssr`'ın `createBrowserClient`'ı oturumu çerezden
+ASENKRON okuyup Realtime soketine bağlıyor (`onAuthStateChange`
+üzerinden); `.subscribe()` bu asenkron adım tamamlanmadan tetiklenince,
+kanalın ilk katılımı (join) "anon" rolüyle oluyordu. `contact_messages`'ta
+anon'un hiç SELECT izni olmadığı için (bilerek öyle, bkz. `GUVENLIK.md`
+madde 1-2) sonraki tüm INSERT olayları RLS tarafından sessizce eleniyordu
+— `subscribe()` yine de hatasız "SUBSCRIBED" döndüğü için beşinci
+oturumdaki 5 adımlık backend testi (service role + gerçek authenticated
+test kullanıcısıyla) bu senaryoyu hiç yakalayamamıştı, çünkü o testler
+kanalı doğrudan authenticated rolüyle kuruyordu — uygulamadaki gerçek
+zamanlama yarışını değil.
+
+**Düzeltme (`components/panel/NewMessageNotifier.tsx`):** abone olmadan
+ÖNCE `await supabase.auth.getSession()` ile oturum bekleniyor, sonra
+`supabase.realtime.setAuth(session.access_token)` ile token elle Realtime
+soketine veriliyor, ancak ondan sonra kanal kuruluyor — ilk katılım artık
+baştan "authenticated" rolüyle oluyor. Aynı fırsatla ikinci bir eksik de
+kapatıldı: Mesajlar listesi (`app/panel/(protected)/mesajlar/page.tsx`)
+bir Server Component, sadece toast/sayaç düzeltmesi tabloyu güncellemezdi
+— INSERT olayında artık `router.refresh()` de çağrılıyor, bu yüzden
+kullanıcı hangi panel sayfasındaysa (Mesajlar listesi, Özet ekranı
+sayıları) sayfa hiç yenilenmeden güncel kalıyor.
+
+**Doğrulama:** kullanıcı iki-sekmeli gerçek tarayıcı testiyle (bir sekme
+`/panel/mesajlar`, diğeri `/iletisim`) doğruladı — mesaj gönderilince
+toast, okunmamış sayaç ve tablo satırı sayfa yenilenmeden anında
+güncellendi. `npm run lint`/`build` teyidi henüz kullanıcıdan gelmedi,
+commit henüz atılmadı.
+
+**Ders (beşinci konudaki kütüphane incelemesine ek):** kütüphanenin
+kendisinin (supabase-js/realtime-js) auth token'ı otomatik
+`realtime.setAuth()`'a bağlıyor olması, ÇAĞIRAN kodun (bu bileşen) o
+otomatik bağlanmadan önce subscribe çağırmayacağını garanti etmiyor —
+RLS'e tabi bir `postgres_changes` aboneliği kuran her yeni kod, abone
+olmadan önce oturumu EXPLICIT olarak bekleyip `setAuth()` çağırmalı,
+kütüphanenin arka planda "sonunda" doğru auth'u bağlayacağına
+güvenilmemeli.
+
+Bu konu artık kapalı — `docs/DURUM.md` madde 0c güncellendi.

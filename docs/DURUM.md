@@ -15,7 +15,23 @@ geçmişi) oku. Yeni bir müşteri kurulumu yapılacaksa `KURULUM.md`'ye
 (sıfırdan kurulum, geliştirici için), panelin günlük kullanımı için
 `MUSTERİ-KILAVUZU.md`'ye (teknik olmayan okuyucu için) bakılır.
 
-**Son güncelleme:** 2026-08-18 (beşinci oturum, YENİ) — Kullanıcının
+**Son güncelleme:** 2026-08-18 (aynı gün, yedinci oturum, YENİ) — Altıncı
+oturumun sonunda açık bırakılan panel mesaj bildirimi sorunu çözüldü. Kök
+neden: `NewMessageNotifier.tsx`, Realtime kanalına istemci oturumu tarayıcıda
+(asenkron) yüklenmeden önce senkron abone oluyordu, bu yüzden ilk katılım
+"anon" rolüyle kuruluyor ve RLS tüm INSERT olaylarını SESSİZCE eliyordu
+(`CHANNEL_ERROR`/`TIMED_OUT` logu da hiç tetiklenmiyordu, kanal "SUBSCRIBED"
+dönüyordu — beşinci oturumdaki backend testleri bu senaryoyu yakalayamamıştı
+çünkü onlar kanalı doğrudan authenticated rolüyle kuruyordu). Düzeltme: abone
+olmadan önce `supabase.auth.getSession()` bekleniyor,
+`supabase.realtime.setAuth()` ile token elle veriliyor, ancak sonra kanal
+kuruluyor. Aynı işte `router.refresh()` eklenerek Mesajlar listesi (Server
+Component) de sayfa yenilenmeden güncel kalır hale getirildi. Kullanıcı
+iki-sekmeli gerçek tarayıcı testiyle doğruladı: ÇALIŞIYOR. Detay:
+`KARAR-GUNLUGU.md`, "yedinci oturum". `npm run lint`/`build` teyidi
+kullanıcıdan bekleniyor, henüz commit'lenmedi.
+
+**Önceki güncelleme (aynı gün, beşinci oturum):** Kullanıcının
 verdiği tamamen yeni bir açık+koyu renk paleti (Sayfa/Kart/Hero/Başlık/
 Metin/Accent/Border) **deneme olarak** projeye uygulandı — kullanıcının
 kendi çerçevesi: "ya bu haliyle devam ederim ya da eskiye dönerim".
@@ -35,8 +51,12 @@ brand/surface — 3:1 UI eşiğini geçiyor), 1 YENİ çift az altına düştü
 (koyu error/surface-raised, 4.44:1) — dürüstçe işaretlendi. Detay:
 `KARAR-GUNLUGU.md`, "beşinci oturum"; `TASARIM-SISTEMI.md` madde 1-2
 tamamen güncellendi. `npm run build`/`lint` AI tarafından çalıştırılıp
-temiz doğrulandı — **kullanıcı henüz tarayıcıda görmedi, nihai karar
-(devam/eskiye dönüş) ona ait.**
+temiz doğrulandı.
+
+**Karar (altıncı oturum):** Kullanıcı yeni paleti tarayıcıda inceledi ve
+**kalıcı olarak tutmaya karar verdi** — deneme durumu sona erdi, bu artık
+sitenin güncel renk paleti. Geri dönüş seçeneği yok sayıldı, ek bir kod
+değişikliği gerekmedi (palet zaten tam uygulanmış ve commit'lenmişti).
 
 **Önceki güncelleme (aynı gün, üçüncü-dördüncü oturumlar):** Ziyaretçi
 açık/koyu tema switch'i (site tüm sayfalarda + panel + giriş sayfası,
@@ -1503,18 +1523,53 @@ işaretliyor, daha kesin bir ikinci katman. Detay: `SEO-PERFORMANS.md`.
    hash'ler: `083c408`, `992fe9f`), (b) **bundan sonra commit/push'u AI
    çalıştırmayacak, sadece komutları verecek**, Co-Authored-By satırı da
    bir daha eklenmeyecek. Detay: `KARAR-GUNLUGU.md`, "üçüncü bir olay".
-0c. **(En yüksek öncelik — bir sonraki oturum buradan başlamalı,
-   2026-08-18 beşinci oturumun bittiği yer)**
-   - Yeni renk paletini (bkz. yukarıdaki "Son güncelleme") tarayıcıda
-     gör, devam et ya da eskiye dön kararını ver. Kod/doküman hazır,
-     commit'ler bekliyor — sadece bu karar kaldı.
-   - `supabase/migrations/20260818130000_enable_realtime_contact_messages.sql`
-     henüz Supabase'e (SQL Editor) UYGULANMADI — uygulanmadan Realtime
-     toast bildirimi çalışmaz. Uygulandıktan sonra iki sekmede (biri
-     `/iletisim`'den mesaj gönderiyor, diğeri `/panel/mesajlar`'da
-     açık) canlı test edilmeli.
-   - Aşağıdaki commit'ler henüz push'lanmadı — bu iki grup, ilgili
-     dosyaları kapsıyor (bkz. sohbetin sonundaki komutlar).
+0c. **(En yüksek öncelik — bir sonraki oturum buradan başlamalı)**
+   ~~İki commit ("fix: panel mesaj silme ve okunmamis sayac hatalarini
+   duzelt" `578ac58`, "feat: deneme icin yeni acik/koyu renk paletini
+   uygula" `5582b2d`) push'landı, `git status` temiz, `origin/main` ile
+   senkron.~~ ~~Yeni renk paleti tarayıcıda incelendi, kullanıcı KALICI
+   olarak tutmaya karar verdi (altıncı oturum) — deneme durumu bitti.~~
+   ~~`20260818130000_enable_realtime_contact_messages.sql` kullanıcı
+   tarafından Supabase SQL Editor'de çalıştırıldı (altıncı oturum).~~
+   ~~İki-sekmeli test AI tarafından (Chrome otomasyonuyla, `npm run dev`
+   zaten çalışırken) yapıldı: form→DB→panel mesaj listesi ZİNCİRİ UÇTAN
+   UCA ÇALIŞIYOR (yeni mesaj doğru tenant'a kaydoldu, panelde
+   "Okunmamış" göründü, silme + anlık liste yenilemesi de doğru
+   çalıştı).~~ ~~AI'ın test ortamında toast/anlık sayaç görülemedi ama
+   sebep belirsizdi (test tarayıcısının genel internet erişimi yoktu).
+   Kullanıcı KENDİ normal tarayıcısında tekrar denedi ve AYNI sorunu
+   doğruladı — yani gerçek bir hataydı, test ortamı sınırlaması
+   değildi.~~ ~~CSP `connect-src`'e Supabase origin'i eklendi (bir
+   önceki gerçek bulgu), dev sunucusu yeniden başlatıldı.~~ **Kullanıcı
+   yeniden başlatma SONRASI da tekrar test etti — HÂLÂ çalışmıyor**
+   ("sayfayı yenileyince sadece mesaj sayısı artıyor, bildirime dair bi
+   şey yok"). AI bunun üzerine backend'i (publication, RLS, filtre,
+   kütüphane wiring'i) bu makinedeki gerçek internet erişimiyle
+   (Bash + Node script'leri, tarayıcıya HİÇ güvenmeden) adım adım test
+   etti — **hepsi ÇALIŞIYOR olarak doğrulandı** (bkz. `KARAR-GUNLUGU.md`,
+   "altıncı oturum, beşinci konu" — 4 ayrı script testi + kütüphane
+   kaynak kodu incelemesi). Yani sorun artık ne Supabase tarafında ne
+   kütüphanede — kalan olası sebepler istemci/tarayıcı taraflı: (a)
+   kullanıcının test ettiği sekme dev sunucusu yeniden başladıktan
+   sonra SERT yenilenmedi (CSP sayfa yüklendiği anda sabitlenir), (b)
+   bir tarayıcı eklentisi (reklam engelleyici vb.) WebSocket'i
+   engelliyor, (c) bilinmeyen bir istemci sorunu. `NewMessageNotifier`'a
+   artık `CHANNEL_ERROR`/`TIMED_OUT` durumunda `console.error` logu
+   eklendi (önceden sessizdi) — **sıradaki adım: kullanıcı `/panel/
+   mesajlar`'da Ctrl+Shift+R (sert yenileme) yapıp F12 konsolunu açık
+   tutarak testi tekrarlamalı**, konsolda ne göründüğü (ya da hiçbir şey
+   görünmediği) bir sonraki teşhis adımını belirleyecek.
+   **Sonuç (yedinci oturum): kullanıcı sert yenileme sonrası tekrar denedi,
+   konsolda `CHANNEL_ERROR`/`TIMED_OUT` logu HİÇ görünmedi** — yani sorun
+   bağlantı hatası değil, tamamen sessiz bir RLS filtrelemesiydi. Kök neden
+   bulundu: `NewMessageNotifier.tsx` istemciyi oluşturur oluşturmaz senkron
+   `.subscribe()` çağırıyordu, oturum (JWT) çerezden asenkron okunduğu için
+   ilk katılım "anon" rolüyle oluyor, `contact_messages`'ta anon'un hiç
+   SELECT izni olmadığından olaylar sessizce eleniyordu. Düzeltme: abone
+   olmadan önce oturum bekleniyor, `supabase.realtime.setAuth()` ile token
+   elle veriliyor; ayrıca Mesajlar listesi için `router.refresh()` eklendi.
+   Kullanıcı iki-sekmeli gerçek tarayıcı testiyle doğruladı — **ÇALIŞIYOR**,
+   bu madde kapandı. Detay: `KARAR-GUNLUGU.md`, "yedinci oturum".
 0b. **(Yüksek öncelik, henüz ele alınmadı — 2026-08-18 mentör
    incelemesi)** Panel gerçekte çok-kiracılı değil: yeni tenant
    oluşturma, tenant seçme/listeleme, demo katalog import (PRD madde
