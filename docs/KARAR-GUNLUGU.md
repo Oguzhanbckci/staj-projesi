@@ -4639,3 +4639,131 @@ olarak kontrol edildi — açık/koyu tema, panel çıkış/giriş akışı, Use
 dropdown'ı, Hero'nun açık/koyu temada dalga geçişi. `npm run lint`/`build`
 kullanıcı tarafından HENÜZ çalıştırılmadı — bir sonraki oturumda teyit
 edilmeli. Hiçbir şey commit'lenmedi, oturum sonunda toplu commit'lenecek.
+
+## 2026-08-18 (aynı gün, dokuzuncu oturum) — Mimari karar: e-posta bildirimi için Resend; Hero/Hakkımızda panel ekranları planı
+
+Önceki oturumda ertelenen ziyaretçi sitesi görsel zenginleştirmesi
+(Hizmetler→Footer) yerine kullanıcı bu oturumda önceliği değiştirdi: (1)
+iletişim formuna e-posta bildirimi eklensin, (2) Hero ve Hakkımızda için
+panelde içerik/görsel düzenleme ekranı eklensin.
+
+**Karar — iletişim formu e-posta bildirimi (`AI-KURALLARI.md` madde 8.3
+gereği, uygulamadan önce buraya yazılıyor):** Kullanıcıya 3 gerçek seçenek
+soruldu (Resend / SMTP+Nodemailer / SendGrid) — **Resend** seçildi.
+Gerekçe: Next.js Server Action'dan tek bir `resend.emails.send()` çağrısı
+yeterli; ücretsiz plan (ayda 3.000 / günde 100 e-posta) küçük bir iletişim
+formu trafiği için fazlasıyla yeterli; `onboarding@resend.dev` gönderen
+adresiyle domain doğrulaması OLMADAN hemen çalışıyor — "~28 dakikalık yeni
+müşteri kurulumu" hedefini yavaşlatmıyor (SMTP'nin gerektirdiği uygulama
+şifresi/2FA adımı teknik olmayan müşteri için ek sürtünme olurdu).
+
+Alıcı adresi için yeni bir kolon GEREKMEDİ — `tenants.contact_recipient_email`
+(2026-08-06'da eklenmiş, "form gönderiminin gideceği operasyonel adres"
+olarak zaten tanımlı, bkz. `VERİ-MODELİ.md`) tam olarak bu iş için var ama
+şimdiye kadar hiç kullanılmamıştı (ne kod tarafında ne panelde düzenleme
+alanı vardı) — bu oturumda panelde düzenlenebilir hale getiriliyor
+(`Ayarlar` sayfasına küçük bir "Bildirimler" bloğu). Alan boşsa (yeni
+kurulumda henüz girilmemişse) e-posta sessizce atlanır, mesaj yine de
+`contact_messages`'a kaydedilir — e-posta gönderimi BİR bildirim kanalı,
+gerçek kaynak her zaman DB kaydı + panel (aynı honeypot/rate-limit
+oturumundaki "yanlış pozitifte mesajı kaybetme" ilkesiyle tutarlı: e-posta
+gönderimi başarısız olsa bile ziyaretçiye görünen sonuç değişmez).
+
+**Karar — Hero/Hakkımızda panel ekranları:** Yeni bir desen İCAT
+EDİLMEDİ — `hero_sections`/`about_sections` `tenant_id` UNIQUE (tekil
+kayıt) olduğu için Hizmetler/Projeler'in liste-CRUD deseni değil, Tema/SEO
+Ayarları'nın "tek kayıt + Değişiklikleri Kaydet + dirty-check" deseni
+uygulanacak (`updateSeoSettingsAction`/`updateThemeSettingsAction` ile
+aynı iskelet). Görsel yükleme için `BrandImageUploader.tsx`
+genelleştirilecek (şu an "branding" bucket'ına sabit kodlu — bir `bucket`
+prop'u eklenip `hero`/`about` bucket'larıyla, 2026-08-18 ikinci oturumda
+zaten kurulmuştu, da kullanılabilir hale getirilecek). Tek fark:
+`updateSeoSettingsAction`'ın aksine düz `.update()` değil
+`.upsert(..., {onConflict: "tenant_id"})` kullanılacak — seed her tenant
+için bu satırları oluştursa da (bkz. `seed.sql`/`seed-template.sql`),
+satırın var olduğunu varsaymak riskli (aksi halde `.update()` eşleşen
+satır yoksa hatasız ama SESSİZCE hiçbir şey yazmaz — sessiz veri kaybı
+riski).
+
+**Uygulama:**
+
+E-posta tarafı: `lib/email/contactNotification.ts` (saf içerik üretici —
+konu/HTML/metin, XSS'e karşı kaçırma, boş alan uydurmaz) + `lib/email/resend.ts`
+(Resend client + gönderim, `RESEND_API_KEY` yoksa sessizce `{ok:false}`
+döner, hata fırlatmaz) + `lib/email/contactNotification.test.ts` (6 birim
+test — saf fonksiyon, ağ gerektirmiyor). `components/site/contact/actions.ts`
+(`submitContactForm`) DB kaydı BAŞARILI olduktan SONRA `tenants.name` +
+`contact_recipient_email`'i okuyup (varsa) `try/catch` içinde e-posta
+gönderiyor — hata olursa sadece `console.error`, ziyaretçiye dönen sonuç
+değişmiyor. Panelde yeni "Ayarlar → Bildirimler" bloğu
+(`lib/validation/notifications.ts`, `getNotificationSettings`/
+`updateNotificationSettingsAction`, `NotificationSettingsEditor.tsx`) ile
+`contact_recipient_email` artık düzenlenebiliyor (önceden hiç panel alanı
+yoktu). `.env.local.example`'a `RESEND_API_KEY`/`CONTACT_NOTIFICATION_FROM_EMAIL`
+eklendi, ikisi de OPSİYONEL — boşsa e-posta sessizce devre dışı kalır,
+`docs/KURULUM.md`'ye bu netlik eklendi (madde 3'teki eski "e-posta bildirimi
+yok" notu güncellendi), `docs/GUVENLIK.md` madde 10'daki ilgili açık madde
+kapatıldı (canlı doğrulanmadığı notuyla).
+
+Hero/Hakkımızda tarafı: `lib/validation/hero.ts`/`about.ts` (ikisi de
+`z.url()` DEĞİL serbest metin link alanları — Hero CTA'sı iç çapaya
+gidebiliyor); `lib/supabase/panelQueries.ts`'e `getHeroSettings()`/
+`getAboutSettings()` (doğrudan tek-tablo sorgusu, satır yoksa `null`);
+`app/panel/(protected)/icerikler/hero/` ve `.../hakkimizda/` — ikisi de
+`actions.ts` (upsert, dirty-check, `revalidatePath("/")`) + `<X>Editor.tsx`
+(SeoEditor/ThemeEditor ile aynı iskelet, tamamı uncontrolled) +
+`imageActions.ts` (BrandImageUploader'ın genelleştirilmiş hâliyle, bucket
+`hero`/`about` — ikisi de 2026-08-18 ikinci oturumda zaten kurulmuştu,
+görsel yüklemeden önce metin kaydının var olmasını şart koşuyor çünkü
+`title` NOT NULL). `about_sections.core_values` (gerçek bir `text[]`
+kolonu) panelde tek bir "her satıra bir değer" textarea'sı olarak
+gösteriliyor, sunucu eyleminde satırlara bölünüp diziye çevriliyor.
+`components/panel/../tema/BrandImageUploader.tsx` sabit "branding"
+bucket'ından çıkarılıp bir `bucket` prop'u aldı — 3 eski çağrısı (logo,
+favicon, OG görseli) da güncellendi. İçerikler dizin sayfasına (`/panel/icerikler`)
+Hero ve Hakkımızda kartları eklendi.
+
+**Doğrulama:** Kullanıcı `npm install resend` + `npm run lint` + `npm run build`
+çalıştırdı. `npm run build` İLK denemede sorunsuz geçti (yeni Hero/Hakkımızda
+rotaları `/panel/icerikler/hero`, `/panel/icerikler/hakkimizda` çıktıda
+doğru göründü). `npm run lint` **bu oturumda hiç dokunulmamış**
+`components/ui/TextScramble.tsx`'te GERÇEK bir hata buldu:
+`react-hooks/set-state-in-effect` — `prefers-reduced-motion` dalında
+`useEffect` gövdesinde senkron `setDisplay(text)` çağrılıyordu (sekizinci
+oturumda eklenmiş, o oturumda lint hiç çalıştırılmamıştı, bkz. madde 8'in
+"Kod henüz `npm run build`/`lint` ile doğrulanmadı" notu). Düzeltme:
+`ThemeToggle.tsx`'teki AYNI çözüm tekrarlandı —
+`useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot)` ile
+`prefers-reduced-motion`'ı DIŞ bir kaynak olarak takip et, `display`
+state'ini reduced-motion dalında hiç kullanma, doğrudan `text`'i render
+et. Bu ikinci kez aynı lint kuralının aynı "matchMedia'yı effect+setState
+ile senkronla" anti-desenini yakalaması — **ders:** yeni bir `useEffect`
+içinde bir tarayıcı API'sinin (matchMedia, localStorage vb.) o anki
+değerini `useState`'e senkron olarak yazan bir kod yazılıyorsa, baştan
+`useSyncExternalStore` kullanılmalı, effect+setState denenip lint'te
+yakalanmasını beklememeli.
+
+`contactNotification.test.ts` dışında yeni bir otomatik test eklenmedi
+(Hero/Hakkımızda formları/server action'ları ve gerçek bir Resend API
+anahtarıyla uçtan uca e-posta gönderimi elle test edilmeli — henüz
+yapılmadı).
+
+**İkinci gerçek bug (tarayıcı testinde bulundu):** Kullanıcı `/panel/giris`'i
+tarayıcıda açınca konsolda "Encountered a script tag while rendering React
+component" uyarısı gördü — yine bu oturumda dokunulmamış, sekizinci
+oturumdan kalma bir koddu (`app/panel/giris/page.tsx`'teki `forceLightScript`,
+"düz açık temayla aç" tekniği). Kök neden: `app/layout.tsx`'teki script
+gerçek `<head>` içinde olduğu için sorunsuz (kök layout hiç client
+taraflı yeniden render olmuyor), ama giriş sayfasının script'i SAYFA
+GÖVDESİNDE (bir `<div>` içinde) render ediliyordu — Next.js'in kendi
+`preventing-flash-before-hydration.md` kılavuzu (bkz.
+`node_modules/next/dist/docs/`, AGENTS.md gereği kontrol edildi) bunu
+AÇIKÇA öngörüyor: "React also warns in development when rendering
+produces `<script>` tags" ve tam olarak bunun için resmi bir
+`InlineScript` yardımcı bileşeni öneriyor (`type`'ı sunucuda
+`text/javascript`, istemcide `text/plain` yapıp `suppressHydrationWarning`
+ekleyerek). Bu yardımcı `components/ui/InlineScript.tsx` olarak eklendi,
+`giris/page.tsx` ona geçirildi. **Ders:** kök `app/layout.tsx` dışında
+(yani gerçek `<head>` dışında) bir yerde FOUC-önleyici bir inline script
+gerekiyorsa, ham `<script dangerouslySetInnerHTML>` DEĞİL, doğrudan bu
+`InlineScript` bileşeni kullanılmalı.

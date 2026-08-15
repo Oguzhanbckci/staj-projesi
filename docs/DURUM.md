@@ -15,7 +15,25 @@ geçmişi) oku. Yeni bir müşteri kurulumu yapılacaksa `KURULUM.md`'ye
 (sıfırdan kurulum, geliştirici için), panelin günlük kullanımı için
 `MUSTERİ-KILAVUZU.md`'ye (teknik olmayan okuyucu için) bakılır.
 
-**Son güncelleme:** 2026-08-18 (aynı gün, sekizinci oturum, YENİ) — İki ayrı
+**Son güncelleme:** 2026-08-18 (aynı gün, dokuzuncu oturum, YENİ) — Kullanıcı
+önceliği değiştirdi: sekizinci oturumda ertelenen ziyaretçi sitesi görsel
+zenginleştirmesi (Hizmetler→Footer) yerine, bu oturumda (1) iletişim formuna
+**Resend** ile e-posta bildirimi ve (2) panele **Hero/Hakkımızda** düzenleme
+ekranları eklendi. Mimari karar (Resend seçimi, gerekçe) önce
+`KARAR-GUNLUGU.md`'ye yazıldı, sonra uygulandı (bkz. "dokuzuncu oturum").
+`tenants.contact_recipient_email` (2026-08-06'dan beri var ama hiç
+kullanılmayan bir kolon) artık hem gerçek amacına hizmet ediyor (bildirim
+alıcısı) hem panelde (Ayarlar → Bildirimler) düzenlenebiliyor. Hero/Hakkımızda
+ekranları, `tenant_id` UNIQUE tekil kayıt oldukları için Hizmetler'in
+liste-CRUD deseni değil, Tema/SEO Ayarları'nın "tek kayıt + Kaydet" desenini
+kullanıyor; `BrandImageUploader.tsx` bunun için "branding" bucket'ına sabit
+kodlu olmaktan çıkıp bir `bucket` prop'u aldı. **`npm install resend` +
+`npm run lint` + `npm run build` HENÜZ kullanıcı tarafından çalıştırılmadı,
+tarayıcıda da henüz test edilmedi** — bir sonraki adım bu doğrulama (bkz.
+"Sıradaki adım" madde 0e). Ziyaretçi sitesi zenginleştirmesi (madde 0d)
+hâlâ bekliyor, bu oturumda ele alınmadı.
+
+**Önceki güncelleme (2026-08-18, sekizinci oturum):** İki ayrı
 konu işlendi. **(1) GitHub "claude" contributor sorunu araştırıldı:** mevcut
 commit geçmişinde (55 commit) `Co-Authored-By` izi kalmadığı `git
 filter-branch` denemesiyle doğrulandı (sonuç: "Ref unchanged", hiçbir şey
@@ -1607,7 +1625,27 @@ işaretliyor, daha kesin bir ikinci katman. Detay: `SEO-PERFORMANS.md`.
    elle veriliyor; ayrıca Mesajlar listesi için `router.refresh()` eklendi.
    Kullanıcı iki-sekmeli gerçek tarayıcı testiyle doğruladı — **ÇALIŞIYOR**,
    bu madde kapandı. Detay: `KARAR-GUNLUGU.md`, "yedinci oturum".
-0d. **(En yüksek öncelik — bir sonraki oturum buradan başlamalı)** Ziyaretçi
+0e. **(Dokuzuncu oturumda kullanıcı önceliği değiştirdi — 0d yerine bu ikisi
+   yapıldı)** İletişim formu e-posta bildirimi (Resend, bkz. madde 3'ün YENİ
+   hâli) ve Hero/Hakkımızda panel ekranları (bkz. madde 1'in YENİ hâli)
+   eklendi. `npm install resend` + `npm run build` kullanıcı tarafından
+   çalıştırıldı, İLK denemede sorunsuz geçti. `npm run lint` bu oturumda hiç
+   dokunulmamış `TextScramble.tsx`'te GERÇEK bir hata buldu
+   (`react-hooks/set-state-in-effect`, sekizinci oturumdan kalma — o oturumda
+   lint hiç çalıştırılmamıştı) — `ThemeToggle.tsx`'teki `useSyncExternalStore`
+   deseniyle düzeltildi. Kullanıcı tarayıcıda `/panel/giris`'i test ederken
+   İKİNCİ gerçek bug bulundu (aynı şekilde sekizinci oturumdan kalma, bu
+   oturuma ait değil): konsolda "Encountered a script tag..." uyarısı —
+   `forceLightScript`'in sayfa GÖVDESİNDE (kök `<head>` dışında) render
+   edilmesinden kaynaklanıyordu. Next.js'in resmi kılavuzundaki
+   `InlineScript` yardımcı deseniyle (`components/ui/InlineScript.tsx`,
+   yeni) düzeltildi. **Kalan doğrulama:** `npm run lint` TEKRAR
+   çalıştırılıp temiz geçtiği teyit edilmeli; ardından tarayıcıda
+   `/panel/icerikler/hero`, `/panel/icerikler/hakkimizda`, `/panel/ayarlar`
+   (Bildirimler bloğu) ve `/panel/giris` (konsolda uyarı kalmadığı) elle
+   test edilmeli, gerçek bir Resend API anahtarıyla uçtan uca bir e-posta
+   gönderimi henüz denenmedi. Detay: `KARAR-GUNLUGU.md`, "dokuzuncu oturum".
+0d. **(0e doğrulandıktan sonraki en yüksek öncelik)** Ziyaretçi
    sitesinin (inşaat firması sayfası) görsel zenginleştirmesi YARIM KALDI —
    kullanıcı "tasarım basit/yüzeysel, div yazıp geçmişim gibi" dedi, kapsam
    panel+giriş sayfası+Navbar/Hero (TAMAMLANDI, sekizinci oturum, bkz.
@@ -1636,18 +1674,20 @@ işaretliyor, daha kesin bir ikinci katman. Detay: `SEO-PERFORMANS.md`.
    gerçek tarayıcıda uçtan uca doğruladı, commit'lendi/push'landı. Aynı
    oturumda görsel boyut sınırı da 5MB'dan **10MB**'a çıkarıldı
    (`MAX_IMAGE_SIZE_BYTES`) — kaliteli DSLR/drone fotoğraflarını
-   kapsasın diye. **Hero ve Hakkımızda hâlâ açık** — bu ikisinin
-   panelde HİÇ içerik düzenleme ekranı yok (sadece Sayfa Düzeni'nde
-   görünürlük/sıra yönetiliyor), bucket kurulsa da bağlanacak bir form
-   yok; ayrı, daha büyük bir görev (yeni panel ekranı inşa etmek
-   gerekiyor).
+   kapsasın diye. ~~Hero ve Hakkımızda hâlâ açık — bu ikisinin panelde
+   HİÇ içerik düzenleme ekranı yok~~ — **dokuzuncu oturumda eklendi:**
+   `/panel/icerikler/hero` ve `/panel/icerikler/hakkimizda` (metin +
+   `BrandImageUploader` genelleştirilip `hero`/`about` bucket'larına
+   bağlandı), henüz `npm run lint`/`build` ile doğrulanmadı (bkz. madde 0e).
 2. ~~Vitest/Playwright kur~~ — 2026-08-17'de tamamlandı, `npm test` 3x
    yeşil doğrulandı (bkz. `TEST-STRATEJISI.md` madde 10-12). Kapsanmayan
    alanlar (madde 12) için ayrı bir öncelik kararı bekliyor: bileşen
    render testleri, diğer 6 doğrulama şeması, Projeler/Referanslar/SSS/
    Ekip için ayrı e2e, açık/koyu tema geçişi, CI kurulumu.
-3. İletişim formuna bir e-posta bildirimi eklenmeli (kayıt artık gerçek,
-   bildirim hâlâ yok — bkz. `GUVENLIK.md` madde 10).
+3. ~~İletişim formuna bir e-posta bildirimi eklenmeli~~ — dokuzuncu
+   oturumda Resend ile eklendi (`tenants.contact_recipient_email`, panel →
+   Ayarlar → Bildirimler'den ayarlanır), henüz canlı doğrulanmadı (bkz.
+   madde 0e).
 4. Site tasarımı ilerledikçe `KURUMSAL-SITE-STANDARTLARI.md`'deki kontrol listesini
    madde madde işaretle.
 5. Gerçek görsel(ler) Storage'a yüklenince Lighthouse'u tekrar çalıştırıp
