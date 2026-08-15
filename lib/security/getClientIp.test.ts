@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { pickTrustedClientIp } from "./contactRateLimit";
+import { pickTrustedClientIp } from "./getClientIp";
 
 describe("pickTrustedClientIp", () => {
   it("x-forwarded-for tek değerse onu döner", () => {

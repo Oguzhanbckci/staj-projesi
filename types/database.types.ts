@@ -252,6 +252,24 @@ export type Database = {
           },
         ]
       }
+      login_attempts: {
+        Row: {
+          created_at: string
+          id: string
+          ip: unknown
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          ip: unknown
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          ip?: unknown
+        }
+        Relationships: []
+      }
       page_sections: {
         Row: {
           created_at: string

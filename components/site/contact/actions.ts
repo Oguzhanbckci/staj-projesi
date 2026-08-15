@@ -7,7 +7,8 @@ import {
 import { createServiceRoleClient } from "@/lib/supabase/server";
 import { getActiveTenantId, getActiveTenantDomain } from "@/lib/supabase/queries";
 import { isHoneypotFilled } from "@/lib/security/contactHoneypot";
-import { getClientIp, checkContactRateLimit } from "@/lib/security/contactRateLimit";
+import { submitContactMessageIfAllowed } from "@/lib/security/contactRateLimit";
+import { getClientIp } from "@/lib/security/getClientIp";
 import { getSiteUrl } from "@/lib/seo/getSiteUrl";
 import { buildContactNotificationEmail } from "@/lib/email/contactNotification";
 import { sendContactNotificationEmail } from "@/lib/email/resend";
@@ -81,15 +82,27 @@ export async function submitContactForm(
   }
 
   const supabase = createServiceRoleClient();
+  const senderPhone = result.data.phoneNumber || null;
 
-  // KATMAN 2 — Sunucu tarafı IP-bazlı hız sınırı. Honeypot'u atlatan (ör.
-  // formu hiç render etmeden doğrudan action'a POST atan) bir bot için
-  // ikinci savunma hattı. IP okunamazsa (yerel geliştirme vb.)
-  // checkContactRateLimit kendi içinde güvenli varsayılana (izin ver)
-  // düşer — bkz. lib/security/contactRateLimit.ts.
+  // KATMAN 2 — Sunucu tarafı IP-bazlı hız sınırı + gerçek kayıt, ATOMIK
+  // (sayım + insert TEK Postgres fonksiyonunda, advisory lock ile
+  // serileştirilmiş — bkz. lib/security/contactRateLimit.ts'teki 2026-08-18
+  // düzeltme notu). Honeypot'u atlatan (ör. formu hiç render etmeden
+  // doğrudan action'a POST atan) bir bot için ikinci savunma hattı. IP
+  // okunamazsa (yerel geliştirme vb.) hız sınırı kendi içinde güvenli
+  // varsayılana (izin ver) düşer.
   const clientIp = await getClientIp();
-  const rateLimit = await checkContactRateLimit(supabase, tenantId, clientIp);
-  if (!rateLimit.allowed) {
+  const submission = await submitContactMessageIfAllowed(supabase, {
+    tenantId,
+    ip: clientIp,
+    senderName: result.data.fullName,
+    senderEmail: result.data.email,
+    senderPhone,
+    subject: result.data.subject,
+    message: result.data.message,
+  });
+
+  if (submission.status === "rate_limited") {
     // KISITLAR: "yanlış pozitifte kullanıcının mesajını kaybetme" —
     // sahte bir "gönderildi" YERİNE dürüst, aksiyon önerir bir hata;
     // `values: raw` ile kullanıcının yazdıkları form'da kalır, yeniden
@@ -98,24 +111,11 @@ export async function submitContactForm(
       status: "error",
       errors: {},
       values: raw,
-      formError: `Kısa süre içinde çok fazla mesaj gönderildi. Lütfen ${rateLimit.retryAfterMinutes} dakika sonra tekrar deneyin, ya da bizi doğrudan arayın.`,
+      formError: `Kısa süre içinde çok fazla mesaj gönderildi. Lütfen ${submission.retryAfterMinutes} dakika sonra tekrar deneyin, ya da bizi doğrudan arayın.`,
     };
   }
 
-  const senderPhone = result.data.phoneNumber || null;
-
-  const { error } = await supabase.from("contact_messages").insert({
-    tenant_id: tenantId,
-    sender_name: result.data.fullName,
-    sender_email: result.data.email,
-    sender_phone: senderPhone,
-    sender_ip: clientIp,
-    subject: result.data.subject,
-    message: result.data.message,
-  });
-
-  if (error) {
-    console.error("submitContactForm insert hatası:", error);
+  if (submission.status === "error") {
     return {
       status: "error",
       errors: {},

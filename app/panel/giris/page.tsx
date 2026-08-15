@@ -1,16 +1,16 @@
 import type { CSSProperties } from "react";
 import { redirect } from "next/navigation";
 import { Mail, ShieldCheck, TriangleAlert } from "lucide-react";
-import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { createServerSupabaseClient, createServiceRoleClient } from "@/lib/supabase/server";
 import { getSafeRedirectPath } from "@/lib/utils";
+import { getClientIp } from "@/lib/security/getClientIp";
+import { checkAndReserveLoginAttempt, releaseLoginAttempt } from "@/lib/security/loginRateLimit";
 import { getSiteThemeSettings } from "@/lib/supabase/queries";
-import { resolveThemeTokens } from "@/lib/theme/resolve";
 import { TextField } from "@/components/ui/TextField";
 import { PasswordField } from "@/components/ui/PasswordField";
 import { Button } from "@/components/ui/Button";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import { TextScramble } from "@/components/ui/TextScramble";
-import { InlineScript } from "@/components/ui/InlineScript";
 
 const LOGIN_PATH = "/panel/giris";
 const DEFAULT_REDIRECT = "/panel";
@@ -30,12 +30,41 @@ async function signInAction(formData: FormData) {
   // hedefini kaybetmesin.
   const nextQuery = rawNext ? `&next=${encodeURIComponent(rawNext)}` : "";
 
+  // `login_attempts`'e (RLS'te ne anon ne authenticated erişebiliyor, bkz.
+  // migration 20260818140000) sadece service role yazabilir/okuyabilir —
+  // checkContactRateLimit'in contact_messages'ı sorgulamasıyla AYNI desen.
+  // BİLEREK signInWithPassword'dan ÖNCE kontrol ediliyor: kilitliyken
+  // doğru şifre girilse bile Supabase Auth'a hiç istek gitmiyor (bkz.
+  // docs/KARAR-GUNLUGU.md, 2026-08-18 dokuzuncu oturum — "kilitlesin").
+  //
+  // checkAndReserveLoginAttempt ATOMIK: sayım + rezervasyon (bu denemenin
+  // sayaca yansıması) TEK bir Postgres fonksiyonunda gerçekleşiyor — bir
+  // öncekinin "önce say, sonra ayrı INSERT" deseni bu oturumun kendi
+  // review'ünde paralel isteklerle atlatılabilir bulundu, bkz.
+  // supabase/migrations/20260818150000_add_atomic_rate_limit_functions.sql.
+  const ip = await getClientIp();
+  const rateLimitClient = createServiceRoleClient();
+
+  const rateLimit = await checkAndReserveLoginAttempt(rateLimitClient, ip);
+  if (!rateLimit.allowed) {
+    redirect(
+      `${LOGIN_PATH}?hata=${encodeURIComponent(`Çok fazla başarısız giriş denemesi. Lütfen ${rateLimit.retryAfterMinutes} dakika sonra tekrar deneyin.`)}${nextQuery}`
+    );
+  }
+
   const supabase = await createServerSupabaseClient();
   const { error } = await supabase.auth.signInWithPassword({ email, password });
 
   if (error) {
+    // Rezervasyon zaten checkAndReserveLoginAttempt'te oluşturuldu — bu
+    // başarısız deneme sayaca çoktan yansımış durumda, ekstra bir kayıt
+    // adımına gerek yok.
     redirect(`${LOGIN_PATH}?hata=${encodeURIComponent("E-posta veya şifre hatalı.")}${nextQuery}`);
   }
+
+  // Başarılı giriş — bu denemenin rezervasyonunu kaldır, doğru şifre girmek
+  // kalan hakkı tüketmesin.
+  await releaseLoginAttempt(rateLimitClient, rateLimit.attemptId);
 
   // Açık yönlendirme (open redirect) koruması: "next" sadece /panel altında
   // bir yolsa kabul edilir, /panel/giris'in kendisine dönmesi de engellenir
@@ -60,19 +89,6 @@ export default async function PanelGirisPage({
 }) {
   const [{ hata, next }, themeSettings] = await Promise.all([searchParams, getSiteThemeSettings()]);
 
-  // KISITLAR: "giriş sayfası her zaman düz açık temayla açılsın" — tenant'ın
-  // koyu ayarından/ziyaretçinin daha önce seçtiği koyu tercihinden BAĞIMSIZ.
-  // app/layout.tsx'teki kök engelleyici script <html>'i (muhtemelen koyu)
-  // uyguladıktan hemen sonra, bu sayfaya özel bir ikinci script AYNI
-  // <html>'i koşulsuz açık moda zorluyor — "son yazan kazanır" (Next.js'in
-  // preventing-flash-before-hydration kılavuzundaki AYNI teknik, bkz.
-  // app/layout.tsx'teki yorum). Switch (aşağıda) yine de normal çalışır;
-  // sadece İLK açılış her zaman açık — bir sonraki ziyarette de böyle kalır
-  // çünkü bu script localStorage'a hiç bakmıyor.
-  const lightTokens = resolveThemeTokens({ ...themeSettings, themeMode: "light" });
-  const lightTokensJson = JSON.stringify(lightTokens.styleVars).replace(/</g, "\\u003c");
-  const forceLightScript = `(function(){var h=document.documentElement;h.setAttribute("data-theme","light");var t=${lightTokensJson};for(var k in t){h.style.setProperty(k,t[k])}})();`;
-
   return (
     // Tek, "iç içe" kompozisyon — iki ayrı blok (sol/sağ) yerine tüm sayfa
     // markalı mavi zemin, form kartı bunun İÇİNE (cam/translucent) yerleşiyor.
@@ -94,8 +110,6 @@ export default async function PanelGirisPage({
         } as CSSProperties
       }
     >
-      <InlineScript html={forceLightScript} />
-
       {/* Hero ile aynı dekoratif doku (degrade + ince ızgara) — ürün
           genelinde tutarlı bir "markalı yüzey" dili kurmak için. */}
       <div aria-hidden="true" className="absolute inset-0">
@@ -117,6 +131,18 @@ export default async function PanelGirisPage({
       </div>
 
       <div className="absolute right-4 top-4 z-20 sm:right-6 sm:top-6">
+        {/* KISITLAR: "giriş sayfası her zaman düz açık temayla açılsın" —
+            `forceInitialMode="light"` tek başına yeterli: ThemeToggle
+            kendi `useLayoutEffect`'inde bunu tenant'ın koyu ayarından/
+            localStorage'daki tercihten BAĞIMSIZ olarak zaten uyguluyor
+            (bkz. ThemeToggle.tsx, `mode` öncelik sırası). Önceden burada
+            AYRICA bir `forceLightScript` (ham <script>) vardı — hydration
+            öncesi milisaniyelik bir FOUC'u önlemek için — ama React 19'da
+            gövdede render edilen HER <script> için (type ne olursa olsun)
+            "Encountered a script tag" dev uyarısı verdiği görüldü; bu
+            düşük trafikli/kritik olmayan sayfa için kaldırıldı, kod
+            basitleşti (bkz. docs/KARAR-GUNLUGU.md, 2026-08-18 dokuzuncu
+            oturum). Switch yine de normal çalışır. */}
         <ThemeToggle settings={themeSettings} forceInitialMode="light" />
       </div>
 
