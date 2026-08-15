@@ -280,6 +280,7 @@ bileşenlerinin (Hero/Hizmetler/Panel formları vb.) kendisinde görünür.
 | `Badge` | `components/ui/Badge.tsx` | `variant` (brand/neutral/accent/success), + native `<span>` props | Küçük pill/chip etiket — durum rozeti değil (bkz. `StatusBadge`/`ReadStatusBadge`, `components/panel/`), dekoratif/bilgilendirici kısa etiketler için (sekizinci oturum) |
 | `Tooltip` | `components/ui/Tooltip.tsx` | `label`, `side` (top/bottom), `children` | Salt CSS (group-hover/focus-within) araç ipucu, JS gerektirmez — ikon-sadece butonlarda görsel destek (ekran okuyucu için birincil kanal çağıranın kendi `aria-label`'ı, sekizinci oturum) |
 | `TextScramble` | `components/ui/TextScramble.tsx` | `text`, `className` | Metnin "çözülme" animasyonuyla belirmesi (client, `prefers-reduced-motion`'a saygılı, gerçek metin ayrı bir `sr-only` span'de anında mevcut) — giriş sayfası başlığında kullanılıyor (sekizinci oturum) |
+| `Breadcrumbs` | `components/ui/Breadcrumbs.tsx` | `items` (`{label, href?}[]`, son öğe `href`siz = geçerli sayfa) | Yol izi — native `<nav>`/`<ol>`, son öğe `aria-current="page"` ve link değil, uzun bir dinamik etiket (ör. bir SSS sorusu) `truncate` ile kırpılır. Hem site (Ekip/İletişim) hem panelde (neredeyse her sayfa) kullanılıyor (dokuzuncu oturum) |
 
 ## 9. Bileşen API Kuralları
 

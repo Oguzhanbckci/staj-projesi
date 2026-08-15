@@ -4767,3 +4767,272 @@ ekleyerek). Bu yardımcı `components/ui/InlineScript.tsx` olarak eklendi,
 (yani gerçek `<head>` dışında) bir yerde FOUC-önleyici bir inline script
 gerekiyorsa, ham `<script dangerouslySetInnerHTML>` DEĞİL, doğrudan bu
 `InlineScript` bileşeni kullanılmalı.
+
+**DÜZELTME (birkaç saat sonra, kullanıcı gerçek tarayıcıda tekrar test
+etti):** `InlineScript` deseni uygulandıktan SONRA bile uyarı AYNEN devam
+etti — kullanıcı login hız sınırını test ederken tekrar gördü. Demek ki
+`type` server/client değişimi bu React 19 + Next.js 16 (App Router)
+kombinasyonunda beklendiği gibi çalışmıyor: muhtemelen sonraki client
+taraflı yeniden render'ları DEĞİL, sayfanın İLK hydration'ını (App
+Router'da her sert navigasyonda gerçekleşir) engelleyemiyor — kılavuzun
+örneği muhtemelen daha çok Client Component içinde tekrarlanan render
+senaryosu için. Kök nedene daha fazla zaman harcamak yerine (bu bir DEV
+MODU uyarısı, üretimde hiç görünmez) kullanıcıya iki seçenek sunuldu:
+olduğu gibi bırak, ya da script'i tamamen kaldır. **Kullanıcı kaldırmayı
+seçti** — gerekçe: `forceLightScript`'in yaptığı işi (giriş sayfasını her
+zaman açık temada açmak) `ThemeToggle`'ın kendi `useLayoutEffect`'i zaten
+`forceInitialMode="light"` ile yapıyordu, script sadece hydration
+ÖNCESİNDEki milisaniyelik bir FOUC'u önlemek için vardı — düşük trafikli/
+kritik olmayan bir sayfa için bu marjinal fayda, kalıcı bir dev-konsol
+gürültüsüne değmedi. `forceLightScript`/`lightTokens` hesaplaması ve
+`components/ui/InlineScript.tsx` (artık hiçbir yerde kullanılmıyordu)
+tamamen silindi. **Ders:** Next.js'in resmi kılavuzundaki bir teknik bile
+her React/Next sürüm kombinasyonunda birebir aynı sonucu vermeyebilir —
+"resmi kaynak öyle diyor" tek başına yeterli kanıt değil, GERÇEK
+tarayıcıda doğrulanmalı (tıpkı bu oturumun Realtime hata avında olduğu
+gibi, bkz. yedinci oturum).
+
+## 2026-08-18 (aynı gün, dokuzuncu oturum devamı) — Panel girişine IP bazlı hız sınırı/kilitleme
+
+Kullanıcı doğrudan sordu: panel giriş ekranında şifre deneme sınırı var mı?
+Kod incelemesi net bir boşluk ortaya çıkardı: `signInAction`
+(`app/panel/giris/page.tsx`) doğrudan `supabase.auth.signInWithPassword()`
+çağırıyordu, başarısız deneme sayısı hiçbir yerde tutulmuyordu —
+`GUVENLIK.md`'de bu açık madde olarak bile listelenmiyordu (mentör
+incelemesinin gözünden kaçmış bir bulgu). İletişim formunun rate limit'i
+(madde 14) sadece o forma özeldi, giriş ekranına hiç uygulanmamıştı.
+
+**Karar (kullanıcı isteği, birebir):** 15 dakikada 5 başarısız denemeden
+sonra kilitle; kilit tarayıcı/sekme kapatılıp açılsa da (yani istemci
+taraflı değil, sunucu/DB taraflı) kalıcı olsun; bir süre sonra (pencere
+eskiyince) tekrar denenebilsin.
+
+**Uygulama — `checkContactRateLimit`'in (madde 14) BİREBİR aynı iskeleti,
+sadece hedef tablo/anahtar farklı:**
+- Yeni `login_attempts` tablosu (`supabase/migrations/20260818140000_...`)
+  — SADECE başarısız denemeler yazılır (başarılı girişte hiç satır
+  eklenmiyor), bu yüzden ayrı bir "başarılı mı" kolonuna gerek yok. RLS
+  açık, **hiçbir policy yok** (ne anon ne authenticated) — contact_messages'ın
+  anon'a kapalı olmasından bir adım ileri: burada authenticated'e de
+  kapalı, çünkü panelde "başarısız giriş denemeleri" diye bir ekran YOK,
+  tabloyu sadece sunucu taraflı hız sınırı mantığı service role ile
+  okuyor/yazıyor.
+- `lib/security/getClientIp.ts` (YENİ) — `pickTrustedClientIp`/`getClientIp`
+  `contactRateLimit.ts`'ten buraya taşındı (iki hız sınırlayıcı da AYNI IP
+  tespitine ihtiyaç duyduğu için); `contactRateLimit.test.ts` da
+  `getClientIp.test.ts`'e taşındı.
+- `lib/security/loginRateLimit.ts` (YENİ) — `checkLoginRateLimit` (5
+  deneme/15 dakika, kayan pencere — `checkContactRateLimit` ile birebir
+  aynı mantık, tenant_id yok çünkü panel auth platform geneli/tek hesap,
+  tenant'a özel değil) + `recordFailedLoginAttempt`.
+- `signInAction`: `checkLoginRateLimit` `signInWithPassword`'dan ÖNCE
+  çağrılıyor — kilitliyken DOĞRU şifre girilse bile Supabase Auth'a hiç
+  istek gitmiyor (gerçek bir "kilitleme", sadece "yanlışları say" değil).
+  Hata durumunda `recordFailedLoginAttempt` çağrılıp aynı "E-posta veya
+  şifre hatalı" mesajı gösteriliyor; kilitliyken FARKLI bir mesaj
+  ("Çok fazla başarısız giriş denemesi. Lütfen N dakika sonra tekrar
+  deneyin.") — saldırgana kalan deneme SAYISI hiçbir aşamada
+  gösterilmiyor, sadece bekleme süresi (honeypot'taki "botu bilgilendirme"
+  ilkesiyle aynı temkinli yaklaşım).
+- Reset-on-success BİLİNÇLİ OLARAK yok (basitlik/tutarlılık — contact
+  form'un rate limiter'ında da yok): pencere zaten kayıyor, eski başarısız
+  denemeler 15 dakika sonra kendiliğinden sayımdan düşüyor.
+
+**Doğrulama:** Henüz yapılmadı — migration gerçek Supabase projesine
+uygulanmadı (`npm run types:generate` de çalıştırılmadı, `login_attempts`
+tipi henüz `types/database.types.ts`'te yok). `checkLoginRateLimit`/
+`recordFailedLoginAttempt` BİLEREK `checkContactRateLimit` ile aynı gevşek
+`SupabaseClient` parametre tipini kullanıyor (Database tipine bağlı değil)
+— bu yüzden `npm run build` muhtemelen bundan hata VERMEZ, ama migration
+uygulanana kadar sorgu gerçek Postgres'te "tablo yok" hatası alır ve kod
+bunu "izin ver"e düşürür: hız sınırı migration uygulanana kadar sessizce
+devre dışıdır (fail-open, kimseyi hatalı kilitlemez ama koruma da yoktur).
+Sıradaki adım: kullanıcı migration'ı SQL Editor'de çalıştırıp
+types:generate'i koşacak, sonra gerçek bir tarayıcıda 5 kez bilerek yanlış
+şifre girip kilitlendiğini, 15 dakika sonra (ya da DB'den satır silerek)
+tekrar deneyebildiğini doğrulayacak.
+
+**Sonuç (kullanıcı, gerçek tarayıcı):** Login hız sınırı ÇALIŞIYOR — 5
+yanlış denemeden sonra kilitlendi. Ayrı bir bulgu: kullanıcı bu testi
+yaparken konsolda AYNI "Encountered a script tag" uyarısını (bkz. bir
+önceki DÜZELTME notu) TEKRAR gördü — `InlineScript` deseni bu React/Next
+sürümünde işe yaramamıştı. Kullanıcının onayıyla `forceLightScript`/
+`InlineScript` TAMAMEN kaldırıldı (yukarıdaki DÜZELTME notuna bakın),
+`npm run lint`/`build` tekrar temiz doğrulandı.
+
+## 2026-08-18 (aynı gün, dokuzuncu oturum devamı) — Ziyaretçi sitesi ve panele breadcrumb (yol izi)
+
+Kullanıcı isteği: hem ziyaretçi sitesine hem panele breadcrumb eklensin,
+sayfa tasarımına uygun olsun. Gerçek bir mimari fork noktası yoktu
+(mevcut tasarım sistemi/token'lar zaten yeterliydi), bu yüzden
+AskUserQuestion'a gerek duyulmadan uygulandı; kararlar burada şeffaf
+bildiriliyor.
+
+**Kapsam kararı:** Ziyaretçi sitesinde sadece `/ekip` ve `/iletisim`
+breadcrumb aldı — ana sayfa (`/`) tek sayfa + çapa bağlantılı bölümlerden
+oluşuyor (bkz. `page_sections`), "Ana Sayfa > Ana Sayfa" gibi anlamsız bir
+iz üretmemek için ana sayfaya breadcrumb EKLENMEDİ (standart pratik).
+Panelde `/panel` (Özet) ve `/panel/giris` DIŞINDA tüm sayfalar breadcrumb
+aldı (18 sayfa) — sığ sayfalarda (Sayfa Düzeni, Medya, Tema, Ayarlar,
+Mesajlar) bile eklendi, tutarlılık için (bazı sayfalarda var bazılarında
+yok görünseydi eksik/bozuk hissettirirdi).
+
+**Mimari:** Tek paylaşılan `components/ui/Breadcrumbs.tsx` (native
+`<nav>`/`<ol>`, `aria-current="page"`, son öğe link değil — TASARIM-
+SISTEMI.md "Bileşen API Kuralları" ile tutarlı) — `components/panel/` ve
+`components/site/` birbirini asla import etmediği için (bkz. docs/MIMARI.md)
+nötr `components/ui/` katmanında. Her SAYFA kendi breadcrumb dizisini
+KENDİSİ kuruyor (paylaşılan bir "route → label" registry'si BİLİNÇLİ OLARAK
+kurulmadı) — çünkü [id] sayfalarının son basamağı (ör. bir hizmetin
+başlığı, bir SSS sorusu) zaten o sayfanın kendi `getXById()` çağrısıyla
+elinde olan dinamik bir değer; genel bir pathname-tabanlı çözüm bu
+dinamik etiketi bilemezdi. Uzun bir dinamik başlık (ör. uzun bir SSS
+sorusu) `Breadcrumbs`'ın son öğesinde `truncate` ile kırpılıyor, düzeni
+bozmuyor.
+
+**SEO bonusu (ziyaretçi sitesi, panelde YOK çünkü panel zaten noindex):**
+`lib/seo/breadcrumbList.ts` (saf `BreadcrumbList` JSON-LD üretici, test
+edildi) + `components/site/BreadcrumbJsonLd.tsx` (`LocalBusinessJsonLd.tsx`
+ile birebir aynı desen — ham veri çekme/JSON-LD kurma ayrımı). Google'ın
+gerçek bir "breadcrumb rich result" desteği var; `TESLIM-PAKETI.md`'nin
+zaten vurguladığı "teknik SEO baştan dahil" konumlandırmasıyla tutarlı
+bir ek, bu yüzden ayrıca sorulmadan eklendi.
+
+**Yerleşim:** Ziyaretçi sayfalarında breadcrumb, ilgili Section
+bileşeninin (`TeamSection`/`ContactSection`) KENDİ `Container` genişliğiyle
+hizalı ama `bg-surface-raised` zemininin DIŞINDA (normal `bg-surface`
+zemininde) ayrı bir şerit — Section bileşenlerine hiç dokunulmadı (hâlâ
+`page_sections` registry'sinden de çağrılabilir paylaşılan bileşenler).
+Panelde her sayfanın kendi `<h1>`'inin hemen üstünde (`mb-2`).
+
+**Doğrulama:** `npm run lint`/`build`/`test:unit` kullanıcı tarafından
+çalıştırıldı — üçü de temiz: lint 0 hata, build tüm 26 rotayı (yeni
+`/panel/icerikler/hero`/`hakkimizda` dahil) sorunsuz üretti, 8 test
+dosyası/54 test yeşil (yeni `breadcrumbList.test.ts` ve taşınan
+`getClientIp.test.ts` dahil). Kullanıcı tarayıcıda kendim (Claude in
+Chrome ile) görsel/işlevsel doğrulama yapmamı istedi ve haklı bulguyla
+eleştirdi: buraya kadarki doğrulama "koddan bakınca doğru görünüyor"
+seviyesindeydi, gerçek eşzamanlılık/erişilebilirlik/UX kontrolü hiç
+yapılmamıştı.
+
+## 2026-08-18 (aynı gün, dokuzuncu oturum devamı) — Kullanıcı geri bildirimi: "çok yüzeysel" — çok ajanlı review + tarayıcı doğrulaması
+
+Kullanıcı doğrudan ve haklı bir eleştiri yaptı: bütün oturum boyunca "kod
+derlendi, testler geçti" seviyesinde doğrulama yapılıp iş bitmiş
+sayılıyordu — gerçek adversarial code review yok, tarayıcıda bizzat görsel/
+a11y/karanlık-mod/mobil kontrol yok, eşzamanlılık gibi güvenlik senaryoları
+hiç düşünülmemişti. Ultracode açıkken bu, beklenenin altında bir derinlik.
+
+**Yapılan:** (1) Bu oturumun TÜM diff'i (52 dosya, sekizinci oturum
+sonrasından bu yana — e-posta bildirimi, Hero/Hakkımızda panelleri, login
+hız sınırı, breadcrumb) 5 boyutlu (doğruluk, güvenlik, erişilebilirlik,
+test kapsamı, tutarlılık) paralel bir workflow'a verildi, her bulgu 3
+bağımsız ajan tarafından ÇÜRÜTÜLMEYE çalışıldı (adversarial verify). (2)
+Claude in Chrome ile gerçek tarayıcıda: `/ekip`/`/iletisim` görsel+koyu
+mod+konsol hatası kontrolü, panel girişi (E2E test hesabıyla), SSS'ye
+gerçekten uzun bir soru eklenip breadcrumb kırpmasının GERÇEKTEN çalıştığı
+doğrulandı (sonra temizlendi), Hakkımızda'nın `coreValues` dizisinin
+kaydedip geri okunduğu (DB round-trip) uçtan uca test edildi, Bildirimler
+alanı kaydedildi.
+
+**Review sonucu: 8 bulgu, 6 doğrulandı (3/3 ya da 2/3 oy ile çürütülemedi),
+2 çürütüldü.**
+
+**Doğrulanan ve DÜZELTİLEN gerçek sorunlar:**
+
+1. **[YÜKSEK, güvenlik] Login hız sınırı atomik değildi (TOCTOU/yarış
+   durumu).** `checkLoginRateLimit` (SELECT COUNT) ile `recordFailedLoginAttempt`
+   (INSERT) AYRI adımlardı — eşzamanlı (paralel) istekler hepsi aynı düşük
+   sayımı görüp hepsi "izin verildi" alabiliyordu. Bir saldırgan 20-50
+   paralel istekle "5 deneme/15 dakika" kilidini fiilen anlamsız hale
+   getirebilirdi — tam da tek admin hesabına karşı inşa ettiğimiz korumanın
+   kendisini boşa çıkaran bir açık. **Düzeltme:** sayım + rezervasyon artık
+   TEK bir Postgres fonksiyonunda (`check_and_reserve_login_attempt`,
+   `supabase/migrations/20260818150000_add_atomic_rate_limit_functions.sql`),
+   IP başına bir `pg_advisory_xact_lock` ile serileştirilmiş — gerçekten
+   atomik. Başarılı girişte `delete_login_attempt` ile rezervasyon
+   kaldırılıyor (doğru şifre kalan hakkı tüketmesin). `lib/security/loginRateLimit.ts`
+   baştan yazıldı (`checkAndReserveLoginAttempt`/`releaseLoginAttempt`),
+   `app/panel/giris/page.tsx` güncellendi.
+2. **[ORTA, güvenlik] Aynı TOCTOU açığı iletişim formunda da vardı**
+   (`checkContactRateLimit` — 2026-08-17'den kalma, bu oturumda YENİ
+   yazılan login hız sınırı bu deseni birebir kopyalamıştı). **Düzeltme:**
+   aynı atomik desen — `submit_contact_message_if_allowed` fonksiyonu,
+   sayım + GERÇEK mesaj insert'ini (tenant_id, IP) bazlı bir advisory lock
+   ile tek transaction'da yapıyor. `lib/security/contactRateLimit.ts` ve
+   `components/site/contact/actions.ts` güncellendi.
+3. **[YÜKSEK, erişilebilirlik] `/ekip` ve `/iletisim` sayfalarında HİÇ
+   `<h1>` yoktu** — `TeamSection`/`ContactSection` içindeki `SectionHeader`
+   hep `h2` render ediyordu (ana sayfada Hero'nun h1'i olduğu varsayımıyla
+   yazılmış), ama bu iki sayfa 2026-08-13'te Hero'suz bağımsız sayfa
+   yapılınca hiç h1 kalmamıştı — projenin kendi `TASARIM-SISTEMI.md`
+   kuralını ("h1 sayfada bir kez") ihlal ediyordu. Bu oturumdan ÖNCE de
+   vardı ama breadcrumb eklerken tam bu dosyalara dokunulmasına rağmen fark
+   edilmemişti. **Düzeltme:** `SectionHeader`'ın `headingLevel` tipi `h1`'i
+   de kabul edecek şekilde genişletildi; `TeamSection`/`ContactSection`'a
+   opsiyonel `headingLevel` prop'u eklendi (varsayılan `h2`, ana sayfa
+   davranışı DEĞİŞMEDİ); `/ekip` ve `/iletisim` artık `headingLevel="h1"`
+   geçiriyor.
+4. **[DÜŞÜK, erişilebilirlik] `Breadcrumbs.tsx`'teki `aria-label="Breadcrumb"`
+   kod tabanındaki TEK İngilizce aria-label'dı** (projenin geri kalanı
+   istisnasız Türkçe). **Düzeltme:** `"Yol izi"`ye çevrildi.
+
+**Çürütülen (yanlış pozitif, düzeltme YAPILMADI):**
+- Breadcrumb hover renginin (koyu temada `text-brand`, ~4.24:1) WCAG AA
+  gövde-metin eşiğinin altında olması — `TASARIM-SISTEMI.md`'de zaten
+  bilinen, kullanıcının iki kez onayladığı bir ödünleşim (Navbar/Footer'daki
+  AYNI link renginin de aynı orana sahip olduğu doğrulandı, yeni/izole bir
+  kullanım değil).
+- `parseCoreValues`/`coreValuesEqual` (Hakkımızda) için unit test eksikliği
+  — projenin kendi "dirty-check karşılaştırma mantığı hiçbir `actions.ts`'de
+  test edilmez" kuralıyla (bkz. Karar 3) tutarlı, izole bir boşluk değil;
+  ayrıca `"use server"` dosyasından senkron yardımcı fonksiyon export edip
+  test etmek Next.js'in kendi kısıtına takılırdı.
+
+**Ders (genel):** "Kod derlendi, lint/test geçti" doğrulaması YETERLİ
+DEĞİL — özellikle güvenlik-kritik kod (rate limiting gibi) için eşzamanlılık
+senaryosu AÇIKÇA düşünülmeli, ve bir dosyaya dokunulduğunda (breadcrumb
+eklerken ekip/iletisim sayfaları gibi) o dosyanın komşu kalite sorunları
+(başlık hiyerarşisi gibi) da gözden geçirilmeli — "sadece istenen özelliği
+ekle" dar kapsamı, bitişik gerçek sorunları görmezden gelme bahanesi
+olmamalı.
+
+**Doğrulama:** Migration henüz gerçek Supabase projesine uygulanmadı.
+Sıradaki adım: kullanıcı `supabase/migrations/20260818150000_add_atomic_rate_limit_functions.sql`'i
+SQL Editor'de çalıştıracak, `npm run lint`/`build`/`test` tekrar
+doğrulanacak, sonra hem giriş kilidinin hem iletişim formunun gerçek
+tarayıcıda hâlâ beklendiği gibi çalıştığı teyit edilecek.
+
+## 2026-08-18 (aynı gün, dokuzuncu oturum devamı) — Footer okunabilirliği artırıldı
+
+Kullanıcı isteği: "footerdaki yazılar çok küçük, genişlik de az geldi,
+biraz görünür yap." `components/site/Footer.tsx` güncellendi:
+- Firma adı `text-h6`(20px) → `text-h5`(25px).
+- Adres/telefon/e-posta ve tüm bağlantılar (Bölümler, Sosyal Medya)
+  `text-base`(16px) → `text-h6`(20px) — `text-h6` SAF bir boyut token'ı
+  (font-weight taşımıyor, bkz. app/globals.css), o yüzden kalınlaşmadan
+  büyüdü.
+- "Bölümler"/"Sosyal Medya" başlıkları ve telif satırı `text-caption`(13px)
+  → `text-base`(16px).
+- Sütun kırılması `sm:`(640px)'ten `md:`(768px)'e alındı (dar/orta
+  genişlikte tek sütun kalıp metin erken sarmasın), sütun arası boşluk
+  büyütüldü (`gap-8`→`gap-10`/`gap-12`), firma bilgisi sütunu
+  (`md:grid-cols-[1.3fr_1fr_1fr]`) diğer ikisinden daha geniş pay alıyor.
+
+**Doğrulama:** Bu ortamda ekran görüntüsü aracı (Claude in Chrome) tutarlı
+şekilde boş görüntü döndürdü (birkaç farklı yöntem denendi — muhtemelen
+aracın kendi arızası, sayfanın gerçek render'ıyla ilgisi yok) — bunun
+yerine DOM/CSSOM üzerinden doğrudan doğrulandı: `document.elementFromPoint()`
+ile footer içindeki gerçek metnin (adres) o pikselde hit-test edilebilir
+olduğu (üstünde görünmez bir overlay olmadığı) kanıtlandı; hem açık hem
+koyu temada `getComputedStyle()` ile font boyutları (20px/25px/16px,
+beklenen) ve renkler (text/text-muted token'ları, doğru kontrast) teyit
+edildi. Kullanıcı ayrıca `npm run build`/`lint`'i çalıştırdı, ikisi de
+temiz. Gerçek görsel (ekran görüntüsü) doğrulaması hâlâ yapılmadı — araç
+düzelirse ya da kullanıcı kendi gözüyle bakarsa teyit edilmeli.
+
+**Yan not (bu değişiklikle ilgisiz, doğrulama sırasında fark edildi):**
+Panel → Ayarlar → Sayfa Başlığı alanına "tofe İnşaat | Kurumsal Web
+Sitesi" yazılmış — muhtemelen "Akme İnşaat" yazılırken oluşmuş bir yazım
+hatası, tarayıcı sekmesinde/arama sonucunda görünüyor. Kullanıcıya
+bildirildi, düzeltme onayı bekleniyor.

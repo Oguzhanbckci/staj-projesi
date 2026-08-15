@@ -1011,3 +1011,75 @@ Supabase projesine uygulanmadı** — uygulanana kadar Realtime aboneliği
 sessizce hiçbir olay almaz (hata vermez, sadece bildirim gelmez).
 İki-sekmeli canlı test de henüz yapılmadı. Bkz. `docs/DURUM.md`,
 "Sıradaki adım" madde 0c.
+
+## 19. Panel Girişine Hız Sınırı/Kilitleme *(2026-08-18 eklendi)*
+
+Kullanıcının doğrudan sorusu ("şifre deneme sınırımız var mı?") gerçek bir
+boşluk ortaya çıkardı: `signInAction` (`app/panel/giris/page.tsx`) hiçbir
+deneme sayacı olmadan doğrudan `supabase.auth.signInWithPassword()`
+çağırıyordu — bu madde daha önce (2026-08-18 mentör incelemesi dahil)
+hiçbir yerde açık madde olarak bile listelenmemişti.
+
+**Katman — IP bazlı, DB'de kalıcı kilitleme:** İletişim formunun hız
+sınırıyla (madde 14) BİREBİR aynı iskelet, yeni `login_attempts` tablosu
+(`supabase/migrations/20260818140000_create_login_attempts_table.sql`)
+üzerinden. Aynı IP'den **15 dakikada 5 başarısız denemeden sonra** giriş
+tamamen kilitlenir — kilitliyken DOĞRU şifre girilse bile
+`signInWithPassword` hiç çağrılmaz. Kilit istemci taraflı değil (tarayıcı
+kapatılıp açılsa, farklı bir cihazdan girilse bile aynı IP kilitli kalır);
+kayan pencere olduğu için 15 dakika sonra eski denemeler kendiliğinden
+sayımdan düşer, ayrı bir "kilidi aç" zamanlayıcısına gerek yok.
+
+**KRİTİK DÜZELTME (aynı gün, birkaç saat sonra — kullanıcının "çok
+yüzeysel çalışıyorsun" eleştirisi üzerine başlatılan çok-ajanlı adversarial
+review'de bulundu):** İlk sürüm ATOMİK DEĞİLDİ — `checkLoginRateLimit`
+(SELECT COUNT) ile `recordFailedLoginAttempt` (INSERT) AYRI adımlardı, ve
+`signInWithPassword`'un gerçek ağ+bcrypt gecikmesi arada büyük bir pencere
+bırakıyordu. Eşzamanlı (paralel) istekler hepsi aynı düşük sayımı görüp
+hepsi "izin verildi" alabiliyordu — bir saldırgan 20-50 paralel istekle
+"5 deneme/15 dakika" kilidini fiilen anlamsız hale getirebilirdi. **Bu, tek
+admin hesabına karşı inşa edilen korumanın kendi amacını boşa çıkaran
+YÜKSEK önemde bir açıktı.** Düzeltme: sayım + rezervasyon artık TEK bir
+Postgres fonksiyonunda (`check_and_reserve_login_attempt`,
+`supabase/migrations/20260818150000_add_atomic_rate_limit_functions.sql`),
+IP başına bir `pg_advisory_xact_lock` ile serileştirilmiş — rezervasyon
+(satırın eklenmesi) `signInWithPassword` çağrılmadan ÖNCE, AYNI atomik
+adımda oluşuyor, aradan başka bir isteğin sıyrılması artık mümkün değil.
+Başarılı girişte `delete_login_attempt` ile rezervasyon kaldırılıyor
+(doğru şifre kalan hakkı tüketmesin). `checkLoginRateLimit`/
+`recordFailedLoginAttempt` kaldırıldı, yerine `checkAndReserveLoginAttempt`/
+`releaseLoginAttempt` geldi. **Aynı TOCTOU deseni** iletişim formunun hız
+sınırında da (madde 14, `checkContactRateLimit`) vardı — o da aynı gün
+`submit_contact_message_if_allowed` atomik fonksiyonuyla düzeltildi.
+
+**`login_attempts` RLS:** Açık, **hiçbir policy yok** — `contact_messages`'ın
+anon'a kapalı olmasından bir adım ileri: burada `authenticated`'e de
+kapalı, çünkü panelde bu tabloyu gösteren bir ekran yok/planlanmıyor,
+sadece sunucu taraflı hız sınırı mantığı (`lib/security/loginRateLimit.ts`)
+service role client ile okuyor/yazıyor. Tabloya SADECE başarısız denemeler
+yazılır, başarılı girişte hiç satır eklenmez.
+
+**Bilgi sızıntısı önlemi:** Kilitliyken gösterilen mesaj ("Çok fazla
+başarısız giriş denemesi. Lütfen N dakika sonra tekrar deneyin.") normal
+"E-posta veya şifre hatalı" mesajından KASITLI olarak farklı, ama kalan
+deneme SAYISI hiçbir aşamada gösterilmiyor — bir saldırganın "3 hakkım
+kaldı" gibi bir geri bildirimle stratejisini kalibre etmesini önlemek
+için (honeypot'un botu bilgilendirmeme ilkesiyle aynı yaklaşım, madde 14).
+
+**IP tespiti paylaşıldı:** `pickTrustedClientIp`/`getClientIp`
+(`x-forwarded-for` zincirinin SON, sahtelenemez değerini kullanan aynı
+fonksiyon, bkz. madde 14) `lib/security/getClientIp.ts`'e taşındı —
+hem iletişim formu hem panel girişi AYNI IP tespit mantığını paylaşıyor.
+
+**Bilinçli sınırlar:** E-posta bazlı ayrı bir sayaç yok (panel tek admin
+hesaplı, IP yeterli — bkz. `docs/PRD.md`); başarılı girişte sayaç
+sıfırlanmıyor (basitlik, kayan pencere zaten yeterli).
+
+**Doğrulama durumu:** İlk (atomik olmayan) sürüm gerçek tarayıcıda
+kullanıcı tarafından test edildi ve 5 yanlış denemeden sonra kilitlendiği
+DOĞRULANDI — ama o test paralel/eşzamanlı istek senaryosunu kapsamıyordu
+(tek tarayıcıdan sırayla deneme), bu yüzden TOCTOU açığını yakalayamadı.
+Atomik düzeltme (`20260818150000_add_atomic_rate_limit_functions.sql`)
+henüz gerçek Supabase projesine uygulanmadı — sıradaki adım bu migration'ın
+çalıştırılması, ardından hem tekli hem (mümkünse) paralel istek
+senaryosuyla yeniden doğrulama.

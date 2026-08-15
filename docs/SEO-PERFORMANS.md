@@ -228,6 +228,21 @@ kullanım yüzeyi yok (bkz. `docs/GUVENLIK.md` madde 13).
 bir PNG döndüğü ve içeriğin (firma adı, doğru marka rengi, okunaklı
 beyaz metin) doğru render edildiği görsel olarak teyit edildi.
 
+### BreadcrumbList Yapısal Verisi *(2026-08-18 eklendi)*
+
+Ziyaretçi sitesindeki breadcrumb (yol izi) özelliğinin bir SEO yan
+ürünü — `LocalBusinessJsonLd` ile AYNI desen: `lib/seo/breadcrumbList.ts`
+(saf `BreadcrumbList` üretici, DB'den bağımsız, test edilebilir) →
+`components/site/BreadcrumbJsonLd.tsx` (Server Component, `getSiteUrl()`
+ile mutlak URL üretir). Şu an sadece `/ekip` ve `/iletisim`
+sayfalarında (ana sayfada breadcrumb yok, bkz. `docs/KARAR-GUNLUGU.md`,
+dokuzuncu oturum). Google'ın "breadcrumb zengin sonucu" arama
+sonuçlarında sayfa URL'si yerine bir yol izi gösterebiliyor.
+
+**Henüz yapılmadı:** Google Zengin Sonuçlar Testi'nin bu iki sayfa için
+tekrarlanması (LocalBusiness JSON-LD'nin 2026-08-17'de yapıldığı gibi) —
+aşağıdaki kontrol listesine eklendi.
+
 ## Yayın Sonrası SEO Kontrol Listesi
 
 Bu liste, bu oturumda **yapılan** işi tekrar etmiyor — sadece gerçek bir

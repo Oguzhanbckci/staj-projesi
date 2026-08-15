@@ -27,10 +27,29 @@ alıcısı) hem panelde (Ayarlar → Bildirimler) düzenlenebiliyor. Hero/Hakkı
 ekranları, `tenant_id` UNIQUE tekil kayıt oldukları için Hizmetler'in
 liste-CRUD deseni değil, Tema/SEO Ayarları'nın "tek kayıt + Kaydet" desenini
 kullanıyor; `BrandImageUploader.tsx` bunun için "branding" bucket'ına sabit
-kodlu olmaktan çıkıp bir `bucket` prop'u aldı. **`npm install resend` +
-`npm run lint` + `npm run build` HENÜZ kullanıcı tarafından çalıştırılmadı,
-tarayıcıda da henüz test edilmedi** — bir sonraki adım bu doğrulama (bkz.
-"Sıradaki adım" madde 0e). Ziyaretçi sitesi zenginleştirmesi (madde 0d)
+kodlu olmaktan çıkıp bir `bucket` prop'u aldı. Doğrulandı: `npm install
+resend` + `npm run lint`/`build` kullanıcı tarafından çalıştırıldı; yol
+boyunca sekizinci oturumdan kalma 2 gerçek bug bulunup düzeltildi
+(`TextScramble.tsx`'teki `react-hooks/set-state-in-effect`, giriş
+sayfasındaki gereksiz `forceLightScript` — ikincisi tamamen kaldırıldı,
+bkz. `KARAR-GUNLUGU.md`). **(3) Kullanıcının doğrudan sorusu üzerine panel
+girişine IP bazlı hız sınırı/kilitleme eklendi:** 15 dakikada 5 başarısız
+denemeden sonra kilitleniyor (yeni `login_attempts` tablosu,
+`lib/security/loginRateLimit.ts`) — kullanıcı gerçek tarayıcıda test edip
+ÇALIŞTIĞINI doğruladı. **(4) Ziyaretçi sitesine (Ekip/İletişim) ve panele
+(neredeyse tüm sayfalar) breadcrumb eklendi**, ziyaretçi tarafında ayrıca
+`BreadcrumbList` JSON-LD (SEO) ile. **(5) Kullanıcı "çok yüzeysel
+çalışıyorsun" diye haklı bir eleştiri yaptı** — bunun üzerine bu oturumun
+TÜM diff'i (52 dosya) adversarial-doğrulamalı çok-ajanlı bir review'a
+verildi VE Claude in Chrome ile gerçek tarayıcıda doğrulama yapıldı. Review
+**6 gerçek sorun buldu, hepsi düzeltildi** — en önemlisi: **login VE
+iletişim formu hız sınırlayıcıları ATOMİK DEĞİLDİ** (paralel isteklerle
+atlatılabiliyordu, klasik TOCTOU), artık Postgres advisory lock'lu atomik
+fonksiyonlarla düzeltildi (yeni migration `20260818150000_...`, henüz
+Supabase'e uygulanmadı); ayrıca `/ekip`/`/iletisim`'de hiç `<h1>` yoktu,
+düzeltildi. Detay: `KARAR-GUNLUGU.md`, "Kullanıcı geri bildirimi: 'çok
+yüzeysel'"; `docs/DURUM.md` "Sıradaki adım" madde 0h.
+Ziyaretçi sitesi görsel zenginleştirmesi (madde 0d, Hizmetler→Footer)
 hâlâ bekliyor, bu oturumda ele alınmadı.
 
 **Önceki güncelleme (2026-08-18, sekizinci oturum):** İki ayrı
@@ -1638,14 +1657,70 @@ işaretliyor, daha kesin bir ikinci katman. Detay: `SEO-PERFORMANS.md`.
    oturuma ait değil): konsolda "Encountered a script tag..." uyarısı —
    `forceLightScript`'in sayfa GÖVDESİNDE (kök `<head>` dışında) render
    edilmesinden kaynaklanıyordu. Next.js'in resmi kılavuzundaki
-   `InlineScript` yardımcı deseniyle (`components/ui/InlineScript.tsx`,
-   yeni) düzeltildi. **Kalan doğrulama:** `npm run lint` TEKRAR
-   çalıştırılıp temiz geçtiği teyit edilmeli; ardından tarayıcıda
-   `/panel/icerikler/hero`, `/panel/icerikler/hakkimizda`, `/panel/ayarlar`
-   (Bildirimler bloğu) ve `/panel/giris` (konsolda uyarı kalmadığı) elle
+   `InlineScript` yardımcı deseniyle ilk denemede düzeltilmeye çalışıldı,
+   ama kullanıcı GERÇEK tarayıcıda tekrar test edince uyarının AYNEN
+   devam ettiği görüldü — bu teknik bu React/Next sürüm kombinasyonunda
+   işe yaramadı. `ThemeToggle`'ın zaten `forceInitialMode="light"` ile
+   AYNI işi yaptığı fark edildi (script sadece hydration öncesi
+   milisaniyelik bir FOUC'u önlüyordu, kritik olmayan bir sayfa için) —
+   kullanıcının onayıyla `forceLightScript`/`InlineScript` TAMAMEN
+   kaldırıldı, konsol artık tamamen temiz. **Doğrulandı (kullanıcı,
+   gerçek tarayıcı):** panel giriş hız sınırı çalışıyor — 5 yanlış
+   denemeden sonra kilitleniyor. `npm run lint`/`build` bu oturumda TEKRAR
+   çalıştırılıp (InlineScript kaldırıldıktan sonra) temiz geçtiği teyit
+   edilmeli; ayrıca tarayıcıda `/panel/icerikler/hero`,
+   `/panel/icerikler/hakkimizda`, `/panel/ayarlar` (Bildirimler bloğu) elle
    test edilmeli, gerçek bir Resend API anahtarıyla uçtan uca bir e-posta
    gönderimi henüz denenmedi. Detay: `KARAR-GUNLUGU.md`, "dokuzuncu oturum".
-0d. **(0e doğrulandıktan sonraki en yüksek öncelik)** Ziyaretçi
+0f. **(ÇÖZÜLDÜ, sonra KRİTİK bir açık bulunup TEKRAR düzeltildi — bkz. 0h)**
+   ~~Panel girişine IP bazlı hız sınırı/kilitleme~~ eklendi, kullanıcı ilk
+   sürümü gerçek tarayıcıda (tek tarayıcı, sıralı deneme) doğruladı. Detay:
+   `KARAR-GUNLUGU.md`, "dokuzuncu oturum devamı"; `GUVENLIK.md` madde 19.
+0g. **(Kod tarafı tamamlandı, tarayıcıda kısmen doğrulandı — bkz. 0h'deki
+   ek düzeltmeler)** Ziyaretçi sitesine (`/ekip`, `/iletisim`) ve panele
+   (`/panel` Özet ve `/panel/giris` dışında neredeyse tüm sayfalar, 18
+   sayfa) breadcrumb (yol izi) eklendi — `components/ui/Breadcrumbs.tsx`,
+   [id] sayfalarında dinamik kaydın adını (ör. hizmet başlığı, SSS sorusu)
+   gösteriyor. Ziyaretçi tarafında ayrıca `BreadcrumbList` JSON-LD (SEO
+   bonusu). Kullanıcı, tarayıcıda kendim Claude in Chrome ile doğrulama
+   yapmamı istedi — SSS'ye gerçekten uzun bir soru eklenip breadcrumb
+   kırpmasının ÇALIŞTIĞI, koyu modda okunaklı olduğu, panel/giriş
+   sayfalarında konsol hatası kalmadığı doğrulandı. Detay:
+   `KARAR-GUNLUGU.md`, "dokuzuncu oturum devamı — breadcrumb".
+0h. **(EN YÜKSEK ÖNCELİK — `npm run lint`/`build` temiz, migration henüz
+   uygulanmadı)** Kullanıcı "çok yüzeysel çalışıyorsun" diye haklı bir eleştiri yaptı — bu
+   oturumun TÜM diff'i (52 dosya) 5 boyutlu, adversarial-doğrulamalı bir
+   çok-ajanlı review'a verildi. **6 GERÇEK sorun bulundu ve DÜZELTİLDİ:**
+   (1) **[YÜKSEK]** Login hız sınırı ATOMİK DEĞİLDİ — paralel istekler "5
+   deneme/15 dakika" kilidini fiilen atlatabiliyordu (klasik TOCTOU); artık
+   `check_and_reserve_login_attempt` Postgres fonksiyonuyla (advisory lock)
+   gerçekten atomik. (2) **[ORTA]** Aynı açık iletişim formunda da vardı,
+   `submit_contact_message_if_allowed` ile düzeltildi. (3-4) **[YÜKSEK]**
+   `/ekip` ve `/iletisim` sayfalarında (2026-08-13'ten beri, bu oturumdan
+   ÖNCE) hiç `<h1>` yoktu — `SectionHeader`/`TeamSection`/`ContactSection`'a
+   `headingLevel="h1"` desteği eklenip bu iki sayfaya uygulandı. (5)
+   **[DÜŞÜK]** `Breadcrumbs.tsx`'teki tek İngilizce `aria-label` Türkçeye
+   çevrildi. 2 bulgu (breadcrumb hover kontrastı, coreValues test eksikliği)
+   incelenip projenin kendi felsefesiyle tutarlı/kasıtlı bulunarak
+   çürütüldü, düzeltme YAPILMADI. **Yeni migration:**
+   `supabase/migrations/20260818150000_add_atomic_rate_limit_functions.sql`
+   — henüz gerçek Supabase projesine uygulanmadı. Sıradaki adım: kullanıcı
+   bu migration'ı (ve hâlâ uygulanmamışsa `20260818140000`'i) SQL Editor'de
+   çalıştıracak, `npm run lint`/`build`/`test` tekrar doğrulanacak, sonra
+   hem giriş kilidinin hem iletişim formunun tarayıcıda hâlâ çalıştığı
+   teyit edilecek. Detay: `KARAR-GUNLUGU.md`, "Kullanıcı geri bildirimi:
+   'çok yüzeysel'".
+0i. **(YENİ, `npm run lint`/`build` temiz — gerçek ekran görüntüsü
+   doğrulaması hâlâ yapılmadı, araç bu ortamda arızalıydı)** Footer
+   metinlerinin okunabilirliği artırıldı (kullanıcı isteği: "yazılar çok
+   küçük, genişlik de az geldi") — firma adı 20→25px, adres/telefon/
+   e-posta/bağlantılar 16→20px, alt başlıklar/telif 13→16px, sütun
+   kırılması `md:`(768px)'e alındı, firma bilgisi sütunu daha geniş.
+   Detay: `KARAR-GUNLUGU.md`, "Footer okunabilirliği artırıldı". **Ayrıca
+   fark edilen ilgisiz bir konu:** Panel → Ayarlar → Sayfa Başlığı'nda
+   muhtemelen yazım hatasıyla "tofe İnşaat" yazılı ("Akme İnşaat" yerine)
+   — kullanıcıya bildirildi, düzeltme onayı bekleniyor.
+0d. **(0i doğrulandıktan sonraki en yüksek öncelik)** Ziyaretçi
    sitesinin (inşaat firması sayfası) görsel zenginleştirmesi YARIM KALDI —
    kullanıcı "tasarım basit/yüzeysel, div yazıp geçmişim gibi" dedi, kapsam
    panel+giriş sayfası+Navbar/Hero (TAMAMLANDI, sekizinci oturum, bkz.
