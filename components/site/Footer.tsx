@@ -36,14 +36,25 @@ export async function Footer() {
   return (
     <footer className="bg-surface-raised py-12 text-text">
       <Container>
-        <div className="grid gap-8 sm:grid-cols-3">
+        {/* KISITLAR (kullanıcı isteği, 2026-08-18): "yazılar çok küçük,
+            genişlik de az geldi" — üç değişiklik: (1) asıl okunacak içerik
+            (adres/telefon/e-posta, bağlantılar) `text-base`(16px)'ten
+            `text-h6`(20px)'ya çıkarıldı — text-h6 SAF bir boyut token'ı
+            (bkz. app/globals.css), font-weight taşımıyor, o yüzden burada
+            kalın görünmeden sadece büyüyor; (2) sütun kırılması `sm:`
+            (640px) yerine `md:` (768px)'e alındı ki dar/orta genişlikte
+            sütunlar sıkışıp metin erken sarmasın, tam genişlik tek sütun
+            olarak kalsın; (3) ilk sütun (firma bilgisi, genelde en uzun
+            içerik) `md:` sonrası diğer ikisinden daha geniş bir pay alıyor
+            (1.3fr) ve sütun arası boşluk (gap) büyütüldü. */}
+        <div className="grid gap-10 md:grid-cols-[1.3fr_1fr_1fr] md:gap-12">
           <div>
-            <p className="text-h6 font-bold text-text">{tenantName}</p>
+            <p className="text-h5 font-bold text-text">{tenantName}</p>
             {settings?.slogan && (
-              <p className="mt-1 text-caption text-text-muted">{settings.slogan}</p>
+              <p className="mt-1 text-base text-text-muted">{settings.slogan}</p>
             )}
             {contact && (
-              <ul className="mt-3 space-y-1 text-base text-text-muted">
+              <ul className="mt-4 space-y-2 text-h6 text-text-muted">
                 {contact.address && <li>{contact.address}</li>}
                 {contact.phone && (
                   <li>
@@ -68,13 +79,13 @@ export async function Footer() {
 
           {navLinks.length > 0 && (
             <div>
-              <p className="text-caption font-semibold uppercase tracking-wide text-text-muted">
+              <p className="text-base font-semibold uppercase tracking-wide text-text-muted">
                 Bölümler
               </p>
-              <ul className="mt-3 space-y-1">
+              <ul className="mt-4 space-y-2">
                 {navLinks.map((link) => (
                   <li key={link.href}>
-                    <a href={link.href} className="text-base text-text-muted hover:text-brand">
+                    <a href={link.href} className="text-h6 text-text-muted hover:text-brand">
                       {link.label}
                     </a>
                   </li>
@@ -85,17 +96,17 @@ export async function Footer() {
 
           {socialLinks.length > 0 && (
             <div>
-              <p className="text-caption font-semibold uppercase tracking-wide text-text-muted">
+              <p className="text-base font-semibold uppercase tracking-wide text-text-muted">
                 Sosyal Medya
               </p>
-              <ul className="mt-3 space-y-1">
+              <ul className="mt-4 space-y-2">
                 {socialLinks.map((social) => (
                   <li key={social.key}>
                     <a
                       href={settings![social.key]!}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-base text-text-muted hover:text-brand"
+                      className="text-h6 text-text-muted hover:text-brand"
                     >
                       {social.label}
                     </a>
@@ -106,7 +117,7 @@ export async function Footer() {
           )}
         </div>
 
-        <p className="mt-10 border-t border-neutral-300 pt-6 text-caption text-text-muted">
+        <p className="mt-10 border-t border-neutral-300 pt-6 text-base text-text-muted">
           © {year} {tenantName}. Tüm hakları saklıdır.
         </p>
       </Container>
