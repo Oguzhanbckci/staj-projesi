@@ -1,5 +1,6 @@
 import { getAllTeamMembers } from "@/lib/supabase/panelQueries";
 import { AdminListTable } from "@/components/panel/AdminListTable";
+import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { TeamMemberForm } from "./TeamMemberForm";
 import {
   deleteTeamMemberAction,
@@ -13,6 +14,10 @@ export default async function EkipPage() {
   return (
     <div className="space-y-10">
       <div>
+        <Breadcrumbs
+          items={[{ label: "İçerikler", href: "/panel/icerikler" }, { label: "Ekip" }]}
+          className="mb-2"
+        />
         <h1 className="text-h3 font-bold text-text">Ekip</h1>
         <div className="mt-6">
           <AdminListTable

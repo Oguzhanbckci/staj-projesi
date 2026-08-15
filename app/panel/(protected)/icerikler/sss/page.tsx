@@ -1,5 +1,6 @@
 import { getAllFaqs } from "@/lib/supabase/panelQueries";
 import { AdminListTable } from "@/components/panel/AdminListTable";
+import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { FaqForm } from "./FaqForm";
 import { deleteFaqAction, moveFaqOrderAction, toggleFaqPublishedAction } from "./actions";
 
@@ -9,6 +10,10 @@ export default async function SssPage() {
   return (
     <div className="space-y-10">
       <div>
+        <Breadcrumbs
+          items={[{ label: "İçerikler", href: "/panel/icerikler" }, { label: "SSS" }]}
+          className="mb-2"
+        />
         <h1 className="text-h3 font-bold text-text">SSS</h1>
         <div className="mt-6">
           <AdminListTable

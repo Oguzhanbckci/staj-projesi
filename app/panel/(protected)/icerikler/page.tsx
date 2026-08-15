@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Card } from "@/components/ui/Card";
+import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 
 const CONTENT_TYPES = [
   { label: "Hero", href: "/panel/icerikler/hero", description: "Ana sayfadaki büyük tanıtım bölümünü yönet." },
@@ -17,6 +18,7 @@ const CONTENT_TYPES = [
 export default function IceriklerPage() {
   return (
     <div>
+      <Breadcrumbs items={[{ label: "Özet", href: "/panel" }, { label: "İçerikler" }]} className="mb-2" />
       <h1 className="text-h3 font-bold text-text">İçerikler</h1>
       <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
         {CONTENT_TYPES.map((type) => (

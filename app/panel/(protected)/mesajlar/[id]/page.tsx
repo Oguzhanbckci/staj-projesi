@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { getContactMessageById } from "@/lib/supabase/panelQueries";
 import { getContactSubjectLabel } from "@/lib/validation/contact";
 import { LinkButton } from "@/components/ui/LinkButton";
+import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { MarkMessageReadOnView } from "../MarkMessageReadOnView";
 
 // getServiceById/[id]/page.tsx ile aynı desen (kayıt yoksa notFound()).
@@ -25,6 +26,10 @@ export default async function MessageDetailPage({
     <div className="max-w-2xl">
       <MarkMessageReadOnView messageId={message.id} alreadyRead={message.isRead} />
 
+      <Breadcrumbs
+        items={[{ label: "Mesajlar", href: "/panel/mesajlar" }, { label: message.senderName }]}
+        className="mb-2"
+      />
       <h1 className="text-h3 font-bold text-text">{message.senderName}</h1>
 
       <dl className="mt-4 grid grid-cols-1 gap-4 text-base sm:grid-cols-2">

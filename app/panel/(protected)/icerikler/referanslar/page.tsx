@@ -1,5 +1,6 @@
 import { getAllTestimonials } from "@/lib/supabase/panelQueries";
 import { AdminListTable } from "@/components/panel/AdminListTable";
+import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { TestimonialForm } from "./TestimonialForm";
 import {
   deleteTestimonialAction,
@@ -13,6 +14,10 @@ export default async function ReferanslarPage() {
   return (
     <div className="space-y-10">
       <div>
+        <Breadcrumbs
+          items={[{ label: "İçerikler", href: "/panel/icerikler" }, { label: "Referanslar" }]}
+          className="mb-2"
+        />
         <h1 className="text-h3 font-bold text-text">Referanslar</h1>
         <div className="mt-6">
           <AdminListTable

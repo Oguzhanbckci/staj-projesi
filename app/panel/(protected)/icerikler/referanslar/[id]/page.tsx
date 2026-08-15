@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { getTestimonialById } from "@/lib/supabase/panelQueries";
+import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { TestimonialForm } from "../TestimonialForm";
 import { TestimonialImageUploader } from "../TestimonialImageUploader";
 
@@ -17,6 +18,14 @@ export default async function EditTestimonialPage({
 
   return (
     <div className="max-w-lg">
+      <Breadcrumbs
+        items={[
+          { label: "İçerikler", href: "/panel/icerikler" },
+          { label: "Referanslar", href: "/panel/icerikler/referanslar" },
+          { label: testimonial.authorName },
+        ]}
+        className="mb-2"
+      />
       <h1 className="text-h3 font-bold text-text">Referansı Düzenle</h1>
       <div className="mt-6">
         <TestimonialForm testimonial={testimonial} />

@@ -1,5 +1,6 @@
 import { getAllServices } from "@/lib/supabase/panelQueries";
 import { AdminListTable } from "@/components/panel/AdminListTable";
+import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { ServiceForm } from "./ServiceForm";
 import {
   deleteServiceAction,
@@ -18,6 +19,10 @@ export default async function HizmetlerPage() {
   return (
     <div className="space-y-10">
       <div>
+        <Breadcrumbs
+          items={[{ label: "İçerikler", href: "/panel/icerikler" }, { label: "Hizmetler" }]}
+          className="mb-2"
+        />
         <h1 className="text-h3 font-bold text-text">Hizmetler</h1>
         <div className="mt-6">
           <AdminListTable

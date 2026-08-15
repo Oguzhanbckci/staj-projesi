@@ -2,7 +2,10 @@ import { getSeoSettings, getNotificationSettings } from "@/lib/supabase/panelQue
 import { SeoEditor } from "./SeoEditor";
 import { NotificationSettingsEditor } from "./NotificationSettingsEditor";
 import { BrandImageUploader } from "../tema/BrandImageUploader";
+import { Breadcrumbs, type BreadcrumbItem } from "@/components/ui/Breadcrumbs";
 import { uploadOgImageAction, deleteOgImageAction } from "./imageActions";
+
+const AYARLAR_BREADCRUMB_ITEMS: BreadcrumbItem[] = [{ label: "Özet", href: "/panel" }, { label: "Ayarlar" }];
 
 export default async function AyarlarPage() {
   const settings = await getSeoSettings();
@@ -11,6 +14,7 @@ export default async function AyarlarPage() {
   if (!settings) {
     return (
       <div>
+        <Breadcrumbs items={AYARLAR_BREADCRUMB_ITEMS} className="mb-2" />
         <h1 className="text-h3 font-bold text-text">Ayarlar</h1>
         <p className="mt-4 text-base text-text-muted">
           Ayarlar şu anda alınamıyor. Lütfen daha sonra tekrar deneyin.
@@ -22,6 +26,7 @@ export default async function AyarlarPage() {
   return (
     <div className="space-y-10">
       <div>
+        <Breadcrumbs items={AYARLAR_BREADCRUMB_ITEMS} className="mb-2" />
         <h1 className="text-h3 font-bold text-text">Ayarlar</h1>
         <p className="mt-2 text-base text-text-muted">
           Sitenizin arama motorlarında ve sosyal medya paylaşımlarında nasıl göründüğünü ve
