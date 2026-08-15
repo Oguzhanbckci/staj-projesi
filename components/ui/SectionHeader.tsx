@@ -2,12 +2,17 @@ export interface SectionHeaderProps {
   eyebrow?: string;
   title: string;
   description?: string;
-  /** Sayfa başlık hiyerarşisi doğru kalsın diye çağıran belirler (varsayılan h2). */
-  headingLevel?: "h2" | "h3";
+  /** Sayfa başlık hiyerarşisi doğru kalsın diye çağıran belirler (varsayılan h2).
+   *  `h1` SADECE bu bölümün sayfadaki TEK h1'i olduğu bağlamlarda kullanılmalı
+   *  (ör. Ekip/İletişim gibi Hero'suz bağımsız sayfalar, bkz. TeamSection/
+   *  ContactSection'daki `headingLevel` prop'u) — ana sayfada Hero zaten kendi
+   *  h1'ini taşıdığı için oradaki çağrılar varsayılan h2'de kalmalı. */
+  headingLevel?: "h1" | "h2" | "h3";
   className?: string;
 }
 
-const HEADING_TEXT_CLASS: Record<"h2" | "h3", string> = {
+const HEADING_TEXT_CLASS: Record<"h1" | "h2" | "h3", string> = {
+  h1: "text-h1",
   h2: "text-h2",
   h3: "text-h3",
 };

@@ -19,7 +19,13 @@ import { ContactForm } from "./ContactForm";
 // docs/TEST-STRATEJISI.md). Bunun yerine, sıfır ek ağırlıklı bir "Haritada
 // Görüntüle" linki kullanılıyor — tıklanınca Google Maps'i yeni sekmede
 // açar, sayfanın kendi ağırlığına hiçbir şey eklemez.
-export async function ContactSection() {
+// `headingLevel` — TeamSection.tsx'teki AYNI gerekçe: varsayılan "h2" (ana
+// sayfada Hero zaten h1'i taşıyor), `/iletisim` bağımsız sayfası Hero'suz
+// olduğu için "h1" geçirmeli (bkz. docs/KARAR-GUNLUGU.md, 2026-08-18
+// dokuzuncu oturum).
+export async function ContactSection({
+  headingLevel = "h2",
+}: { headingLevel?: "h1" | "h2" } = {}) {
   const contact = await getContactSection();
 
   return (
@@ -28,7 +34,7 @@ export async function ContactSection() {
         <SectionHeader
           title="İletişim"
           description="Projeniz hakkında konuşmak için bize ulaşın."
-          headingLevel="h2"
+          headingLevel={headingLevel}
         />
 
         <div className="mt-10 grid gap-10 lg:grid-cols-2">
