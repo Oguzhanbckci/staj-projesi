@@ -10,6 +10,7 @@ import { PasswordField } from "@/components/ui/PasswordField";
 import { Button } from "@/components/ui/Button";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import { TextScramble } from "@/components/ui/TextScramble";
+import { InlineScript } from "@/components/ui/InlineScript";
 
 const LOGIN_PATH = "/panel/giris";
 const DEFAULT_REDIRECT = "/panel";
@@ -93,7 +94,7 @@ export default async function PanelGirisPage({
         } as CSSProperties
       }
     >
-      <script dangerouslySetInnerHTML={{ __html: forceLightScript }} />
+      <InlineScript html={forceLightScript} />
 
       {/* Hero ile aynı dekoratif doku (degrade + ince ızgara) — ürün
           genelinde tutarlı bir "markalı yüzey" dili kurmak için. */}

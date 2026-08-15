@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 
 const SCRAMBLE_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
 
@@ -9,19 +9,46 @@ export interface TextScrambleProps {
   className?: string;
 }
 
+const REDUCED_MOTION_QUERY = "(prefers-reduced-motion: reduce)";
+
+// ThemeToggle.tsx'teki AYNI desen (useSyncExternalStore) — matchMedia
+// bir DIŞ (React state'i olmayan) kaynak, `useEffect` içinde `setState`
+// ile "senkronlamak" `react-hooks/set-state-in-effect` lint kuralını
+// tetikliyordu (bkz. docs/KARAR-GUNLUGU.md, ThemeToggle'da yaşanan aynı
+// sorun). Sunucuda `getServerSnapshot()` her zaman `false` — reduced
+// motion tercihini sunucu bilemez, animasyon istemci tarafında (ilk
+// boyamadan ÖNCE, senkron) doğru değere geçer, hydration uyuşmazlığı
+// oluşmaz.
+function subscribeReducedMotion(callback: () => void): () => void {
+  const mediaQueryList = window.matchMedia(REDUCED_MOTION_QUERY);
+  mediaQueryList.addEventListener("change", callback);
+  return () => mediaQueryList.removeEventListener("change", callback);
+}
+
+function getReducedMotionSnapshot(): boolean {
+  return window.matchMedia(REDUCED_MOTION_QUERY).matches;
+}
+
+function getReducedMotionServerSnapshot(): boolean {
+  return false;
+}
+
 // Giriş sayfası başlığı için "çözülme" efekti. Ekran okuyucu animasyonu
 // HİÇ görmez: gerçek metin ayrı, gizli bir <span>'de anında mevcut (bkz.
 // sr-only deseni, Button.tsx isLoading ile aynı ilke); görünen/animasyonlu
-// span aria-hidden. `prefers-reduced-motion` true ise hiç karıştırma
-// yapılmaz, metin doğrudan görünür durur (bkz. ThemeToggle.tsx'teki aynı
-// ilke).
+// span aria-hidden. `prefersReducedMotion` true ise `display` state'i hiç
+// devreye girmez, `text` doğrudan render edilir — karıştırma efekti
+// başlamaz.
 export function TextScramble({ text, className = "" }: TextScrambleProps) {
+  const prefersReducedMotion = useSyncExternalStore(
+    subscribeReducedMotion,
+    getReducedMotionSnapshot,
+    getReducedMotionServerSnapshot
+  );
   const [display, setDisplay] = useState(text);
 
   useEffect(() => {
-    const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     if (prefersReducedMotion) {
-      setDisplay(text);
       return;
     }
 
@@ -46,11 +73,11 @@ export function TextScramble({ text, className = "" }: TextScrambleProps) {
     }, 30);
 
     return () => window.clearInterval(intervalId);
-  }, [text]);
+  }, [text, prefersReducedMotion]);
 
   return (
     <span className={className}>
-      <span aria-hidden="true">{display}</span>
+      <span aria-hidden="true">{prefersReducedMotion ? text : display}</span>
       <span className="sr-only">{text}</span>
     </span>
   );
