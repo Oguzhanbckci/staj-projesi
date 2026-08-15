@@ -2,6 +2,8 @@ import Link from "next/link";
 import { Card } from "@/components/ui/Card";
 
 const CONTENT_TYPES = [
+  { label: "Hero", href: "/panel/icerikler/hero", description: "Ana sayfadaki büyük tanıtım bölümünü yönet." },
+  { label: "Hakkımızda", href: "/panel/icerikler/hakkimizda", description: "Firma tanıtım bölümünü yönet." },
   { label: "Hizmetler", href: "/panel/icerikler/hizmetler", description: "Hizmet kartlarını yönet." },
   { label: "Projeler", href: "/panel/icerikler/projeler", description: "Proje/portfolyo kayıtlarını yönet." },
   { label: "Referanslar", href: "/panel/icerikler/referanslar", description: "Müşteri referanslarını yönet." },

@@ -65,10 +65,13 @@ yoksa aşağıdaki adımların bir kısmında durup beklemeniz gerekir:
    kapsamıyor). Alan adı henüz yoksa, ilk yayın Vercel'in verdiği
    ücretsiz alt alan adıyla (`...vercel.app`) yapılıp özel alan adı
    sonradan bağlanabilir (bkz. Adım 10 sonu).
-3. **İletişim formu bildirim e-postası** — ziyaretçi mesajlarının
-   panelde görünmesi dışında bir bildirim şu an gönderilmiyor (bkz.
-   `GUVENLIK.md` madde 10 açık madde); yine de kayıt olarak bu adres
-   tutulur, ileride bildirim eklenirse kullanılacak.
+3. **İletişim formu bildirim e-postası** — ziyaretçi mesajları her
+   zaman panelde görünür; bu adres AYRICA panel → **Ayarlar →
+   Bildirimler**'e girilirse (veya kurulum sırasında `seed-template.sql`
+   ile önceden doldurulursa) her yeni mesajda bir bildirim e-postası da
+   gönderilir (bkz. Adım 3'teki `RESEND_API_KEY`, 2026-08-18 dokuzuncu
+   oturum). `RESEND_API_KEY` ayarlanmadıysa bildirim e-postası sessizce
+   gönderilmez, mesaj yine de panelde kaybolmaz.
 4. **Panel admin hesabı için e-posta adresi** — müşterinin kendisi mi
    yoksa sizin mi panele gireceğine göre değişir, ama bir e-posta
    adresi mutlaka gerekir (kayıt formu yok, hesap Supabase Dashboard'dan
@@ -84,6 +87,10 @@ sonradan eklenir):**
 9. Gerçek hizmet/proje/referans/SSS/ekip içeriği — kurulum sırasında
    jenerik bir DEMO şablonu yüklenir (bkz. Adım 4), müşteri gerçek
    içeriğini panelden kendisi girer/siz girersiniz.
+10. **Resend API anahtarı** ([resend.com](https://resend.com), ücretsiz,
+    kart bilgisi gerekmez) — iletişim formu bildirim e-postası için
+    (bkz. yukarıdaki madde 3). Yoksa bu adım tamamen atlanabilir, e-posta
+    bildirimi olmadan kurulum normal şekilde tamamlanır.
 
 ---
 
@@ -146,6 +153,9 @@ komutunu çalıştırın — çıktıda yeni projenizin isminin yanında bir
    **Project Settings → Database → Connection string → URI**'den alın
    (2. adımdaki veritabanı şifresini `[YOUR-PASSWORD]` yerine siz
    yazmanız gerekir, kopyalanan metinde otomatik gelmez).
+6. *(Opsiyonel)* `RESEND_API_KEY`'i doldurun — [resend.com/api-keys](https://resend.com/api-keys)'ten
+   ücretsiz bir hesapla alınır. Boş bırakırsanız iletişim formu yine
+   çalışır, sadece bildirim e-postası gönderilmez.
 
 **✅ Doğru yaptığını nasıl anlarsın:** `.env.local` dosyasında 3
 Supabase değişkeni ve `ACTIVE_TENANT_DOMAIN` dolu; terminalde

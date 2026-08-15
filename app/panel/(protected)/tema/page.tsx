@@ -31,12 +31,14 @@ export default async function TemaPage() {
 
       <BrandImageUploader
         title="Logo"
+        bucket="branding"
         currentPath={settings.logoPath}
         uploadAction={uploadLogoAction}
         deleteAction={deleteLogoAction}
       />
       <BrandImageUploader
         title="Favicon"
+        bucket="branding"
         helpText="Kare bir görsel önerilir (ör. 512×512)."
         currentPath={settings.faviconPath}
         uploadAction={uploadFaviconAction}

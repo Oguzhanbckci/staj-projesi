@@ -5,9 +5,12 @@ import {
   type ContactFormValues,
 } from "@/lib/validation/contact";
 import { createServiceRoleClient } from "@/lib/supabase/server";
-import { getActiveTenantId } from "@/lib/supabase/queries";
+import { getActiveTenantId, getActiveTenantDomain } from "@/lib/supabase/queries";
 import { isHoneypotFilled } from "@/lib/security/contactHoneypot";
 import { getClientIp, checkContactRateLimit } from "@/lib/security/contactRateLimit";
+import { getSiteUrl } from "@/lib/seo/getSiteUrl";
+import { buildContactNotificationEmail } from "@/lib/email/contactNotification";
+import { sendContactNotificationEmail } from "@/lib/email/resend";
 
 export interface ContactFormState {
   status: "idle" | "success" | "error";
@@ -119,6 +122,42 @@ export async function submitContactForm(
       values: raw,
       formError: "Mesajınız gönderilirken bir sorun oluştu. Lütfen daha sonra tekrar deneyin.",
     };
+  }
+
+  // Bildirim e-postası — DB KAYDI ZATEN BAŞARILI OLDUKTAN SONRA, "en iyi
+  // çaba" (best-effort) olarak denenir. Gerçek kaynak her zaman DB kaydı +
+  // panel; bu adım başarısız olsa (RESEND_API_KEY eksik, Resend geçici
+  // hatası vb.) bile ziyaretçiye dönen sonuç DEĞİŞMEZ — sadece sunucuya
+  // loglanır (bkz. docs/KARAR-GUNLUGU.md, 2026-08-18 dokuzuncu oturum).
+  try {
+    const { data: tenantRow } = await supabase
+      .from("tenants")
+      .select("name, contact_recipient_email")
+      .eq("id", tenantId)
+      .maybeSingle();
+
+    const recipientEmail = tenantRow?.contact_recipient_email;
+    if (tenantRow && recipientEmail) {
+      const tenantDomain = await getActiveTenantDomain();
+      const panelMessagesUrl = `${getSiteUrl(tenantDomain)}/panel/mesajlar`;
+
+      const email = buildContactNotificationEmail({
+        tenantName: tenantRow.name,
+        senderName: result.data.fullName,
+        senderEmail: result.data.email,
+        senderPhone,
+        subject: result.data.subject,
+        message: result.data.message,
+        panelMessagesUrl,
+      });
+
+      const sendResult = await sendContactNotificationEmail(recipientEmail, tenantRow.name, email);
+      if (!sendResult.ok) {
+        console.error("submitContactForm bildirim e-postası gönderilemedi:", sendResult.reason);
+      }
+    }
+  } catch (notifyError) {
+    console.error("submitContactForm bildirim e-postası sırasında beklenmeyen hata:", notifyError);
   }
 
   return { status: "success", errors: {}, values: {} };

@@ -841,6 +841,37 @@ export async function getPanelPageSections(): Promise<PanelPageSectionRow[]> {
   }
 }
 
+export interface NotificationSettingsData {
+  recipientEmail: string | null;
+}
+
+// tenants.contact_recipient_email — Ayarlar sayfasındaki "Bildirimler"
+// bloğu için (bkz. docs/KARAR-GUNLUGU.md, 2026-08-18 dokuzuncu oturum).
+// getSeoSettings ile aynı null-safe desen, tek kolonluk en küçük hâli.
+export async function getNotificationSettings(): Promise<NotificationSettingsData | null> {
+  try {
+    const supabase = await createServerSupabaseClient();
+    const tenantId = await getActiveTenantId();
+    if (!tenantId) return null;
+
+    const { data, error } = await supabase
+      .from("tenants")
+      .select("contact_recipient_email")
+      .eq("id", tenantId)
+      .maybeSingle();
+
+    if (error || !data) return null;
+
+    return {
+      recipientEmail:
+        typeof data.contact_recipient_email === "string" ? data.contact_recipient_email : null,
+    };
+  } catch (err) {
+    console.error("getNotificationSettings sorgu hatası:", err);
+    return null;
+  }
+}
+
 export interface SeoSettingsData {
   domain: string;
   seoTitle: string | null;
@@ -880,6 +911,103 @@ export async function getSeoSettings(): Promise<SeoSettingsData | null> {
     };
   } catch (err) {
     console.error("getSeoSettings sorgu hatası:", err);
+    return null;
+  }
+}
+
+export interface HeroSettingsData {
+  variant: "a" | "b";
+  title: string;
+  subtitle: string | null;
+  ctaText: string | null;
+  ctaLink: string | null;
+  secondaryCtaText: string | null;
+  secondaryCtaLink: string | null;
+  backgroundImagePath: string | null;
+}
+
+// Hero panel ekranı (app/panel/(protected)/icerikler/hero/) için — getSeoSettings
+// ile aynı null-safe desen, ama tek-tablolu doğrudan sorgu (getServiceById
+// ile aynı iskelet) çünkü hero_sections zaten kendi tenant_id'sine sahip,
+// tenants'a embed gerekmiyor (bkz. docs/KARAR-GUNLUGU.md, 2026-08-18
+// dokuzuncu oturum). Satır hiç yoksa (yeni bir tenant, seed atlanmışsa)
+// null döner — sayfa "henüz içerik girilmemiş" varsayılanlarıyla render
+// eder, actions.ts kaydederken upsert kullandığı için ilk kayıt burada
+// oluşturulur.
+export async function getHeroSettings(): Promise<HeroSettingsData | null> {
+  try {
+    const supabase = await createServerSupabaseClient();
+    const tenantId = await getActiveTenantId();
+    if (!tenantId) return null;
+
+    const { data, error } = await supabase
+      .from("hero_sections")
+      .select(
+        "variant, title, subtitle, cta_text, cta_link, secondary_cta_text, secondary_cta_link, background_image_path"
+      )
+      .eq("tenant_id", tenantId)
+      .maybeSingle();
+
+    if (error) {
+      throw error;
+    }
+    if (!data) return null;
+
+    return {
+      variant: data.variant === "b" ? "b" : "a",
+      title: String(data.title),
+      subtitle: typeof data.subtitle === "string" ? data.subtitle : null,
+      ctaText: typeof data.cta_text === "string" ? data.cta_text : null,
+      ctaLink: typeof data.cta_link === "string" ? data.cta_link : null,
+      secondaryCtaText: typeof data.secondary_cta_text === "string" ? data.secondary_cta_text : null,
+      secondaryCtaLink: typeof data.secondary_cta_link === "string" ? data.secondary_cta_link : null,
+      backgroundImagePath:
+        typeof data.background_image_path === "string" ? data.background_image_path : null,
+    };
+  } catch (err) {
+    console.error("getHeroSettings sorgu hatası:", err);
+    return null;
+  }
+}
+
+export interface AboutSettingsData {
+  title: string;
+  description: string | null;
+  foundedYear: number | null;
+  coreValues: string[];
+  imagePath: string | null;
+}
+
+// Hakkımızda panel ekranı için — getHeroSettings ile aynı desen. Satır
+// yoksa null döner (bkz. getHeroSettings yorumu, aynı gerekçe).
+export async function getAboutSettings(): Promise<AboutSettingsData | null> {
+  try {
+    const supabase = await createServerSupabaseClient();
+    const tenantId = await getActiveTenantId();
+    if (!tenantId) return null;
+
+    const { data, error } = await supabase
+      .from("about_sections")
+      .select("title, description, founded_year, core_values, image_path")
+      .eq("tenant_id", tenantId)
+      .maybeSingle();
+
+    if (error) {
+      throw error;
+    }
+    if (!data) return null;
+
+    return {
+      title: String(data.title),
+      description: typeof data.description === "string" ? data.description : null,
+      foundedYear: typeof data.founded_year === "number" ? data.founded_year : null,
+      coreValues: Array.isArray(data.core_values)
+        ? data.core_values.filter((v: unknown): v is string => typeof v === "string")
+        : [],
+      imagePath: typeof data.image_path === "string" ? data.image_path : null,
+    };
+  } catch (err) {
+    console.error("getAboutSettings sorgu hatası:", err);
     return null;
   }
 }

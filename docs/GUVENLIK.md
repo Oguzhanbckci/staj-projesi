@@ -368,8 +368,7 @@ tenant/domain ayrımı gibi bazı maddeler bilinçli olarak hâlâ açık.
 **Tamamlanan maddeler (2026-08-14 eklendi):**
 - [x] İletişim formu → sunucu tarafı doğrulama → `contact_messages`'a
       insert çalışıyor (bkz. madde 2 — Route Handler değil, Server
-      Action). **E-posta bildirimi HÂLÂ yok** — ayrı bir açık madde
-      olarak aşağıda duruyor.
+      Action).
 
 **Tamamlanan maddeler (2026-08-17 eklendi, bugünkü oturum):**
 - [x] Kullanıcıdan alınan formlarda (iletişim) rate limiting/spam
@@ -400,7 +399,12 @@ tenant/domain ayrımı gibi bazı maddeler bilinçli olarak hâlâ açık.
       header'a göre tenant çözümleyen ayrı bir mantık gerektiriyor (bkz.
       `MIMARI.md` madde 7), henüz yazılmadı. Şu anki `proxy.ts` sadece
       oturum kontrolü yapıyor, tenant/domain ayrımı yapmıyor.
-- [ ] İletişim formu bildirimi hâlâ sadece DB kaydı, e-posta bildirimi yok.
+- [x] *(2026-08-18 dokuzuncu oturum eklendi)* İletişim formu bildirimi
+      artık Resend ile e-posta de gönderiyor (`tenants.contact_recipient_email`
+      doluysa, panel → Ayarlar → Bildirimler'den ayarlanır) — DB kaydı her
+      zaman gerçek kaynak, e-posta best-effort bir ek kanal (bkz.
+      `KARAR-GUNLUGU.md`). `RESEND_API_KEY` ayarlanmadıysa (henüz canlı
+      doğrulanmadı) sessizce devre dışı kalır.
 - [ ] Spam koruması (madde 14) gerçek bir bot/saldırı simülasyonuyla henüz
       canlı test edilmedi.
 - [ ] Gerçek bir müşteriye canlıya alınacaksa: Vercel Hobby → Pro plan

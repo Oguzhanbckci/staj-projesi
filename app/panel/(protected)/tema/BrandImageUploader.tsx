@@ -18,20 +18,25 @@ export interface BrandImageUploaderProps {
   title: string;
   helpText?: string;
   currentPath: string | null;
+  bucket: string;
   uploadAction: (prevState: ImageActionState, formData: FormData) => Promise<ImageActionState>;
   deleteAction: (prevState: ImageActionState, formData: FormData) => Promise<ImageActionState>;
 }
 
 // ProjectImageUploader.tsx'in (icerikler/projeler/) generic hali — markup
 // %100 aynı (seç→önizle→yükle, mevcut görsel + Sil), sadece hangi eyleme
-// bağlı olduğu ve etiket/yardım metni dışarıdan geliyor. Logo ve favicon
-// için iki kez örnekleniyor (bkz. page.tsx) — DB-özel/güvenlik-kritik
-// sunucu eylemleri (imageActions.ts) BİLEREK ayrı kalıyor, sadece markup
-// paylaşılıyor.
+// bağlı olduğu, hangi bucket'ı hedeflediği ve etiket/yardım metni
+// dışarıdan geliyor. Logo/favicon/OG görseli (hepsi "branding" bucket'ı)
+// için üç kez, Hero/Hakkımızda (2026-08-18, dokuzuncu oturum — "hero"/
+// "about" bucket'ları) için birer kez örnekleniyor (bkz. page.tsx'ler) —
+// DB-özel/güvenlik-kritik sunucu eylemleri (imageActions.ts) BİLEREK
+// ayrı kalıyor, sadece markup paylaşılıyor. `bucket` başlangıçta
+// "branding"e sabit kodluydu, genelleştirildi (bkz. docs/KARAR-GUNLUGU.md).
 export function BrandImageUploader({
   title,
   helpText,
   currentPath,
+  bucket,
   uploadAction,
   deleteAction,
 }: BrandImageUploaderProps) {
@@ -42,7 +47,7 @@ export function BrandImageUploader({
   const formRef = useRef<HTMLFormElement>(null);
   const inputId = `brand-image-${title.toLowerCase()}`;
 
-  const currentUrl = currentPath ? getPublicImageUrl("branding", currentPath) : null;
+  const currentUrl = currentPath ? getPublicImageUrl(bucket, currentPath) : null;
 
   useEffect(() => {
     return () => {
