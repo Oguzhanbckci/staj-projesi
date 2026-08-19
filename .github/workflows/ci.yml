@@ -30,14 +30,14 @@ jobs:
 
     steps:
       - name: Depoyu çek
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       # Node 22: Vercel'in (bkz. docs/MIMARI.md madde 5) varsayılan sürümüne
       # yakın olduğu için seçildi — CI'ın üretim ortamını yaklaşık olarak
       # taklit etmesi, geliştirme makinesini taklit etmesinden daha değerli.
       # (Yerel geliştirme şu an Node 26 ile yapılıyor; fark bilinçli.)
       - name: Node.js kur
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: "22"
           cache: npm
@@ -50,6 +50,20 @@ jobs:
 
       - name: ESLint
         run: npm run lint
+
+      # ZORUNLU ÖN ADIM — atlanırsa `tsc` "Cannot find name 'LayoutProps'"
+      # ile düşer. `LayoutProps`/`PageProps`/`RouteContext`, Next.js'in
+      # OTOMATİK ÜRETTİĞİ global tiplerdir ve `.next/types/routes.d.ts`
+      # içinde yaşarlar (bkz. app/layout.tsx'teki `LayoutProps<"/">`
+      # kullanımı). Geliştirme makinesinde `.next` zaten var olduğu için
+      # sorun görünmez — TEMİZ bir makinede (CI) ilk koşuda ortaya çıkar,
+      # nitekim ilk CI koşusunda tam olarak böyle oldu.
+      #
+      # `next typegen` bu tipleri TAM BUILD ALMADAN üretir (Next.js 15.5'te
+      # geldi, bkz. node_modules/next/dist/docs/01-app/02-guides/upgrading/
+      # version-16.md, "Migrating types for async Request-time APIs").
+      - name: Next.js tiplerini üret
+        run: npx next typegen
 
       # `npm run build` de tip hatalarını yakalıyor ama bu adım ÖNCE ve
       # daha hızlı çalışıyor: tip hatası varsa build'i beklemeden görülür.
@@ -86,8 +100,8 @@ jobs:
     # böyle ortaya çıkmıştı (bkz. docs/GUVENLIK.md madde 10).
     continue-on-error: true
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with:
           node-version: "22"
           cache: npm
