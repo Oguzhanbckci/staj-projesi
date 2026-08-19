@@ -51,8 +51,23 @@ const isDev = process.env.NODE_ENV === "development";
 // yolu için) — bu yüzden tek bir origin'den hem https hem wss şemasını
 // türetmek yeterli. `NewMessageNotifier.tsx`'in tarayıcıdan doğrudan açtığı
 // Realtime kanalı buna ihtiyaç duyuyor (bkz. yukarıdaki yorum).
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseWsUrl = supabaseUrl.replace(/^https:/, "wss:");
+//
+// 2026-08-19: Burada `process.env.NEXT_PUBLIC_SUPABASE_URL!` yazıyordu — `!`
+// (non-null assertion) "bu kesin dolu" demek, ama DEĞİLDİ: değişken yoksa
+// `.replace()` çağrısı `Cannot read properties of undefined` diye anlamsız
+// bir TypeError'la TÜM BUILD'i düşürüyordu (ortam değişkeni olmayan temiz
+// bir makinede/CI'da ilk karşılaşılan hata bu oluyor ve sebebi hiç belli
+// olmuyor). `lib/supabase/queries.ts`'teki `??` hatasıyla aynı sınıf: env
+// değişkeninin varlığını varsaymak.
+//
+// Zarafetle düşmek BURADA GÜVENLİ, çünkü connect-src'den bir origin
+// ÇIKARMAK politikayı daha KATI yapar, daha gevşek değil ("fail closed").
+// Değişken yoksa uygulama zaten çalışamaz (bkz. lib/supabase/server.ts,
+// açık Türkçe hata mesajıyla durur) — build'in ayrıca ve anlaşılmaz bir
+// şekilde çökmesine gerek yok.
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
+const supabaseWsUrl = supabaseUrl ? supabaseUrl.replace(/^https:/, "wss:") : "";
+const supabaseConnectSrc = [supabaseUrl, supabaseWsUrl].filter(Boolean).join(" ");
 const CSP_HEADER = [
   "default-src 'self'",
   `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ""}`,
@@ -63,7 +78,7 @@ const CSP_HEADER = [
   // bağlantısı için ws(s)://localhost gerekli — üretimde buna gerek yok,
   // sadece dev modda ekleniyor (bkz. next/dist/docs, "Development vs
   // Production Considerations" — aynı prensip, farklı direktif).
-  `connect-src 'self' ${supabaseUrl} ${supabaseWsUrl}${isDev ? " ws://localhost:* wss://localhost:*" : ""}`,
+  `connect-src 'self'${supabaseConnectSrc ? ` ${supabaseConnectSrc}` : ""}${isDev ? " ws://localhost:* wss://localhost:*" : ""}`,
   "object-src 'none'",
   "base-uri 'self'",
   "form-action 'self'",
