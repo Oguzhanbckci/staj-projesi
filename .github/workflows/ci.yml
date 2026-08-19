@@ -1,0 +1,96 @@
+# Sürekli entegrasyon (CI) — docs/TEST-STRATEJISI.md madde 12'de "CI
+# kurulmadı" diye açık duran maddeyi kapatır.
+#
+# NEDEN GEREKLİ (somut gerekçe, teorik değil): 2026-08-19'da yapılan sıfırdan
+# kurulumda, `npm test`in e2e yarısının İKİ OTURUM boyunca hiç
+# çalıştırılmadığı ortaya çıktı — bu sürede iki gerçek hata (panel giriş
+# sayfasında hiç <h1> olmaması, kırılgan bir test seçicisi) fark edilmeden
+# `main`'e push'landı. `AI-KURALLARI.md` madde 8.4 "push öncesi npm test
+# temiz olmalı" diyordu ama bunu hatırlamak insana kalmıştı. Bu dosya o
+# kontrolü otomatikleştirir.
+
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+# Aynı dal için arka arkaya push yapıldığında eski koşuyu iptal et —
+# Actions dakikalarını boşa harcamamak için (ücretsiz plan sınırlı).
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  dogrulama:
+    name: Lint, tip kontrolü, birim testleri ve build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Depoyu çek
+        uses: actions/checkout@v4
+
+      # Node 22: Vercel'in (bkz. docs/MIMARI.md madde 5) varsayılan sürümüne
+      # yakın olduğu için seçildi — CI'ın üretim ortamını yaklaşık olarak
+      # taklit etmesi, geliştirme makinesini taklit etmesinden daha değerli.
+      # (Yerel geliştirme şu an Node 26 ile yapılıyor; fark bilinçli.)
+      - name: Node.js kur
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      # `npm ci` (`npm install` DEĞİL): package-lock.json'a birebir uyar,
+      # lock dosyasını asla güncellemez — CI'ın yerelde çalışanla AYNI
+      # bağımlılık sürümlerini kurmasını garanti eder.
+      - name: Bağımlılıkları kur
+        run: npm ci
+
+      - name: ESLint
+        run: npm run lint
+
+      # `npm run build` de tip hatalarını yakalıyor ama bu adım ÖNCE ve
+      # daha hızlı çalışıyor: tip hatası varsa build'i beklemeden görülür.
+      - name: TypeScript tip kontrolü
+        run: npx tsc --noEmit
+
+      - name: Birim testleri (Vitest)
+        run: npm run test:unit
+
+      # ORTAM DEĞİŞKENİ GEREKTİRMEZ — 2026-08-19'da bu bilinçli olarak
+      # sağlandı: `next.config.ts` eksik NEXT_PUBLIC_SUPABASE_URL'de artık
+      # çökmüyor (CSP'den o origin'i çıkarır, ki bu politikayı daha KATI
+      # yapar) ve `getActiveTenantId()` boş ortam değişkeninde varsayılan
+      # tenant'a düşer. Supabase sorguları erişim olmadığında hatayı yakalayıp
+      # boş dönüyor, sayfa yine üretiliyor. Bu sayede CI'a hiçbir gizli
+      # anahtar konmasına gerek yok.
+      - name: Production build
+        run: npm run build
+
+  # E2E TESTLERİ BİLİNÇLİ OLARAK CI'DA KOŞULMUYOR — dürüst gerekçe:
+  # `e2e/admin-service-flow.spec.ts` gerçek Supabase'e bağlanıp GERÇEK bir
+  # hizmet kaydı oluşturup siliyor (bkz. docs/TEST-STRATEJISI.md madde 10).
+  # Tek bir Supabase projesi var, yani "test veritabanı" diye ayrı bir ortam
+  # yok — her push'ta üretim verisine yazmak kabul edilemez. Ayrıca admin
+  # şifresinin GitHub Secrets'a konması gerekirdi. E2E, yerelde `npm test`
+  # ile elle çalıştırılmaya devam ediyor. Ayrı bir test/staging Supabase
+  # projesi açılırsa burası bir `e2e` job'ı ile genişletilebilir.
+
+  guvenlik:
+    name: Bağımlılık güvenlik taraması
+    runs-on: ubuntu-latest
+    # Bilgi amaçlı — yeni bir advisory yayınlandığında build'i kırmasın diye
+    # başarısızlığı koşuyu düşürmüyor. 2026-08-19'da `nanoid` açığı tam da
+    # böyle ortaya çıkmıştı (bkz. docs/GUVENLIK.md madde 10).
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - run: npm ci
+      - name: npm audit
+        run: npm audit --audit-level=high
