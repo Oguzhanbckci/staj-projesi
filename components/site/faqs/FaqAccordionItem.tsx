@@ -24,7 +24,14 @@ export function FaqAccordionItem({
   const buttonId = useId();
 
   return (
-    <div className="break-inside-avoid border-b border-neutral-300 py-4">
+    // `flex h-full flex-col` — iki sütunlu varyantta bu öğe bir grid
+    // hücresi oluyor ve hücre, satırdaki en uzun kardeşinin yüksekliğine
+    // uzuyor. Bu sarmalayıcı da o yüksekliği doldurmazsa alt kenarlık
+    // içeriğin hemen altında kalır ve sütunlar yine hizasız görünürdü;
+    // doldurunca kenarlık hücrenin DİBİNE oturuyor, satır boyunca hizalı.
+    // (`break-inside-avoid` kaldırıldı — o bir çok-sütun özelliğiydi,
+    // grid'e geçince işlevsiz kaldı, bkz. FaqList.tsx.)
+    <div className="flex h-full flex-col border-b border-neutral-300 py-4">
       <Heading className="text-h6 font-semibold">
         <button
           type="button"
