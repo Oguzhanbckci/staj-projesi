@@ -658,7 +658,35 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      check_and_reserve_login_attempt: {
+        Args: {
+          p_ip: unknown
+          p_max_attempts: number
+          p_window_minutes: number
+        }
+        Returns: {
+          allowed: boolean
+          attempt_id: string
+        }[]
+      }
+      delete_login_attempt: { Args: { p_id: string }; Returns: undefined }
+      submit_contact_message_if_allowed: {
+        Args: {
+          p_ip: unknown
+          p_max_per_window: number
+          p_message: string
+          p_sender_email: string
+          p_sender_name: string
+          p_sender_phone: string
+          p_subject: string
+          p_tenant_id: string
+          p_window_minutes: number
+        }
+        Returns: {
+          allowed: boolean
+          message_id: string
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never
