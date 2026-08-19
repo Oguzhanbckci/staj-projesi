@@ -281,6 +281,28 @@ bileşenlerinin (Hero/Hizmetler/Panel formları vb.) kendisinde görünür.
 | `Tooltip` | `components/ui/Tooltip.tsx` | `label`, `side` (top/bottom), `children` | Salt CSS (group-hover/focus-within) araç ipucu, JS gerektirmez — ikon-sadece butonlarda görsel destek (ekran okuyucu için birincil kanal çağıranın kendi `aria-label`'ı, sekizinci oturum) |
 | `TextScramble` | `components/ui/TextScramble.tsx` | `text`, `className` | Metnin "çözülme" animasyonuyla belirmesi (client, `prefers-reduced-motion`'a saygılı, gerçek metin ayrı bir `sr-only` span'de anında mevcut) — giriş sayfası başlığında kullanılıyor (sekizinci oturum) |
 | `Breadcrumbs` | `components/ui/Breadcrumbs.tsx` | `items` (`{label, href?}[]`, son öğe `href`siz = geçerli sayfa) | Yol izi — native `<nav>`/`<ol>`, son öğe `aria-current="page"` ve link değil, uzun bir dinamik etiket (ör. bir SSS sorusu) `truncate` ile kırpılır. Hem site (Ekip/İletişim) hem panelde (neredeyse her sayfa) kullanılıyor (dokuzuncu oturum) |
+| `ImagePlaceholder` | `components/ui/ImagePlaceholder.tsx` | `icon` (opsiyonel `ReactNode`), `className` | Gerçek fotoğraf YOKKEN kullanılan dekoratif yer tutucu — degrade + ince ızgara (teknik çizim çağrışımı) + opsiyonel merkez ikon. `HeroVariantA`'nın "fotoğraf yoksa" katmanının görsel dilini devralır ama SABİT beyaz değil `currentColor` + token tabanlı (kart içinde, temaya göre değişen bir zeminin üstünde duruyor). Tamamen `aria-hidden`. Hizmetler ve Projeler kullanıyor. **Kişi kartlarında (Ekip, Referanslar) BİLİNÇLİ OLARAK kullanılmaz** — bir insanın yerine soyut teknik çizim koymak yanlış olurdu, orada baş harf rozeti deseni var (onuncu oturum) |
+
+### 8.1 Ortak kart etkileşim dili *(2026-08-19 eklendi)*
+
+Ziyaretçi sitesindeki tüm kart bölümleri (Hizmetler, Projeler, Referanslar,
+Ekip) **aynı hover davranışını** paylaşır — ziyaretçi için site tek bir
+tasarım gibi hissetmeli:
+
+- Kart: `hover:-translate-y-1` (hafif yükselme) + `hover:shadow-lg` +
+  `ring-1 ring-neutral-300/60` → `hover:ring-brand/40` (marka renkli ince
+  çerçeve).
+- Başlık: `group-hover:text-brand`.
+- Görsel (varsa): `group-hover:scale-105`, `duration-500`.
+- **Hepsi `motion-reduce:` varyantlarıyla birlikte yazılır** —
+  `prefers-reduced-motion` kullanıcısı hiç hareket görmez (projenin mevcut
+  ilkesi, bkz. `FaqAccordionItem`/`HeroVariantA`).
+- Tamamı saf CSS (`group`/`group-hover`) — bu bölümler Server Component,
+  hover için JS/state eklenmez.
+
+Yeni bir kart bölümü eklenirken bu dil aynen tekrarlanır; ayrı bir "Card
+hover" soyutlaması ÇIKARILMADI (bkz. madde 9.8 — birkaç utility class'lık
+tekrar, soyutlama maliyetinden ucuz).
 
 ## 9. Bileşen API Kuralları
 

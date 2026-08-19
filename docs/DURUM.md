@@ -15,37 +15,97 @@ geçmişi) oku. Yeni bir müşteri kurulumu yapılacaksa `KURULUM.md`'ye
 (sıfırdan kurulum, geliştirici için), panelin günlük kullanımı için
 `MUSTERİ-KILAVUZU.md`'ye (teknik olmayan okuyucu için) bakılır.
 
-**Son güncelleme:** 2026-08-19 (onuncu oturum, YENİ) — **Proje yeni bir
-makineye taşındı ve sıfırdan kuruldu** (`C:\Users\234410084\staj-projesi`;
-`node_modules`/`.env.local`/`.next` yoktu). Böylece `KURULUM.md`'nin adımları
-ilk defa GERÇEKTEN sıfırdan koşuldu ve **3 gerçek hata** ortaya çıkardı — üçü
-de ancak temiz bir kurulumda ya da gerçek tarayıcı koşusunda görülebilirdi:
-**(1)** `lib/supabase/queries.ts`'te `ACTIVE_TENANT_DOMAIN` yedeği `??` ile
-yazılmıştı; `.env` dosyasında boş bırakılan bir değişken `undefined` değil
-BOŞ STRING olduğu için yedek hiç devreye girmiyordu — `.env.local.example`'ın
-açıkça vaat ettiği davranış yanlıştı ve `npm run build` tamamen düşüyordu.
-`||`'a çevrildi, boş değerle build'in geçtiği kanıtlandı. **(2)** Giriş
-sayfasında (`/panel/giris`) **hiç `<h1>` yoktu** — `TextScramble` `<span>`
-render ediyor; 2026-08-18'de `/ekip`+`/iletisim`'de düzeltilen hatanın
-aynısı, o taramada giriş sayfası kapsam dışı kalmıştı. **(3)**
-`e2e/admin-service-flow.spec.ts`'teki `getByLabel("Şifre")` seçicisi
-`PasswordField`'ın göster/gizle butonuyla çakışıyordu (`exact: true`
-eklendi). (2) ve (3) aynı commit'ten (`3c15629`, sekizinci oturum)
-geliyordu ve **e2e testleri 2 oturumdur hiç koşulmadığı için** görünmemişti
-— `AI-KURALLARI.md` madde 8.4'ün ("push öncesi `npm test` temiz olmalı")
-fiilen ihlal edildiği anlamına geliyor, ders `KARAR-GUNLUGU.md`'ye yazıldı.
-**Ayrıca bir YANLIŞ ALARM düzeltildi:** oturumun başında "migration
-`20260818150000` uygulanmamış, canlı iletişim formu kırık" denmişti — hatalı
-bir tespit yöntemiydi (fonksiyonlar parametresiz `rpc()` ile denenmiş,
-PostgREST'in imza-eşleştirme davranışı "fonksiyon yok" sanılmıştı). `pg_proc`
-doğrudan sorgulanınca üç fonksiyonun da zaten var olduğu ve imzalarının
-koddaki çağrılarla birebir eşleştiği görüldü. **Kurulum artık tam:**
-`npm install` (482 paket, Node 26.4), Playwright Chromium, `.env.local`
-dolu, `npm run types:generate` çalıştırıldı (`Functions` bloğu artık 3
-fonksiyonu içeriyor — bu güncelleme dokuzuncu oturumdan beri eksikti).
-**Doğrulama: `npm test` 54/54 birim + 3/3 e2e, `npm run build`,
-`npm run lint`, `npx tsc --noEmit` — hepsi temiz.** Test paketi 2 oturum
-sonra ilk kez tamamen yeşil. Henüz commit'lenmedi.
+**Son güncelleme:** 2026-08-19 (onuncu oturum) — Uzun bir oturum; beş ana iş
+yapıldı. **12 commit atıldı ve hepsi `origin/main`'e push'landı.**
+
+**(1) Proje yeni bir makineye taşındı ve sıfırdan kuruldu**
+(`C:\Users\234410084\staj-projesi`; `node_modules`/`.env.local`/`.next`
+yoktu). Böylece `KURULUM.md`'nin adımları ilk defa GERÇEKTEN sıfırdan koşuldu
+ve **ortam değişkeni varsayımına dayanan 2 gerçek hata** ortaya çıkardı — ikisi
+de dolu bir `.env.local`'i olan hiçbir oturumda görülemezdi:
+`lib/supabase/queries.ts`'te `ACTIVE_TENANT_DOMAIN` yedeği `??` ile yazılmıştı
+(`.env`'de boş bırakılan değişken `undefined` değil BOŞ STRING olduğu için
+yedek hiç devreye girmiyordu, build tamamen düşüyordu → `||`); ve
+`next.config.ts`'te `process.env.NEXT_PUBLIC_SUPABASE_URL!` yoksa `.replace()`
+anlamsız bir `TypeError`'la build'i düşürüyordu (→ CSP'den o origin'i
+çıkarıyor; bu **güvenli**, çünkü `connect-src`'den origin çıkarmak politikayı
+daha KATI yapar). Kurulum tam: `npm install` (482 paket, Node 26.4),
+Playwright Chromium, `.env.local` dolduruldu, `npm run types:generate`
+çalıştırıldı (`Functions` bloğu dokuzuncu oturumdan beri eksikti, artık 3
+RPC'yi içeriyor).
+
+**(2) E2E testleri 2 oturum sonra ilk kez koşuldu ve 2 GERÇEK hata buldu:**
+`/panel/giris` sayfasında **hiç `<h1>` yoktu** (`TextScramble` `<span>` render
+ediyor — 2026-08-18'de `/ekip`+`/iletisim`'de düzeltilen hatanın aynısı, o
+taramada giriş sayfası kapsam dışıydı) ve `e2e/admin-service-flow.spec.ts`'teki
+`getByLabel("Şifre")` seçicisi `PasswordField`'ın göster/gizle butonuyla
+çakışıyordu (`exact: true`). İkisi de `3c15629` (sekizinci oturum)
+commit'inden geliyordu ve **e2e hiç koşulmadığı için** iki oturum gizli
+kalmıştı — `AI-KURALLARI.md` madde 8.4 fiilen ihlal edilmişti. **Bir YANLIŞ
+ALARM da düzeltildi:** oturum başında "migration `20260818150000`
+uygulanmamış, canlı iletişim formu kırık" denmişti; hatalı tespit yöntemiydi
+(fonksiyonlar parametresiz `rpc()` ile denenmiş, PostgREST'in imza-eşleştirme
+davranışı "fonksiyon yok" sanılmıştı). `pg_proc` doğrudan sorgulanınca üçünün
+de zaten var olduğu görüldü.
+
+**(3) Ziyaretçi sitesi görsel zenginleştirmesi TAMAMLANDI (madde 0d kapandı)**
+— iki oturumdur bekliyordu. Sıra: Hizmetler → Projeler →
+Referanslar/İstatistikler/SSS/CTA → Footer → Ekip; her bölüm ayrı ayrı
+kullanıcıya gösterilip onaylandı. Yeni paylaşılan
+`components/ui/ImagePlaceholder.tsx`, site geneline yayılan ortak hover dili,
+**iki "veri var ama ekranda yok" bulgusu** (`projects.category` ve
+`testimonials.rating` — ikincisi sorguda bile seçilmiyordu). Kullanıcı
+isteğiyle `rating` kesirli hâle getirildi (migration `20260819120000_...`,
+integer → numeric(2,1), yarım yıldız — UYGULANDI). **Madde 9 (çift-önek
+Storage hatası) da bu iş sırasında tamamen çözüldü:** kök neden DB kaydı (seed
+yer tutucuları), 9 kolon/6 bucket tarandı, **7 kırık yol** bulunup temizlendi
+(4'ü Ekip'te ve YAYINDAYDI).
+
+**(4) CI kuruldu** (`.github/workflows/ci.yml`) — `TEST-STRATEJISI.md` madde
+12'de açık duran madde kapandı. Her push/PR'da `npm ci` → lint → **`next
+typegen`** → `tsc --noEmit` → 54 birim testi → build; ayrı ve bloklamayan bir
+`npm audit` job'ı. **Hiçbir gizli anahtar gerektirmiyor** (yukarıdaki iki env
+düzeltmesi sayesinde). **İlk koşu KIRMIZI döndü** — `Cannot find name
+'LayoutProps'`: bu tip Next.js'in otomatik ürettiği global bir tip ve
+`.next/types/`'ta yaşıyor; yerel simülasyon `.next` silinmeden yapıldığı için
+hatayı kaçırmıştı. `npx next typegen` adımı eklenip düzeltildi, action'lar
+`@v5`'e yükseltildi.
+
+**(5) Kullanıcı istekli iki küçük düzeltme:** Hizmetler'deki "Konut İnşaatı"
+kartının görseli kaldırıldı (artık diğer ikisi gibi kendi `home` ikonunu
+gösteriyor — sadece VERİ değişikliği, kod değişmedi); SSS'nin iki sütunlu
+varyantı `columns-2`'den `grid-cols-2`'ye çevrildi (sütunların bitiş hizaları
+tutmuyordu).
+
+**Ayrıca:** `nanoid` güvenlik açığı kapatıldı (`npm audit` 1 high → **0**);
+commit kuralları genişletildi (emir kipli mesaj, Türkçe karaktersiz, doküman
+commit'lerinin gün sonunda toplanması — `AI-KURALLARI.md` madde 8.5-8.7);
+madde **0b (panelin gerçek çok-kiracılılığı) kullanıcı kararıyla
+önceliksizleştirildi**; Ayarlar'daki "tofe İnşaat" başlığı kullanıcı kararıyla
+**bilinçli olarak korunuyor** (ikisi de tekrar gündeme GETİRİLMEMELİ).
+
+**Doğrulama:** `npm run build` (10/10 sayfa), `npm test` **54/54 birim + 3/3
+e2e**, `npm run lint`, `npx tsc --noEmit` — hepsi temiz. Ekran görüntüsü
+alınamadı (Claude in Chrome bu ortamda `localhost`'a erişemiyor, bilinen
+sınırlama); doğrulama her adımda üretilen HTML'in `curl` ile çekilip beklenen
+sınıf/ikon/metin sayılarının sayılmasıyla + kullanıcının gözle onayıyla
+yapıldı.
+
+**BİR SONRAKİ OTURUM BURADAN BAŞLASIN:** Ortam kurulu ve çalışır durumda —
+`npm run dev` yeterli, yeniden kurulum gerekmiyor. `.env.local` dolu ve
+`.gitignore`'da. Açık iş kalmadı: "Sıradaki adım" listesindeki 0d, 0b, 9 ve CI
+maddeleri bu oturumda kapandı. **Kullanıcıya sunulmuş ama henüz seçilmemiş
+seçenekler:** (a) **KVKK aydınlatma metni + çerez politikası** —
+`GUVENLIK.md` madde 10'un açık maddesi, `KURUMSAL-SITE-STANDARTLARI.md` şart
+koşuyor, iletişim formu zaten IP ve kişisel veri saklıyor; (b) **test
+kapsamını genişletmek** — 6 doğrulama şeması ve bileşen render testleri hâlâ
+yok, bugün dokunulan hiçbir bileşenin testi yok; (c) **panelin iç ekranlarının
+görsel devamı** — ziyaretçi sitesi bitti ama panel içeriği sekizinci oturumdaki
+kabuk yenilemesinden sonra aynı kaldı. **Bugün ertelenen iki fikir:** bölüm
+başlıklarına panelden yönetilen açıklama alanı (`page_sections`'a yeni kolon —
+şu an başlıklar kodda sabit, `AI-KURALLARI.md` madde 5.5 gereği metin
+eklenmedi) ve scroll ile beliren animasyon (client bileşeni gerektirir, Server
+Component'ten çıkarır).
 
 **Önceki güncelleme (2026-08-18, dokuzuncu oturum):** Kullanıcı
 önceliği değiştirdi: sekizinci oturumda ertelenen ziyaretçi sitesi görsel
@@ -1756,9 +1816,28 @@ işaretliyor, daha kesin bir ikinci katman. Detay: `SEO-PERFORMANS.md`.
    Detay: `KARAR-GUNLUGU.md`, "Footer okunabilirliği artırıldı". **Ayrıca
    fark edilen ilgisiz bir konu:** Panel → Ayarlar → Sayfa Başlığı'nda
    muhtemelen yazım hatasıyla "tofe İnşaat" yazılı ("Akme İnşaat" yerine)
-   — kullanıcıya bildirildi, düzeltme onayı bekleniyor.
-0d. **(0i doğrulandıktan sonraki en yüksek öncelik)** Ziyaretçi
-   sitesinin (inşaat firması sayfası) görsel zenginleştirmesi YARIM KALDI —
+   — ~~kullanıcıya bildirildi, düzeltme onayı bekleniyor.~~ **(KAPANDI,
+   2026-08-19: kullanıcıya canlı sitede hâlâ göründüğü [tarayıcı sekmesi +
+   Google arama sonucu] tekrar hatırlatıldı, kullanıcı "tofe İnşaat olarak
+   kalabilir, bir problem görmüyorum" dedi. BİLİNÇLİ BİR KARAR — bundan
+   sonraki oturumlar bunu hata sanıp tekrar gündeme GETİRMEMELİ.
+   Değiştirmek isterse: Panel → Ayarlar → Sayfa Başlığı, kod değişikliği
+   gerekmez.)**
+0d. **(TAMAMLANDI — 2026-08-19, onuncu oturum.** Sıra: Hizmetler → Projeler →
+   Referanslar/İstatistikler/SSS/CTA → Footer → Ekip; her bölüm ayrı ayrı
+   kullanıcıya gösterilip onaylandı. Yeni paylaşılan `components/ui/
+   ImagePlaceholder.tsx` ("görsel yoksa" dekoratif yer tutucu, madde 0d'nin
+   kendi önerisiydi); kişi kartlarında bilinçli olarak onun yerine baş harf
+   rozeti kullanıldı. Ortak hover dili (yükselme + marka renkli ince çerçeve
+   + görselde yakınlaşma) tüm kart bölümlerine yayıldı. **İki "veri var,
+   ekranda yok" bulgusu kapatıldı:** `projects.category` kartta hiç
+   gösterilmiyordu, `testimonials.rating` ise sorguda bile seçilmiyordu.
+   Kullanıcı isteğiyle `rating` kesirli hale getirildi (yeni migration
+   `20260819120000_...`, integer → numeric(2,1), yarım yıldız desteği —
+   UYGULANDI). **Madde 9 da bu iş sırasında tamamen çözüldü**, aşağıya bak.
+   `npm run build` + `npm test` (54/54 + 3/3) temiz. Detay:
+   `KARAR-GUNLUGU.md`, 2026-08-19.) ~~Ziyaretçi
+   sitesinin (inşaat firması sayfası) görsel zenginleştirmesi YARIM KALDI —~~
    kullanıcı "tasarım basit/yüzeysel, div yazıp geçmişim gibi" dedi, kapsam
    panel+giriş sayfası+Navbar/Hero (TAMAMLANDI, sekizinci oturum, bkz.
    `KARAR-GUNLUGU.md`) ve ziyaretçi sitesinin geri kalanı (HENÜZ
@@ -1772,8 +1851,18 @@ işaretliyor, daha kesin bir ikinci katman. Detay: `SEO-PERFORMANS.md`.
    render oluyor (`bg-surface-raised` renginde, görünmez bir kutu) — Hero'da
    yapılan degrade+ızgara deseni gibi paylaşılan bir "görsel yoksa" dekoratif
    yer tutucu bileşeni bu turda tasarlanabilir.
-0b. **(Yüksek öncelik, henüz ele alınmadı — 2026-08-18 mentör
-   incelemesi)** Panel gerçekte çok-kiracılı değil: yeni tenant
+0b. **(ÖNCELİĞİ DÜŞÜRÜLDÜ — kullanıcı kararı, 2026-08-19.** Kullanıcıya
+   doğrudan soruldu, cevabı: "şu an eksik olanlar dediklerinin ehemmiyeti çok
+   değil". Karar tutarlı: `MIMARI.md` madde 0 bu projenin gerçek bir
+   müşteriye canlıya ALINMADIĞINI, `KURULUM.md` ise satış modelinin "tek
+   müşteri = tek kurulum" olduğunu söylüyor — her müşteri kendi Vercel
+   projesinde kendi `ACTIVE_TENANT_DOMAIN`'iyle çalışıyor, dolayısıyla tek
+   deploy içinde tenant seçen bir arayüz fiilen gerekmiyor. **Sonraki
+   oturumlar bunu "en yüksek öncelik" diye tekrar gündeme GETİRMEMELİ**;
+   PRD madde 3.2 ile kod arasındaki bu fark bilinen ve kabul edilmiş bir
+   boşluktur. Gerçekten çok kiracılı TEK deploy senaryosuna geçilirse madde 6
+   (host-header çözümlemesi) ile birlikte yeniden açılır.)
+   ~~Panel gerçekte çok-kiracılı değil:~~ yeni tenant
    oluşturma, tenant seçme/listeleme, demo katalog import (PRD madde
    3.2) hiç yok — panel `getActiveTenantId()` üzerinden tek bir sabit
    tenant'a (Akme İnşaat) kilitli. Bu, madde 6'daki "host-header
@@ -1819,8 +1908,18 @@ işaretliyor, daha kesin bir ikinci katman. Detay: `SEO-PERFORMANS.md`.
    Console'a sitemap gönderimi, gerçek URL ile Zengin Sonuçlar Testi
    tekrarı, WhatsApp/LinkedIn paylaşım önizlemesi. Tam liste:
    `docs/SEO-PERFORMANS.md`, "Yayın Sonrası SEO Kontrol Listesi".
-9. **(2026-08-18'de kullanıcının terminal logunda görülüp flag'lenen,
-   henüz araştırılmamış bir bug)** Proje görselleri için
+9. **(ÇÖZÜLDÜ — 2026-08-19.** Kök neden: **DB kaydı, fonksiyon değil.** Seed
+   verisindeki `*_path` değerleri bucket adını ÖNEK olarak taşıyordu
+   (`projects/vadi.jpg`), `getPublicImageUrl(bucket, path)` bir kez daha
+   eklediği için yol ikileniyordu. Sadece bildirilen tabloya bakılmadı — 9
+   kolon/6 bucket tarandı, **7 kırık yol** bulundu: `team_members.photo_path`
+   ×4 (**hepsi yayındaydı**, ziyaretçi 4 kırık istek görüyordu),
+   `projects.image_path` ×2 ve `testimonials.logo_path` ×1 (taslak). Yedisi
+   de hiç var olmamış dosyalara işaret ediyordu → `null`'a çekildi, bileşenler
+   artık yer tutucu gösteriyor. Panelden yüklenmiş gerçek yollara
+   (`<tenant_id>/<uuid>.png`) dokunulmadı. Öncesinde ve sonrasında tarama
+   koşuldu, sonuç: sıfır kırık yol. Detay: `KARAR-GUNLUGU.md`, 2026-08-19.)
+   ~~Proje görselleri için~~
    `.../storage/v1/object/public/projects/projects/<dosya>.jpg` gibi
    "projects/" önekinin İKİ KEZ tekrarlandığı bir Storage yolu 400
    hatası veriyor — muhtemelen `getPublicImageUrl()` çağrısına zaten

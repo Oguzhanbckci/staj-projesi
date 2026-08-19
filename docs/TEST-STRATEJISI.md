@@ -5,7 +5,13 @@ sayılması" için gereken koşulları tanımlar. `AI-KURALLARI.md` madde 7 bura
 işaret eder; test kararı değişirse önce `KARAR-GUNLUGU.md`'ye kayıt düşülür,
 sonra bu dosya güncellenir. Kod içermez.
 
-**Son güncelleme:** 2026-08-17 — Vitest + Playwright kuruldu, 3 birim + 3
+**Son güncelleme:** 2026-08-19 — **CI kuruldu** (`.github/workflows/ci.yml`,
+madde 15): her push/PR'da lint + tip kontrolü + 54 birim testi + build
+otomatik koşuyor, hiçbir gizli anahtar gerektirmiyor. E2E bilinçli olarak
+CI dışında (üretim veritabanına yazıyor — gerekçe madde 15'te). Madde 12'deki
+"CI kurulmadı" maddesi kapandı.
+
+**Önceki güncelleme:** 2026-08-17 — Vitest + Playwright kuruldu, 3 birim + 3
 uçtan uca test yazıldı ve kullanıcı tarafından 3x yeşil doğrulandı
 (madde 10-12: kapsam, çalıştırma, kapsanmayan alanlar); ilk canlı yayın
 sonrası canlıya karşı e2e + Lighthouse doğrulaması ve bununla bulunan
@@ -338,8 +344,10 @@ her adımda hata konumu net, 60s altı) karşılandı.
   (host-bazlı tenant/panel ayrımı) henüz kodlanmadı (`GUVENLIK.md`
   madde 8 açık madde) — mevcut yetkisiz-erişim testi sadece "girişsiz
   kullanıcı" senaryosunu kapsıyor, "yanlış domain" senaryosunu değil.
-- **CI (sürekli entegrasyon) kurulmadı** — testler şu an sadece yerel
-  makinede elle çalıştırılıyor, her push'ta otomatik tetiklenmiyor.
+- ~~**CI (sürekli entegrasyon) kurulmadı**~~ — **KURULDU (2026-08-19,
+  `.github/workflows/ci.yml`)**, bkz. madde 15. `main`'e her push ve her
+  pull request'te lint + `tsc --noEmit` + 54 birim testi + production build
+  otomatik koşuyor. **E2E hâlâ CI'da değil** (bilinçli — gerekçe madde 15'te).
 
 ## 13. Canlıya Karşı Doğrulama (Live Testing) *(2026-08-17 eklendi)*
 
@@ -379,3 +387,88 @@ performance 97-100, accessibility 100, best practices 96, **SEO 92**
 ## 14. Açık Sorular
 
 Şu an aktif açık soru yok.
+
+## 15. Sürekli Entegrasyon (CI) *(2026-08-19 eklendi)*
+
+Dosya: **`.github/workflows/ci.yml`**. Tetikleyici: `main`'e push ve `main`'e
+açılan pull request.
+
+### Neden kuruldu (somut gerekçe)
+
+2026-08-19'daki sıfırdan kurulumda, `npm test`in **e2e yarısının iki oturum
+boyunca hiç çalıştırılmadığı** ortaya çıktı. Bu sürede iki gerçek hata fark
+edilmeden `main`'e push'landı: panel giriş sayfasında hiç `<h1>` olmaması
+(erişilebilirlik) ve kırılgan bir Playwright seçicisi. `AI-KURALLARI.md` madde
+8.4 zaten "push öncesi `npm test` temiz olmalı" diyordu — ama bunu hatırlamak
+insana kalmıştı ve hatırlanmadı. CI bu kontrolü otomatikleştirir.
+
+### Ne koşuyor
+
+| Adım | Komut |
+|---|---|
+| 1 | `npm ci` (lock dosyasına birebir uyar, `npm install` DEĞİL) |
+| 2 | `npm run lint` |
+| 3 | **`npx next typegen`** (aşağıdaki uyarıya bak — atlanamaz) |
+| 4 | `npx tsc --noEmit` |
+| 5 | `npm run test:unit` (54 test) |
+| 6 | `npm run build` |
+
+> ⚠️ **`next typegen` adımı zorunlu.** `LayoutProps`/`PageProps`/`RouteContext`
+> Next.js'in OTOMATİK ÜRETTİĞİ global tiplerdir ve `.next/types/routes.d.ts`
+> içinde yaşarlar (`app/layout.tsx` `LayoutProps<"/">` kullanıyor). Bu adım
+> olmadan `tsc --noEmit` **`Cannot find name 'LayoutProps'`** ile düşer.
+> Geliştirme makinesinde `.next` zaten var olduğu için sorun GÖRÜNMEZ —
+> yalnızca temiz bir makinede ortaya çıkar. Nitekim **ilk CI koşusu tam
+> olarak bu hatayla kırmızı döndü**; yerel simülasyon `.next` silinmeden
+> yapıldığı için hatayı kaçırmıştı (bkz. `KARAR-GUNLUGU.md`, 2026-08-19).
+> `next typegen`, tam build almadan sadece bu tipleri üretir (Next.js
+> 15.5'te geldi).
+
+Ayrı ve **bloklamayan** ikinci bir job: `npm audit --audit-level=high`
+(`continue-on-error: true`). Yeni bir advisory yayınlandığında build'i
+kırmasın ama görünür olsun diye — 2026-08-19'daki `nanoid` açığı tam olarak
+böyle ortaya çıkmıştı.
+
+### CI hiçbir gizli anahtar (secret) GEREKTİRMİYOR
+
+Bu bilinçli olarak sağlandı; kurulum sırasında bulunan iki hata düzeltilerek
+mümkün oldu:
+
+1. `lib/supabase/queries.ts` — `ACTIVE_TENANT_DOMAIN` yedeği `??` yerine `||`
+   (boş string de varsayılana düşsün).
+2. `next.config.ts` — `process.env.NEXT_PUBLIC_SUPABASE_URL!` yoksa artık
+   çökmüyor; CSP'nin `connect-src`'inden o origin'i çıkarıyor. Bu **güvenli**,
+   çünkü bir origin'i çıkarmak politikayı daha KATI yapar, daha gevşek değil
+   ("fail closed").
+
+Supabase sorguları erişim olmadığında hatayı yakalayıp boş dönüyor (mevcut
+davranış), sayfa yine üretiliyor. **Doğrulandı:** `.env.local` VE `.next`
+birlikte kaldırılıp altı adımın tamamı yerelde, workflow'daki sırayla
+koşuldu — hepsi `exit 0`.
+
+**Simülasyon kuralı (ilk koşunun kırmızı dönmesinden çıkan ders):** CI'ı
+yerelde taklit ederken `.env.local` kadar **`.next` klasörü de silinmelidir**.
+İlk denemede yalnızca `.env.local` kaldırılmıştı; `.next` yerinde kaldığı için
+üretilmiş tipler mevcuttu ve `tsc` sorunsuz geçti — CI'da ise geçmedi. Temiz
+makine ile geliştirme makinesi arasındaki fark tam olarak buradan doğuyor.
+
+### E2E neden CI'da YOK (dürüst gerekçe)
+
+`e2e/admin-service-flow.spec.ts` gerçek Supabase'e bağlanıp **gerçek bir hizmet
+kaydı oluşturup siliyor** (bkz. madde 10). Projede tek bir Supabase projesi
+var — ayrı bir test/staging veritabanı yok. Her push'ta üretim verisine yazmak
+kabul edilemez; ayrıca admin şifresinin GitHub Secrets'a konması gerekirdi.
+E2E, yerelde `npm test` ile elle çalıştırılmaya devam ediyor.
+
+**Bu boşluğun bedeli açıkça kabul ediliyor:** CI, bugün bulunan iki hatanın
+(giriş sayfası `<h1>`'i ve şifre alanı seçicisi) türünü YAKALAYAMAZ — ikisini
+de yalnızca gerçek tarayıcı koşusu yakalamıştı. Ayrı bir staging Supabase
+projesi açılırsa `ci.yml`'e bir `e2e` job'ı eklenmeli.
+
+### Node sürümü
+
+CI **Node 22** kullanıyor; yerel geliştirme şu an Node 26 ile yapılıyor. Fark
+bilinçli: CI'ın Vercel'in çalıştırdığı ortamı (bkz. `MIMARI.md` madde 5)
+yaklaşık olarak taklit etmesi, geliştirme makinesini taklit etmesinden daha
+değerli. Sürüme özgü bir sorun şüphesi olursa `ci.yml`'deki `node-version`
+bir matrix'e çevrilebilir.

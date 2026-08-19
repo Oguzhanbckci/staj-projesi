@@ -392,6 +392,17 @@ tenant/domain ayrımı gibi bazı maddeler bilinçli olarak hâlâ açık.
       bağımlılıkların o AN bilinen açık listesine göre temiz olduğu
       anlamına gelir, gelecekte yeni açıklar bildirilebilir — periyodik
       olarak tekrar çalıştırılmalı.
+      **Güncelleme (2026-08-19):** Bu uyarı aynen gerçekleşti. Yeni bir
+      makinedeki temiz `npm install` sonrası `npm audit` **1 high** bildirdi
+      (`nanoid <3.3.18`, GHSA-2v37-7h3g-55p8) — 2026-08-17'den sonra
+      yayınlanmış bir advisory. `npm audit fix` ile kapatıldı (`--force`
+      KULLANILMADI; sadece semver-uyumlu yama: `nanoid` 3.3.17 → 3.3.18,
+      tek paket değişti, `next`/`postcss`/`tailwindcss` sürümlerine
+      dokunulmadı). Sonrası: **0 açık**, `npm run build`/`lint`/`test`
+      (54/54 + 3/3) hepsi temiz. `nanoid` yalnızca build zamanında
+      (`postcss` üzerinden) kullanılıyor, çalışma zamanı paketinde yok —
+      pratik risk düşüktü, yine de periyodik denetim ilkesi gereği
+      kapatıldı. Detay: `KARAR-GUNLUGU.md`, 2026-08-19.
 
 **Henüz açık/yapılmamış maddeler (bilinçli olarak, sıradaki adımlarda):**
 - [ ] Proxy (`proxy.ts`) ile `panel` route'unun bir tenant'ın kendi

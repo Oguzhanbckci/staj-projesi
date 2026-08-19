@@ -83,6 +83,13 @@ npm run test:e2e           # Uçtan uca testler (Playwright) — dev sunucusunu 
 npm test                   # İkisi birden — main'e push'lamadan önce çalıştırılması gereken komut
 ```
 
+**Sürekli entegrasyon (CI):** `main`'e her push ve her pull request'te
+`.github/workflows/ci.yml` otomatik çalışır — lint, `next typegen`,
+`tsc --noEmit`, birim testleri ve production build. Hiçbir gizli anahtar
+(secret) gerektirmez. **E2E bilinçli olarak CI'da değildir** (gerçek Supabase
+veritabanına yazıyor, ayrı bir staging ortamı yok) — yerelde elle
+çalıştırılmaya devam eder. Detay: `docs/TEST-STRATEJISI.md` madde 15.
+
 E2E testlerden "admin kritik akışı" (`e2e/admin-service-flow.spec.ts`),
 `.env.local`'de `E2E_ADMIN_EMAIL`/`E2E_ADMIN_PASSWORD` tanımlı değilse
 otomatik atlanır (skip) — gerçek bir panel hesabı gerektirir. İlk

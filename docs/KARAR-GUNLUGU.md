@@ -5149,3 +5149,402 @@ SQL'i yine de çalıştırıldı; `create or replace` olduğu için zararsız,
 tanımlar birebir aynı kaldı. **Ders:** bir şemanın/nesnenin varlığını
 uygulama katmanının hata mesajından ÇIKARIM YAPARAK test etme — katalogdan
 (`pg_proc`, `information_schema`) doğrudan sor.
+
+## 2026-08-19 (aynı gün) — `nanoid` güvenlik açığı kapatıldı; sayfa başlığındaki "tofe İnşaat" bilinçli olarak korundu
+
+**`nanoid` açığı (kapatıldı).** Yeni makinedeki `npm install` sonrası
+`npm audit` **1 high** bildirdi: `nanoid <3.3.18` — "özel jeneratörle
+`size=0` çağrılırsa sonsuz döngü" (GHSA-2v37-7h3g-55p8). Bu, `GUVENLIK.md`
+madde 10'daki 2026-08-17 tarihli "**npm audit → 0 açık**" ölçümünden SONRA
+yayınlanmış yeni bir advisory — o maddenin kendi notu ("gelecekte yeni
+açıklar bildirilebilir, periyodik olarak tekrar çalıştırılmalı") aynen
+gerçekleşti.
+
+**Gerçek risk (dürüstçe, abartılmadan):** `nanoid` bu projenin doğrudan
+bağımlılığı DEĞİL — `postcss`'in alt bağımlılığı, o da hem `next@16.3.0`
+hem `@tailwindcss/postcss@4.3.3` üzerinden geliyor. Yani sadece BUILD
+sırasında çalışıyor, ziyaretçinin eriştiği çalışma zamanı paketinde yok;
+ayrıca projede `nanoid` özel jeneratörle hiç çağrılmıyor. Pratik
+sömürülebilirliği bu projede yok denecek kadar az. Yine de düzeltme
+ucuz olduğu ve madde 10 periyodik denetim gerektirdiği için yapıldı.
+
+**Düzeltme:** `npm audit fix` — **`--force` KULLANILMADI** (o, `next` gibi
+paketlerde major/kırıcı yükseltmeler yapardı). Sade `audit fix` yalnızca
+semver-uyumlu yama uygular: `nanoid` 3.3.17 → 3.3.18, **tek paket
+değişti**, `postcss`/`next`/`tailwindcss` sürümlerine dokunulmadı.
+
+**Doğrulama:** `npm audit` → **0 açık**. `nanoid` PostCSS/Tailwind build
+zincirinde olduğu için derlemenin bozulmadığı ayrıca doğrulandı:
+`npm run build` ✅, `npm run lint` ✅, `npm test` **54/54 birim + 3/3 e2e** ✅.
+
+**Sayfa başlığı "tofe İnşaat" — KULLANICI KARARIYLA KORUNUYOR.**
+2026-08-18'de "muhtemelen yazım hatası, düzeltme onayı bekleniyor" diye
+açık bırakılmıştı. 2026-08-19'da canlı sitede (`WebFetch` ile) hâlâ
+göründüğü doğrulanıp kullanıcıya tekrar soruldu — sitenin her yerinde
+"Akme İnşaat" yazarken tarayıcı sekmesinde ve Google arama sonucunda
+"tofe İnşaat | Kurumsal Web Sitesi" görünüyor. **Kullanıcı "tofe İnşaat
+olarak kalabilir, bir problem görmüyorum" dedi.** Bu artık bir hata değil,
+bilinçli bir tercih — sonraki oturumlar bunu bulgu olarak tekrar
+raporlamamalı. Değeri `site_settings.seo_title` kolonunda tutuluyor,
+istenirse Panel → Ayarlar → Sayfa Başlığı'ndan değiştirilebilir, kod
+değişikliği gerekmez.
+
+## 2026-08-19 (aynı gün) — Commit kuralları genişletildi: emir kipli mesaj, doküman commit'lerinin gün sonuna toplanması
+
+Kullanıcı iki ayrı çalışma kuralı belirtti; `AI-KURALLARI.md` madde 9.3
+gereği ("kural değişirse dosya güncellenir ve nedeni buraya eklenir")
+madde 8'e işlendi.
+
+**Kural 1 — mesaj üslubu (madde 8.5).** Commit mesajlarının açıklama kısmı
+**emir kipli** olmalı ("ekle", "düzelt", "güncelle"), virgülle bağlanmış
+isim öbeği listesi değil; ayrıca **Türkçe karaktersiz** yazılmalı. Bu yeni
+bir kural değil, mevcut geçmişle tutarlılık talebi — repodaki 55+ commit'in
+tamamı zaten bu kalıptaydı (`...breadcrumb ekle`, `...atomik hale getir`),
+sapan AI'ın kendi önerdiği mesajdı (`fix: env yedeginde ?? yerine ||,
+giris sayfasina h1, e2e sifre secicisi` — hem emir kipli değildi hem madde
+8.2'yi ["her commit tek mantıksal değişiklik"] ihlal ediyordu). Düzeltildi:
+o tek commit 5 ayrı commit'e bölünüp emir kipiyle yeniden yazıldı.
+
+**Kural 2 — doküman commit'lerinin toplanması (madde 8.6).** `docs/`
+altındaki güncellemeler artık her işlem için AYRI commit'lenmiyor; çalışma
+ağacında birikip **gün sonunda tek bir toplu commit**'le gönderiliyor.
+Gerekçe (kullanıcı): her küçük iş için ardı ardına gelen doküman
+commit'leri geçmişi gürültülendiriyor. **Önemli sınır:** bu, dokümanların
+GÜNCELLENMEYECEĞİ anlamına GELMEZ — proje beyni her zaman güncel tutulur
+(madde 9.3), sadece commit'lenmesi ertelenir. Aksi hâlde bir sonraki oturum
+eksik/eskimiş bir `DURUM.md` ile başlar, ki bu projenin tüm çalışma modeli
+buna dayanıyor.
+
+**Kural 3 — teyit (madde 8.7).** `git commit`/`git push`'u AI'ın
+çalıştırmaması ve `Co-Authored-By` yasağı şimdiye kadar sadece
+`DURUM.md`'nin "Sıradaki adım" madde 0'ında kayıtlıydı (2026-08-18'deki
+GitHub contributor olayının bir yan notu olarak). Asıl kural dosyası olan
+`AI-KURALLARI.md`'de hiç yazmıyordu — oraya da taşındı, çünkü yeni bir
+oturum kuralları o dosyadan okuyor.
+
+**Ek olarak madde 8.4 netleştirildi:** "`npm test` hatasız tamamlanmalı"
+ifadesinin `npm test` = **birim + e2e** anlamına geldiği açıkça yazıldı.
+Bu belirsizlik somut zarar vermişti: sekizinci ve dokuzuncu oturumlar
+`lint`/`build`'i koşup e2e'yi atlamış, iki gerçek hata (giriş sayfasında
+`<h1>` eksikliği, kırılgan test seçicisi) iki oturum boyunca fark
+edilmemişti (bkz. bu tarihli diğer kayıt).
+
+## 2026-08-19 (aynı gün) — Ziyaretçi sitesi görsel zenginleştirmesi tamamlandı (madde 0d kapandı)
+
+İki oturumdur bekleyen `DURUM.md` madde 0d — kullanıcının "tasarım basit/
+yüzeysel kalmış, div yazıp geçmişim gibi" eleştirisinin ziyaretçi sitesine
+düşen yarısı — bu oturumda bitirildi. Kullanıcı **adım adım onaylı** ilerlemeyi
+seçti (her bölüm ayrı gösterilip onaylandı), tek seferde toplu sunum değil;
+gerekçe: sekizinci oturumda giriş sayfası tasarımı iki kez yapılmak zorunda
+kalmıştı.
+
+**Sıra:** Hizmetler → Projeler → Referanslar/İstatistikler/SSS/CTA → Footer →
+Ekip. Her adımda `npm run lint` + `npx tsc --noEmit` + üretilen HTML'in `curl`
+ile doğrulanması yapıldı.
+
+### Yeni paylaşılan bileşen: `components/ui/ImagePlaceholder.tsx`
+
+Madde 0d'nin kendi önerisiydi ("Hero'daki degrade+ızgara gibi paylaşılan bir
+'görsel yoksa' yer tutucu bu turda tasarlanabilir"). Gerçek fotoğraf yokken
+bölümler tek renk, görünmez bir kutu render ediyordu. HeroVariantA'nın görsel
+dilini (degrade + ince ızgara = teknik çizim çağrışımı) devralıyor ama Hero'nun
+aksine SABİT beyaz değil `currentColor` + token tabanlı — kart içinde, temaya
+göre değişen bir zeminin üstünde duruyor. Opsiyonel bir `icon` yuvası var.
+Hizmetler ve Projeler kullanıyor.
+
+**Kişi kartlarında BİLİNÇLİ OLARAK kullanılmadı** (Ekip, Referanslar): bir
+insanın yerine soyut teknik çizim koymak yanlış olurdu — onun yerine baş harf
+rozeti (ZA, CY...) deseni kuruldu.
+
+### Bölüm bazlı değişiklikler
+
+- **Hizmetler:** yer tutucu artık hizmetin KENDİ ikonunu gösteriyor; hover dili
+  (yükselme + marka renkli ince çerçeve + görselde yakınlaşma + başlık renk
+  değişimi) burada tanımlandı ve site geneline yayıldı. Canlıda yayındaki 3
+  hizmetin 2'sinde görsel yoktu, yani ana sayfada iki boş kutu duruyordu —
+  eleştirinin en somut karşılığı buydu.
+- **Projeler:** `category` ARTIK GÖSTERİLİYOR (aşağıya bak); kart bir modal
+  açtığı hâlde hiçbir görsel işaret yoktu, hover'da beliren bir büyütme ikonu
+  eklendi; filtre butonlarına yumuşak geçiş.
+- **Referanslar:** `rating` ARTIK GÖSTERİLİYOR (aşağıya bak); dekoratif tırnak
+  ikonu; logo yoksa baş harf rozeti.
+- **İstatistikler + CTA:** ikisi de düz tek renk marka bandıydı; Hero'nun ızgara
+  deseni `currentColor` ile eklendi — marka rengi panelden değiştirilse bile
+  kontrast ilişkisi bozulmuyor.
+- **SSS:** chevron düz bir METİN KARAKTERİYDİ (görünümü fonttan fonta
+  değişiyor); gerçek `ChevronDown` ikonuna, marka renkli daire içine alındı.
+- **Footer:** adres/telefon/e-posta düz metin hâlinde ayırt edilemiyordu →
+  MapPin/Phone/Mail ikonları; üst kenarlık (zemini bazı bölümlerle aynı olduğu
+  için tek blok gibi akıyordu). **Yazı boyutlarına DOKUNULMADI** — onlar
+  2026-08-18'deki açık kullanıcı isteğiydi.
+- **Ekip:** boş gri daire yerine baş harf rozeti + halka + hover.
+
+### Bulgu sınıfı: "veri var, ekranda yok"
+
+Üç bölümde de aynı şey çıktı — kolon veritabanında var, seed'de dolu, ama
+ziyaretçiye hiç ulaşmıyor. `projects.category` (2026-08-08'den beri) kartta
+gösterilmiyordu, sadece filtre listesi ondan türetiliyordu.
+`testimonials.rating` (2026-08-07'den beri) ise `getTestimonials()` tarafından
+**hiç select EDİLMİYORDU** — sorgu, tip ve kart birlikte güncellendi.
+
+**Ders:** yeni bir bölüm yazarken şemadaki TÜM kolonların gerçekten render
+edilip edilmediği kontrol edilmeli; "kolonu ekledim" ile "ziyaretçi görüyor"
+arasında sessiz bir boşluk oluşabiliyor.
+
+### Kesirli puan: `testimonials.rating` integer'dan numeric(2,1)'e
+
+Kullanıcı isteği: "birini 4 tam dolu, 5. ortaya kadar dolu göster". Kolon
+`integer` olduğu için 4.5 saklanamıyordu. Yeni migration
+`20260819120000_allow_fractional_testimonial_rating.sql`. `real`/`float`
+BİLİNÇLİ OLARAK seçilmedi — kayan nokta 4.5'i tam temsil etmeyebilir, `numeric`
+kesin bir tiptir. Kart tarafında yarım yıldız tekniği: altta soluk yıldız,
+üstünde `overflow-hidden` bir kutu içinde dolu yıldız, kutunun GENİŞLİĞİ
+doluluk oranı kadar — ikonu ikiye bölmeye veya ek kütüphaneye gerek yok, 4.3
+gibi herhangi bir orana da çalışır.
+
+**Yol boyunca iki gerçek tuzak:**
+
+1. Migration sonrası `supabase-js` ile yapılan UPDATE `invalid input syntax for
+   type integer: "4.5"` hatası verdi — **PostgREST'in şema önbelleği** hâlâ
+   kolonu integer sanıyordu. `notify pgrst, 'reload schema'` ile tazelendi. DDL
+   sonrası bu adım atlanmamalı.
+2. PostgREST `numeric` değerleri JSON'a **string** olarak döndürüyor ("4.5",
+   "5.0"). Mevcut `typeof row.rating === "number"` kontrolü bu durumda puanı
+   sessizce `null`'a düşürüp yıldızları tamamen yok ederdi — önden fark edilip
+   `parseRating()` yardımcısı yazıldı (sayı VE string kabul eder). Migration
+   uygulanmadan önce yazıldığı için hata hiç canlıya çıkmadı.
+
+### Madde 9 (çift-önek Storage hatası) TAMAMEN KAPANDI
+
+2026-08-18'den beri "kaynak DB kaydı mı yoksa fonksiyon mu hatalı, henüz
+belirlenmedi" diye açık duruyordu. **Cevap: DB kaydı.** Seed verisindeki
+`*_path` değerleri bucket adını ÖNEK olarak taşıyor (`projects/vadi.jpg`),
+`getPublicImageUrl(bucket, path)` bir kez daha eklediği için
+`/public/projects/projects/vadi.jpg` oluşuyor ve 400 dönüyor. Fonksiyon doğru,
+veri yanlış.
+
+Sadece bildirilen tabloya bakılmadı — **9 kolon / 6 bucket taranıp Storage'da
+gerçekten var olup olmadıkları tek tek sorgulandı.** Sonuç **7 kırık yol**:
+`team_members.photo_path` 4 kayıt (**hepsi yayında** — ziyaretçi 4 kırık istek
+görüyordu), `projects.image_path` 2 kayıt (taslak), `testimonials.logo_path` 1
+kayıt (taslak, Kaya Holding logosu). Yedisi de hiç var olmamış dosyalara işaret
+ediyordu, `null`'a çekildi; bileşenler artık yeni yer tutucuları gösteriyor.
+Panelden yüklenmiş GERÇEK yollar (`<tenant_id>/<uuid>.png` biçiminde) desene
+uymadığı için dokunulmadı. Silmeden ÖNCE ve SONRA tarama koşuldu; sonrasında
+sıfır kırık yol.
+
+**Ders:** tek bir bildirilen hatayı düzeltmeden önce aynı hata sınıfını tüm
+şemada aramak, burada 1 yerine 7 kayıt buldurdu — ve bunlardan biri (Kaya
+Holding logosu) az önce kullanıcıya verilen "bunu yayınlarsan logoyu görürsün"
+tavsiyesini yanlış çıkaracaktı.
+
+### Yapılmayan iki şey (bilinçli)
+
+- **Bölümlere tanıtım metni (eyebrow/description) eklenmedi.** `SectionHeader`
+  destekliyor ve görsel olarak iyi dururdu, ama `AI-KURALLARI.md` madde 5.5
+  "metin gibi içerik değerlerini kod içine sabit yazma" diyor. Doğrusu
+  `page_sections`'a bir açıklama kolonu ekleyip panelden yönetmek — ayrı bir iş
+  olarak kullanıcıya önerildi.
+- **Scroll ile beliren animasyon eklenmedi.** Mevcut `animate-fade-in-up` sayfa
+  yüklenirken çalışıyor; ekranın altındaki bölümler için kullanıcı oraya
+  geldiğinde animasyon çoktan bitmiş olur. Gerçek scroll animasyonu
+  `"use client"` + IntersectionObserver gerektirir, yani bu bölümleri Server
+  Component olmaktan çıkarırdı — kullanıcıya soruldu, ertelendi.
+
+### Marka logoları kullanılamadı (Footer)
+
+Kurulu `lucide-react` v1.30 Facebook/Instagram/LinkedIn ikonlarını artık ihraç
+etmiyor (6059 ikon tarandı, hiçbiri yok — marka/telif gerekçesiyle
+kaldırılmışlar). Üçüne birden aynı jenerik ikonu koymak bilgi katmazdı; onun
+yerine `ExternalLink` kullanıldı çünkü GERÇEK bir şey söylüyor: bu bağlantılar
+`target="_blank"` ile siteden ayrılıyor. Gerçek logolar isteniyorsa ayrı bir
+ikon paketi kurulması gerekir — ayrı bir karar.
+
+**Doğrulama:** `npm run build` (10/10 sayfa), `npm test` **54/54 birim + 3/3
+e2e**, `npm run lint`, `npx tsc --noEmit` — hepsi temiz. Ekran görüntüsü
+alınamadı (Claude in Chrome bu ortamda `localhost`'a erişemiyor, önceki
+oturumlardan bilinen sınırlama); bunun yerine her adımda üretilen HTML `curl`
+ile çekilip beklenen sınıf/ikon/metin sayıları tek tek doğrulandı ve görsel
+onay kullanıcıdan alındı.
+
+## 2026-08-19 (aynı gün) — CI kuruldu; `next.config.ts`'te ikinci bir ortam değişkeni çökmesi bulundu
+
+Kullanıcı 0b'yi (panelin gerçek çok-kiracılılığı) bilinçli olarak
+önceliksizleştirdikten sonra sıradaki iş için dört seçenek sunuldu; **CI
+kurulumu** seçildi.
+
+### Neden CI (teorik değil, bugün yaşanmış bir gerekçe)
+
+Bu oturumda `npm test`in **e2e yarısının iki oturum boyunca hiç
+çalıştırılmadığı** ortaya çıktı ve bu sürede iki gerçek hata (`/panel/giris`
+sayfasında hiç `<h1>` olmaması, kırılgan bir Playwright seçicisi) fark
+edilmeden `main`'e push'landı. `AI-KURALLARI.md` madde 8.4 zaten bunu
+yasaklıyordu — ama kuralı hatırlamak insana kalmıştı. CI, kuralı
+otomatikleştiriyor.
+
+### Yol boyunca bulunan GERÇEK bir hata: `next.config.ts` eksik env'de çöküyor
+
+CI tasarlanırken şu ölçüldü: "build, veritabanı erişimi olmadan çalışıyor mu?"
+(Cevap evetse CI'a hiç gizli anahtar koymaya gerek kalmaz.) `.env.local`
+geçici olarak kaldırılıp build alındı — **çöktü**, ama bu sefer sabahki
+hatadan FARKLI bir yerde:
+
+```
+Failed to load next.config.ts
+TypeError: Cannot read properties of undefined (reading 'replace')
+```
+
+Kök neden `next.config.ts:54`: `process.env.NEXT_PUBLIC_SUPABASE_URL!` — `!`
+(non-null assertion) TypeScript'e "bu kesin dolu" diyor ama çalışma zamanında
+garantisi yok; değişken yoksa `.replace()` patlıyor ve TÜM build düşüyor.
+Sabahki `??` hatasıyla **aynı sınıf**: ortam değişkeninin varlığını varsaymak.
+Hata mesajı da sebebi hiç belli etmiyor.
+
+**Düzeltme ve güvenlik gerekçesi:** değişken yoksa Supabase origin'leri CSP'nin
+`connect-src`'inden çıkarılıyor. Bu **güvenli**, çünkü bir origin'i çıkarmak
+politikayı daha KATI yapar, daha gevşek değil — "fail closed". Uygulama zaten
+o değişken olmadan çalışamaz (`lib/supabase/server.ts` açık Türkçe bir hatayla
+durur), build'in ayrıca ve anlaşılmaz biçimde çökmesine gerek yok.
+
+**Doğrulandı (iki yönlü):** (1) `.env.local` yokken build `exit 0`; (2)
+`.env.local` varken `npm run start` + `curl -I` ile gerçek CSP başlığı
+okundu — `connect-src 'self' https://...supabase.co wss://...supabase.co`
+aynen yerinde, yani düzeltme gerçek yapılandırmayı bozmadı.
+
+### CI tasarımı
+
+`.github/workflows/ci.yml` — push (`main`) ve pull request tetikleyicisi,
+`concurrency` ile eski koşular iptal ediliyor (ücretsiz Actions dakikaları).
+Adımlar: `npm ci` → `lint` → `tsc --noEmit` → `test:unit` → `build`. Ayrı ve
+**bloklamayan** bir job: `npm audit --audit-level=high`.
+
+**Hiçbir gizli anahtar (secret) gerekmiyor** — yukarıdaki iki düzeltme
+(`||` ve CSP guard'ı) sayesinde. Doğrulama: `.env.local` geçici olarak
+kaldırılıp beş adımın tamamı yerelde, workflow'daki sırayla koşuldu, hepsi
+`exit 0`.
+
+**E2E bilinçli olarak CI'da YOK.** `e2e/admin-service-flow.spec.ts` gerçek
+Supabase'e gerçek bir hizmet kaydı yazıp siliyor ve projede ayrı bir test/
+staging veritabanı yok — her push'ta üretim verisine yazmak kabul edilemez.
+Bunun bedeli dokümanda açıkça yazıldı: **CI, bugün bulunan iki hatanın türünü
+yakalayamaz** (ikisini de yalnızca gerçek tarayıcı koşusu yakalamıştı).
+Ayrı bir staging projesi açılırsa `ci.yml`'e bir `e2e` job'ı eklenmeli.
+
+**Node sürümü 22** seçildi (yerel geliştirme Node 26). Gerekçe: CI'ın Vercel
+ortamını yaklaşık taklit etmesi, geliştirme makinesini taklit etmesinden daha
+değerli.
+
+Detay ve tam gerekçe: `docs/TEST-STRATEJISI.md` madde 15.
+
+### Not (bu değişiklikle ilgisiz, doğrulama sırasında görüldü)
+
+`npm run start` ile alınan CSP başlığında `ws://localhost:* wss://localhost:*`
+girdileri de vardı — bunlar yalnızca `isDev` dalında eklenmesi gereken
+girdiler. Üretimde zararsız (localhost'a bağlantı kullanıcının kendi
+makinesi) ve bu oturumdan ÖNCE de böyleydi, bu yüzden kapsam dışı bırakıldı;
+ama `NODE_ENV`'in `next start` altında beklendiği gibi çözülüp çözülmediği
+ileride bakılmaya değer.
+
+## 2026-08-19 (aynı gün) — İlk CI koşusu kırmızı döndü: `next typegen` eksikti
+
+CI kurulduktan sonraki İLK gerçek koşu başarısız oldu. İki bulgu:
+
+### Hata (bloklayan): `Cannot find name 'LayoutProps'`
+
+`npx tsc --noEmit` adımı `app/layout.tsx:79`'da düştü. Kök neden:
+`LayoutProps<"/">`, `PageProps`, `RouteContext` — bunlar projede yazılmış
+tipler DEĞİL, **Next.js'in otomatik ürettiği global tipler** ve
+`.next/types/routes.d.ts` içinde yaşıyorlar. CI temiz bir makinede koştuğu
+için `.next` yoktu, dolayısıyla tip de yoktu.
+
+**Bu hatayı yerel simülasyon KAÇIRDI ve sebebi öğreticidir.** CI yazılırken
+"gizli anahtar gerekmediğini" doğrulamak için `.env.local` geçici olarak
+kaldırılıp adımlar yerelde koşulmuştu — ama **`.next` klasörü silinmemişti**.
+Önceki build'lerden kalan üretilmiş tipler yerinde durduğu için `tsc` sorunsuz
+geçti. Yani simülasyonun gizli bir bağımlılığı vardı; gerçek CI, geliştirme
+makinesinde görünmeyen tam olarak bu farkı yakaladı.
+
+**Düzeltme:** workflow'a `tsc`'den ÖNCE bir `npx next typegen` adımı eklendi.
+Bu komut tam build almadan sadece o global tipleri üretir; Next.js 15.5'te
+geldi ve projenin kendi paketindeki dokümanda (`node_modules/next/dist/docs/
+01-app/02-guides/upgrading/version-16.md`, "Migrating types for async
+Request-time APIs") açıkça bu amaç için önerilmiş — AGENTS.md'nin "kod
+yazmadan önce `node_modules/next/dist/docs/`'a bak" kuralı gereği oradan
+doğrulandı, tahmin edilmedi.
+
+**Yeniden doğrulama:** bu sefer `.env.local` VE `.next` birlikte silinerek
+altı adım baştan koşuldu — `lint`, `next typegen`, `tsc --noEmit`,
+`test:unit` (54/54), `build`, hepsi `exit 0`.
+
+### Uyarı (bloklamayan): Node 20 hedefleyen action'lar
+
+GitHub, `actions/checkout@v4` ve `actions/setup-node@v4`'ün Node 20
+hedeflediğini ve runner'ların bunları zorla Node 24'te çalıştırdığını
+bildirdi. İkisi de `@v5`'e yükseltildi.
+
+### Ders
+
+"Yerelde koştum, geçti" ile "temiz bir makinede geçer" aynı şey değil.
+Geliştirme makinesinde biriken üretilmiş dosyalar (`.next`, `node_modules`,
+önbellekler) gerçek bir bağımlılığı gizleyebilir. CI'ı yerelde taklit ederken
+**üretilmiş her şeyin silinmesi** gerekir — bu kural
+`docs/TEST-STRATEJISI.md` madde 15'e yazıldı.
+
+İronik olarak bu, CI'ın kurulma gerekçesinin kendisini doğruladı: CI, insanın
+"bende çalışıyordu" demesinin yetmediği durumları yakalamak için var ve
+kurulduğu gün ilk işi bunu kanıtlamak oldu.
+
+## 2026-08-19 (aynı gün, oturum sonu) — Kullanıcı istekli iki görsel düzeltme
+
+Zenginleştirme onaylandıktan sonra kullanıcıdan gelen iki somut istek.
+
+### 1. "Konut İnşaatı" kartı artık ikon gösteriyor (KOD DEĞİŞİKLİĞİ YOK)
+
+İstek: Hizmetler'deki üç karttan biri (Konut İnşaatı) gerçek bir fotoğraf,
+diğer ikisi ikon gösteriyordu; üçünün de aynı görünmesi istendi.
+
+**Kod değişmedi — sadece veri.** Hizmetin `icon` alanı zaten `home` olarak
+tanımlıydı; `services.image_path` `null`'a çekilince bu oturumda yazılan
+`ImagePlaceholder` kendiliğinden devreye girip o ikonu gösterdi. Üç kart artık
+`home` / `hammer` / `pencil-ruler` ikonlarıyla aynı düzende.
+
+**Storage'daki dosya BİLEREK silinmedi**
+(`services/<tenant>/fcf14de2-...png`) — dosyayı silmek geri alınamaz, oysa
+karar değişirse yolu geri yazmak yeterli. Yetim bir dosya olarak duruyor;
+kullanıcıya bildirildi.
+
+**Yol boyunca küçük bir yanlış alarm:** doğrulamada `lucide-home` sınıfı
+aranıp bulunamayınca "ikon render edilmiyor" sanıldı. Gerçek sebep: lucide,
+`Home` ikonunu `House` olarak yeniden adlandırmış — sınıf adı `lucide-house`.
+İkon en baştan doğru çalışıyordu. **Ders:** bir ikonun render edilip
+edilmediğini bileşen adından türetilen bir CSS sınıfıyla test etme; kütüphane
+yeniden adlandırmaları bunu sessizce yanlış çıkarır.
+
+### 2. SSS iki sütunlu varyantı: `columns-2` → `grid-cols-2`
+
+Kullanıcı bulgusu: "karşılıklı soru sütunlarının başlangıç hizası aynı ama
+bitiş hizaları çok farklı, dengesiz duruyor."
+
+**Kök neden — iki CSS tekniğinin farklı çalışması:** `columns` (native
+çok-sütun) içeriği gazete gibi soldan aşağı akıtıp sağa sarar ve sütunları
+yükseklik olarak dengelemeye ÇALIŞIR; ama öğeler bölünemediğinde
+(`break-inside-avoid`) bu denge kabadır — tek bir uzun cevap bir sütunu
+diğerinden belirgin uzun bırakır. `grid` ise öğeleri SATIR SATIR dizer ve aynı
+satırdaki hücreler varsayılan `align-items: stretch` ile birbirinin
+yüksekliğine uzar, böylece alt kenarlıklar hizalanır.
+
+**Uygulama:** `FaqList` sarmalayıcısı `columns-1 md:columns-2` → `grid
+md:grid-cols-2`. Ayrıca `FaqAccordionItem`'ın kök `<div>`'ine `flex h-full
+flex-col` eklendi — bu olmadan hücre uzasa bile alt kenarlık metnin hemen
+altında kalır ve hiza yine tutmazdı; artık kenarlık hücrenin dibine oturuyor.
+Artık işlevsiz kalan `break-inside-avoid` (bir çok-sütun özelliği)
+kaldırıldı.
+
+**Bilinçli ödünleşim:** okuma sırası sütun-boyundan (1,2 solda / 3,4 sağda)
+satır-boyuna (1,2 üstte / 3,4 altta) döndü. **DOM sırası değişmedi**, yani
+klavye ve ekran okuyucu sırası aynen korunuyor — değişen yalnızca görsel
+yerleşim. Kullanıcıya bu ödünleşim açıkça söylendi ve onaylandı.
+
+**Ek fayda:** bir soru açıldığında karşısındaki hücre de birlikte uzuyor, hiza
+bozulmuyor — `columns` düzeninde açılma tüm sütun akışını yeniden
+hesaplatıyordu.

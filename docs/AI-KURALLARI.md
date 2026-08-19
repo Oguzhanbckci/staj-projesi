@@ -146,7 +146,25 @@ tutulur.
 3. Migration dosyası ile onu kullanan kod değişikliği aynı commit'te birlikte
    gönderilir.
 4. `main`'e push'lamadan önce `npm run build` ve `npm test` hatasız
-   tamamlanmalı.
+   tamamlanmalı. **`npm test` = birim + e2e** — e2e yarısını atlamak bu
+   maddeyi karşılamaz (2026-08-19'da bu kuralın iki oturum boyunca fiilen
+   ihlal edildiği ve 2 gerçek hatanın bu yüzden gözden kaçtığı ortaya çıktı,
+   bkz. `KARAR-GUNLUGU.md`).
+5. Mesajın açıklama kısmı **emir kipli** yazılır ("ekle", "düzelt",
+   "güncelle", "kaldır") — virgülle bağlanmış isim öbeği listesi değil.
+   Mesajlarda **Türkçe karakter kullanılmaz** (`giris`, `basligi`, `dus`);
+   repodaki tüm geçmiş bu kalıpta. *(2026-08-19, kullanıcı isteği)*
+6. **Doküman commit'leri gün sonunda toplanır.** `docs/` altındaki
+   güncellemeler her işlem için ayrı ayrı commit'lenmez — çalışma ağacında
+   birikir, gün sonunda tek bir toplu commit'le gönderilir. Kod/test/
+   bağımlılık gibi iş değişiklikleri ise yapıldıkları anda commit'lenir.
+   **Dokümanları güncellemeye devam etmek şarttır** (madde 9.3), sadece
+   commit'lenmesi ertelenir. *(2026-08-19, kullanıcı isteği)*
+7. **`git commit`/`git push` komutlarını AI çalıştırmaz** — komutu hazır
+   biçimde verir, kullanıcı kendisi çalıştırır. Mesajlara `Co-Authored-By`
+   satırı asla eklenmez (gerekçe: bu trailer GitHub'da istenmeyen bir
+   contributor kaydına yol açtı, geçmiş yeniden yazılmak zorunda kaldı —
+   bkz. `DURUM.md` "Sıradaki adım" madde 0).
 
 ## 9. AI ile Çalışma İlkeleri
 

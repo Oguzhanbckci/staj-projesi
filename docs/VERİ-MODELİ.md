@@ -255,7 +255,7 @@ madde 14.
 | `author_name` | text, not null | referans veren kişi/firma adı |
 | `author_title` | text, nullable | unvan/pozisyon veya firma bilgisi |
 | `quote` | text, not null | yorum metni |
-| `rating` | integer, nullable, check (1-5) | opsiyonel puan |
+| `rating` | **numeric(2,1)**, nullable, check (1-5) | opsiyonel puan. *(2026-08-19)* `integer`'dan `numeric(2,1)`'e çevrildi (migration `20260819120000_...`) — kart artık kesirli puanı yarım yıldız olarak gösterebiliyor (ör. 4.5 → 4 tam + 1 yarım, bkz. `TestimonialCard.renderRating`). `real`/`float` bilinçli olarak seçilmedi: kayan nokta 4.5'i tam temsil etmeyebilir, `numeric` kesin bir tiptir. **Dikkat:** PostgREST `numeric` değerleri JSON'a **string** olarak döndürebiliyor (`"4.5"`) — okuyan taraf bunu hesaba katmalı (bkz. `parseRating()`, `lib/supabase/queries.ts`) |
 | `logo_path` | text, nullable | *(2026-08-08 eklendi)* Storage yolu — müşteri/firma logosu, opsiyonel |
 
 Tablo adı **`testimonials`** — `references` SQL'de ayrılmış (reserved) bir
