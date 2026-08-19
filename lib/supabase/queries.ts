@@ -390,6 +390,17 @@ export async function getFaqs(): Promise<FaqItem[]> {
   }
 }
 
+/** DB'den gelen puanı (sayı ya da numeric-string) güvenli biçimde çözer.
+ *  Geçersiz/boş değer null döner — kartta yıldızlar hiç gösterilmez. */
+function parseRating(value: unknown): number | null {
+  if (typeof value === "number") return Number.isFinite(value) ? value : null;
+  if (typeof value === "string") {
+    const parsed = Number.parseFloat(value);
+    return Number.isFinite(parsed) ? parsed : null;
+  }
+  return null;
+}
+
 /**
  * testimonials.logo_path için tip artık var (migration uygulandı +
  * `npm run types:generate` çalıştırıldı, 2026-08-08) — tipli client.
@@ -405,7 +416,11 @@ export async function getTestimonials(): Promise<TestimonialItem[]> {
 
     const { data, error } = await supabase
       .from("testimonials")
-      .select("id, author_name, author_title, quote, logo_path")
+      // `rating` 2026-08-19'da eklendi — kolon 2026-08-07'den beri vardı ve
+      // seed verisinde doluydu ama hiç seçilmiyordu, yani ziyaretçiye hiç
+      // ulaşmıyordu (bkz. docs/KARAR-GUNLUGU.md, ziyaretçi sitesi
+      // zenginleştirmesi).
+      .select("id, author_name, author_title, quote, rating, logo_path")
       .eq("tenant_id", tenantId)
       .eq("is_published", true)
       .order("order_index");
@@ -419,6 +434,13 @@ export async function getTestimonials(): Promise<TestimonialItem[]> {
       authorName: String(row.author_name),
       authorTitle: typeof row.author_title === "string" ? row.author_title : null,
       quote: String(row.quote),
+      // `rating` 2026-08-19'da integer'dan numeric(2,1)'e çevrildi (yarım
+      // yıldız desteği). PostgREST `numeric` değerleri duruma göre JSON
+      // sayısı YA DA string olarak döndürebilir (hassasiyeti korumak için)
+      // — sadece `typeof === "number"` kontrolü yapmak, string geldiğinde
+      // puanı sessizce null'a düşürüp yıldızları yok ederdi. İkisini de
+      // kabul ediyoruz; ayrıştırılamayan değer null olur (yıldız gösterilmez).
+      rating: parseRating(row.rating),
       logoPath: typeof row.logo_path === "string" ? row.logo_path : null,
     }));
   } catch (err) {
