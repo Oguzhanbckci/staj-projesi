@@ -15,7 +15,39 @@ geçmişi) oku. Yeni bir müşteri kurulumu yapılacaksa `KURULUM.md`'ye
 (sıfırdan kurulum, geliştirici için), panelin günlük kullanımı için
 `MUSTERİ-KILAVUZU.md`'ye (teknik olmayan okuyucu için) bakılır.
 
-**Son güncelleme:** 2026-08-18 (aynı gün, dokuzuncu oturum, YENİ) — Kullanıcı
+**Son güncelleme:** 2026-08-19 (onuncu oturum, YENİ) — **Proje yeni bir
+makineye taşındı ve sıfırdan kuruldu** (`C:\Users\234410084\staj-projesi`;
+`node_modules`/`.env.local`/`.next` yoktu). Böylece `KURULUM.md`'nin adımları
+ilk defa GERÇEKTEN sıfırdan koşuldu ve **3 gerçek hata** ortaya çıkardı — üçü
+de ancak temiz bir kurulumda ya da gerçek tarayıcı koşusunda görülebilirdi:
+**(1)** `lib/supabase/queries.ts`'te `ACTIVE_TENANT_DOMAIN` yedeği `??` ile
+yazılmıştı; `.env` dosyasında boş bırakılan bir değişken `undefined` değil
+BOŞ STRING olduğu için yedek hiç devreye girmiyordu — `.env.local.example`'ın
+açıkça vaat ettiği davranış yanlıştı ve `npm run build` tamamen düşüyordu.
+`||`'a çevrildi, boş değerle build'in geçtiği kanıtlandı. **(2)** Giriş
+sayfasında (`/panel/giris`) **hiç `<h1>` yoktu** — `TextScramble` `<span>`
+render ediyor; 2026-08-18'de `/ekip`+`/iletisim`'de düzeltilen hatanın
+aynısı, o taramada giriş sayfası kapsam dışı kalmıştı. **(3)**
+`e2e/admin-service-flow.spec.ts`'teki `getByLabel("Şifre")` seçicisi
+`PasswordField`'ın göster/gizle butonuyla çakışıyordu (`exact: true`
+eklendi). (2) ve (3) aynı commit'ten (`3c15629`, sekizinci oturum)
+geliyordu ve **e2e testleri 2 oturumdur hiç koşulmadığı için** görünmemişti
+— `AI-KURALLARI.md` madde 8.4'ün ("push öncesi `npm test` temiz olmalı")
+fiilen ihlal edildiği anlamına geliyor, ders `KARAR-GUNLUGU.md`'ye yazıldı.
+**Ayrıca bir YANLIŞ ALARM düzeltildi:** oturumun başında "migration
+`20260818150000` uygulanmamış, canlı iletişim formu kırık" denmişti — hatalı
+bir tespit yöntemiydi (fonksiyonlar parametresiz `rpc()` ile denenmiş,
+PostgREST'in imza-eşleştirme davranışı "fonksiyon yok" sanılmıştı). `pg_proc`
+doğrudan sorgulanınca üç fonksiyonun da zaten var olduğu ve imzalarının
+koddaki çağrılarla birebir eşleştiği görüldü. **Kurulum artık tam:**
+`npm install` (482 paket, Node 26.4), Playwright Chromium, `.env.local`
+dolu, `npm run types:generate` çalıştırıldı (`Functions` bloğu artık 3
+fonksiyonu içeriyor — bu güncelleme dokuzuncu oturumdan beri eksikti).
+**Doğrulama: `npm test` 54/54 birim + 3/3 e2e, `npm run build`,
+`npm run lint`, `npx tsc --noEmit` — hepsi temiz.** Test paketi 2 oturum
+sonra ilk kez tamamen yeşil. Henüz commit'lenmedi.
+
+**Önceki güncelleme (2026-08-18, dokuzuncu oturum):** Kullanıcı
 önceliği değiştirdi: sekizinci oturumda ertelenen ziyaretçi sitesi görsel
 zenginleştirmesi (Hizmetler→Footer) yerine, bu oturumda (1) iletişim formuna
 **Resend** ile e-posta bildirimi ve (2) panele **Hero/Hakkımızda** düzenleme
@@ -1687,8 +1719,9 @@ işaretliyor, daha kesin bir ikinci katman. Detay: `SEO-PERFORMANS.md`.
    kırpmasının ÇALIŞTIĞI, koyu modda okunaklı olduğu, panel/giriş
    sayfalarında konsol hatası kalmadığı doğrulandı. Detay:
    `KARAR-GUNLUGU.md`, "dokuzuncu oturum devamı — breadcrumb".
-0h. **(EN YÜKSEK ÖNCELİK — `npm run lint`/`build` temiz, migration henüz
-   uygulanmadı)** Kullanıcı "çok yüzeysel çalışıyorsun" diye haklı bir eleştiri yaptı — bu
+0h. **(ÇÖZÜLDÜ — 2026-08-19'da migration'ın ZATEN uygulanmış olduğu
+   doğrulandı, tipler yenilendi, `npm test` 54/54 + 3/3 yeşil.)**
+   Kullanıcı "çok yüzeysel çalışıyorsun" diye haklı bir eleştiri yaptı — bu
    oturumun TÜM diff'i (52 dosya) 5 boyutlu, adversarial-doğrulamalı bir
    çok-ajanlı review'a verildi. **6 GERÇEK sorun bulundu ve DÜZELTİLDİ:**
    (1) **[YÜKSEK]** Login hız sınırı ATOMİK DEĞİLDİ — paralel istekler "5
@@ -1704,12 +1737,16 @@ işaretliyor, daha kesin bir ikinci katman. Detay: `SEO-PERFORMANS.md`.
    incelenip projenin kendi felsefesiyle tutarlı/kasıtlı bulunarak
    çürütüldü, düzeltme YAPILMADI. **Yeni migration:**
    `supabase/migrations/20260818150000_add_atomic_rate_limit_functions.sql`
-   — henüz gerçek Supabase projesine uygulanmadı. Sıradaki adım: kullanıcı
-   bu migration'ı (ve hâlâ uygulanmamışsa `20260818140000`'i) SQL Editor'de
-   çalıştıracak, `npm run lint`/`build`/`test` tekrar doğrulanacak, sonra
-   hem giriş kilidinin hem iletişim formunun tarayıcıda hâlâ çalıştığı
-   teyit edilecek. Detay: `KARAR-GUNLUGU.md`, "Kullanıcı geri bildirimi:
-   'çok yüzeysel'".
+   — ~~henüz gerçek Supabase projesine uygulanmadı~~ **(2026-08-19'da
+   DÜZELTİLDİ: aslında uygulanmış. `pg_proc` doğrudan sorgulanarak üç
+   fonksiyonun da var olduğu ve imzalarının koddaki çağrılarla birebir
+   eşleştiği doğrulandı — bu not, uygulandıktan sonra güncellenmeyi
+   unutmuş eski bir kayıttı. `npm run types:generate` ile
+   `types/database.types.ts`'in `Functions` bloğu da yenilendi, artık üç
+   fonksiyonu içeriyor. `npm test` 54/54 birim + 3/3 e2e ile iletişim
+   formunun ve giriş akışının GERÇEKTEN çalıştığı doğrulandı.)** Detay:
+   `KARAR-GUNLUGU.md`, "Kullanıcı geri bildirimi: 'çok yüzeysel'" ve
+   2026-08-19 kayıtları.
 0i. **(YENİ, `npm run lint`/`build` temiz — gerçek ekran görüntüsü
    doğrulaması hâlâ yapılmadı, araç bu ortamda arızalıydı)** Footer
    metinlerinin okunabilirliği artırıldı (kullanıcı isteği: "yazılar çok

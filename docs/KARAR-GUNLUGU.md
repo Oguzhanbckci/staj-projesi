@@ -5036,3 +5036,116 @@ Panel → Ayarlar → Sayfa Başlığı alanına "tofe İnşaat | Kurumsal Web
 Sitesi" yazılmış — muhtemelen "Akme İnşaat" yazılırken oluşmuş bir yazım
 hatası, tarayıcı sekmesinde/arama sonucunda görünüyor. Kullanıcıya
 bildirildi, düzeltme onayı bekleniyor.
+
+## 2026-08-19 — Yeni makinede sıfırdan kurulum; `ACTIVE_TENANT_DOMAIN` yedek değeri hiç çalışmıyormuş
+
+Proje yeni bir makineye (`C:\Users\234410084\staj-projesi`) taşındı — `node_modules`,
+`.env.local` ve `.next` yoktu, yani ürünün kendi `KURULUM.md`'sindeki adımlar ilk
+defa GERÇEKTEN sıfırdan koşuldu. Kurulum sırasında dokümanın vaat ettiği bir
+davranışın yanlış olduğu ortaya çıktı.
+
+**Bulgu (gerçek hata):** `lib/supabase/queries.ts`
+
+```js
+const ACTIVE_TENANT_DOMAIN = process.env.ACTIVE_TENANT_DOMAIN ?? "akmeinsaat.com.tr";
+```
+
+`??` (nullish coalescing) sadece `null`/`undefined` için devreye girer. Bir `.env`
+dosyasında `ACTIVE_TENANT_DOMAIN=` yazmak değişkeni tanımsız yapmaz, **boş string**
+yapar — boş string nullish DEĞİLDİR, o yüzden yedek değere hiç düşülmüyordu.
+Sonuç: boş domain'le tenant aranıyor, bulunamıyor, `getTeamMembers` "Aktif tenant
+bulunamadı" fırlatıyor ve zincirleme olarak `getSiteUrl()` `https://` üretip
+`new URL()`'i patlatarak **`npm run build`'i tamamen düşürüyordu**.
+
+Bu, `.env.local.example`'ın açıkça yazdığı davranışın tersi: *"Boş bırakılırsa
+(yerel geliştirme gibi) akmeinsaat.com.tr demo tenant'ına düşer"*. Şablonu
+harfiyen takip eden bir kurulum, `KURULUM.md`'nin "Sık Yapılan Hatalar"ında
+**"site sessizce boş görünür"** diye uyardığı senaryoya bizzat şablon
+tarafından sokuluyordu.
+
+**Düzeltme:** `??` → `||` (boş string de yedek değere düşsün). Kod tabanında
+aynı hata sınıfı için tarama yapıldı (`process.env.* ??` grep'i): **tek kullanım
+buydu**, başka yerde yok. Ayrıca `lib/email/resend.ts:38` (`CONTACT_NOTIFICATION_FROM_EMAIL`)
+aynı ihtiyacı zaten `||` ile DOĞRU çözüyordu — yani düzeltme yeni bir desen
+icat etmiyor, projenin kendi mevcut desenine hizalıyor.
+
+**Doğrulama (gerçek, iddia değil):** `.env.local`'de `ACTIVE_TENANT_DOMAIN=`
+BOŞ bırakılarak `npm run build` çalıştırıldı — düzeltme öncesi exit 1 ile
+düşüyordu, düzeltme sonrası tüm rotalar üretilerek geçti. `npm run lint` temiz,
+`npm run test:unit` 54/54.
+
+**Ders:** Ortam değişkeni yedeklerinde `??` kullanma — `.env` dosyalarında
+"tanımsız" değil "boş" çok daha sık karşılaşılan durum. Bu hata ancak GERÇEK
+bir sıfırdan kurulum yapıldığında ortaya çıktı; mevcut `.env.local`'i dolu olan
+hiçbir oturum bunu göremezdi. `KURULUM.md`'nin kendisinin de en az bir kez
+sıfırdan koşulması gerektiğinin (2026-08-17'de "AI bunu yapamaz" diye açık
+bırakılmıştı) somut kanıtı.
+
+**Kurulumun geri kalanı:** `npm install` (482 paket, Node 26.4 ile sorunsuz),
+`npx playwright install chromium`, `.env.local` dolduruldu (eski JWT anahtar
+çifti kullanıldı — yeni `sb_publishable_`/`sb_secret_` formatı da mevcut ama
+projenin 9 oturumluk doğrulaması eski çiftle yapıldığı için test edilmemiş bir
+değişken eklenmedi). `npm audit` artık **1 high** gösteriyor (`nanoid <3.3.18`,
+dolaylı bağımlılık) — 2026-08-17'deki "0 açık" ölçümünden sonra yayınlanmış yeni
+bir advisory, henüz ele alınmadı.
+
+## 2026-08-19 (aynı gün) — E2E testleri 2 oturum sonra ilk kez koşuldu: giriş sayfasında `<h1>` eksikliği + kırılgan test seçicisi
+
+Kurulum tamamlandıktan sonra `npm run test:e2e` çalıştırıldı — **3 testten 2'si
+düştü.** İkisi de tek bir commit'e (`3c15629`, "panel, giris sayfasi ve site
+gorsellerini zenginlestir", sekizinci oturum) dayanıyordu. O oturumda `npm run
+lint`/`build` hiç çalıştırılmamıştı (bkz. o oturumun kendi kaydı); sonraki
+oturumlar lint'i koştu ama **e2e'yi bir daha hiç koşmadı**, bu yüzden iki hata
+da iki oturum boyunca görünmez kaldı.
+
+**Bulgu 1 — GERÇEK erişilebilirlik hatası (ürün kodu).** `app/panel/giris/page.tsx`
+sayfanın başlığını `TextScramble` bileşeniyle basıyordu; o bileşen `<span>`
+render ediyor. Sonuç: giriş sayfasında **hiçbir başlık elemanı yoktu** —
+görsel olarak başlıklı (`text-h2 font-bold`), semantik olarak boş. Bu,
+`TASARIM-SISTEMI.md`'nin kendi "h1 sayfada bir kez" kuralının ihlali ve
+2026-08-18'de `/ekip`+`/iletisim`'de düzeltilen hatanın BİREBİR AYNISI — o
+çok-ajanlı taramada giriş sayfası kapsam dışı kalmıştı. **Düzeltme:**
+`TextScramble` gerçek bir `<h1>` içine sarmalandı. Bileşene `as`/`headingLevel`
+prop'u EKLENMEDİ — `TextScramble` kod tabanında tam olarak 1 yerde kullanılıyor,
+tek kullanım için paylaşılan bileşeni genelleştirmek erken soyutlama olurdu
+(bkz. `TASARIM-SISTEMI.md` 9.8).
+
+**Bulgu 2 — kırılgan test seçicisi (test kodu, üründe hata YOK).**
+`e2e/admin-service-flow.spec.ts`'teki `getByLabel("Şifre")` Playwright strict
+mode hatası veriyordu: `getByLabel` varsayılan olarak ALT DİZE eşleştirir ve
+"Şifre" hem şifre input'una hem de `PasswordField`'ın göster/gizle butonuna
+(`aria-label="Şifreyi göster"`, yine `3c15629`'de gelmiş) uyuyordu. Butonun
+etiketi doğru ve gerekli — kusur testin gevşek seçicisindeydi. **Düzeltme:**
+`getByLabel("Şifre", { exact: true })`.
+
+**Doğrulama:** Düzeltmeler sonrası `npm test` (54/54 birim + **3/3 e2e**),
+`npm run build`, `npm run lint`, `npx tsc --noEmit` hepsi temiz. E2E koşusunun
+logunda ayrıca beklenen zarif bozulma da doğrulandı: `submitContactForm
+bildirim e-postası gönderilemedi: RESEND_API_KEY tanımlı değil` — yani iletişim
+formu uçtan uca ÇALIŞTI (mesaj DB'ye yazıldı), sadece opsiyonel e-posta kanalı
+atlandı; tasarlanan davranış bu.
+
+**Ders (süreçle ilgili, koddan daha önemli):** `AI-KURALLARI.md` madde 8.4
+"`main`'e push'lamadan önce `npm run build` ve `npm test` hatasız tamamlanmalı"
+diyor ve `npm test` = birim + e2e. Bu kural iki oturum boyunca fiilen
+sağlanmadı — `npm run lint`/`build` alışkanlık hâline gelmişken `npm test`'in
+e2e yarısı atlandı, üstelik bu sürede `main`'e push yapıldı. Lint ve build,
+DOM/erişilebilirlik seviyesindeki bu iki hatanın hiçbirini yakalayamazdı;
+sadece gerçek bir tarayıcı koşusu yakalayabilirdi. Bir tasarım/görsel
+yenileme yapıldığında e2e'yi koşmak İSTEĞE BAĞLI değil.
+
+**Yanlış alarm düzeltmesi (aynı oturum, dürüstlük kaydı):** Bu oturumun
+başında "migration `20260818150000` uygulanmamış, canlıdaki iletişim formu
+kırık" denmişti — **bu yanlıştı.** Tespit yöntemi hatalıydı: fonksiyonlar
+`supabase.rpc(fn, {})` ile PARAMETRESİZ çağrılmıştı, PostgREST ise
+fonksiyonları isim + argüman imzasıyla eşleştirdiği için var olan bir
+fonksiyon için bile *"Could not find the function ... in the schema cache"*
+döner. Bu mesaj "fonksiyon yok" diye okundu. Management API ile `pg_proc`
+doğrudan sorgulandığında üç fonksiyonun da ZATEN VAR olduğu ve imzalarının
+koddaki çağrılarla birebir eşleştiği görüldü — migration daha önce
+uygulanmış, sadece `DURUM.md`/`KARAR-GUNLUGU.md` güncellenmemişti (ve
+`types/database.types.ts` yenilenmemişti, bu oturumda yenilendi). Migration
+SQL'i yine de çalıştırıldı; `create or replace` olduğu için zararsız,
+tanımlar birebir aynı kaldı. **Ders:** bir şemanın/nesnenin varlığını
+uygulama katmanının hata mesajından ÇIKARIM YAPARAK test etme — katalogdan
+(`pg_proc`, `information_schema`) doğrudan sor.
