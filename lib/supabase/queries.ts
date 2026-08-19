@@ -36,7 +36,17 @@ import { getSiteHost } from "@/lib/seo/getSiteUrl";
 // kaynak kodda bir satır değiştirip yeniden deploy etmeye gerek kalmıyor.
 // Değişken tanımsızsa bu projenin (staj/demo) mevcut geliştirme değerine
 // düşer — geriye dönük uyumluluk, bu oturumun kendi .env.local'i etkilenmez.
-const ACTIVE_TENANT_DOMAIN = process.env.ACTIVE_TENANT_DOMAIN ?? "akmeinsaat.com.tr";
+//
+// `??` DEĞİL `||` — kasıtlı (2026-08-19'da gerçek bir kurulum hatasıyla
+// bulundu): bir .env dosyasında `ACTIVE_TENANT_DOMAIN=` yazmak değişkeni
+// TANIMSIZ değil BOŞ STRING yapar, `??` ise sadece null/undefined'da
+// devreye girer. Yani `??` ile yedek değer hiç çalışmıyordu ve
+// .env.local.example'ın açıkça vaat ettiği "boş bırakılırsa demo
+// tenant'ına düşer" davranışı YANLIŞTI — boş domain'le tenant aranıp
+// bulunamıyor, site "Aktif tenant bulunamadı" ile çöküyordu (KURULUM.md'nin
+// "site sessizce boş görünür" diye uyardığı senaryonun ta kendisi).
+// lib/email/resend.ts:38 aynı ihtiyacı zaten `||` ile doğru çözüyordu.
+const ACTIVE_TENANT_DOMAIN = process.env.ACTIVE_TENANT_DOMAIN || "akmeinsaat.com.tr";
 
 export const getActiveTenantId = cache(async (): Promise<string | null> => {
   try {
