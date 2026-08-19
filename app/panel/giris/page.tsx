@@ -152,7 +152,17 @@ export default async function PanelGirisPage({
             <ShieldCheck size={14} aria-hidden="true" />
             Yönetim Paneli
           </span>
-          <TextScramble text="Panel Girişi" className="mt-4 block text-h2 font-bold text-white" />
+          {/* Gerçek bir <h1> — TextScramble kendisi <span> render ediyor, o
+              yüzden burada sarmalanmalı. 2026-08-19'da e2e testi bunun eksik
+              olduğunu yakaladı: sayfa görsel olarak başlıklıydı ama semantik
+              olarak HİÇ başlık elemanı yoktu (8. oturumun tasarım
+              yenilemesinde girmiş). /ekip ve /iletisim'de 2026-08-18'de
+              düzeltilen hatanın aynısı — o taramada giriş sayfası kapsam
+              dışı kalmıştı. TextScramble tek yerde kullanıldığı için
+              bileşene `as` prop'u EKLENMEDİ (bkz. TASARIM-SISTEMI.md 9.8). */}
+          <h1 className="mt-4">
+            <TextScramble text="Panel Girişi" className="block text-h2 font-bold text-white" />
+          </h1>
           <p className="mt-3 max-w-xs text-base text-white/75">
             Sitenizi tek yerden yönetin — bu adresi sadece siz görüyorsunuz.
           </p>
