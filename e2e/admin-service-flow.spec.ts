@@ -35,7 +35,11 @@ test.describe("Kritik akış: admin — hizmet ekle, yayınla, doğrula, sil", (
     await test.step("Admin giriş yapar", async () => {
       await page.goto("/panel/giris");
       await page.getByLabel("E-posta").fill(ADMIN_EMAIL!);
-      await page.getByLabel("Şifre").fill(ADMIN_PASSWORD!);
+      // `exact: true` ZORUNLU — getByLabel varsayılan olarak alt dize (substring)
+      // eşleştirir, "Şifre" hem input'a hem PasswordField'ın göster/gizle
+      // butonuna (aria-label="Şifreyi göster") uyuyor ve Playwright strict mode
+      // hatası veriyordu. Buton etiketinde sorun YOK, testin seçicisi gevşekti.
+      await page.getByLabel("Şifre", { exact: true }).fill(ADMIN_PASSWORD!);
       await page.getByRole("button", { name: "Giriş Yap" }).click();
       await expect(page).toHaveURL(/\/panel$/);
     });
