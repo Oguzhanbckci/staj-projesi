@@ -44,10 +44,10 @@ export function ProjectsExplorer({
               type="button"
               aria-pressed={isSelected}
               onClick={() => setSelectedCategory(category)}
-              className={`rounded-full px-4 py-2 text-caption font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand ${
+              className={`rounded-full px-4 py-2 text-caption font-semibold transition duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand motion-reduce:transition-none ${
                 isSelected
-                  ? "bg-brand text-brand-on"
-                  : "border border-neutral-300 bg-surface-raised text-text hover:bg-neutral-100"
+                  ? "bg-brand text-brand-on shadow-sm"
+                  : "border border-neutral-300 bg-surface-raised text-text hover:border-brand/40 hover:bg-neutral-100 hover:text-brand"
               }`}
             >
               {category}

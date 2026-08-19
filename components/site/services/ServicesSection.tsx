@@ -30,6 +30,9 @@ export async function ServicesSection({
     <section id="hizmetler" className="bg-surface py-16 sm:py-24">
       <Container>
         <SectionHeader title="Hizmetlerimiz" headingLevel="h2" />
+        {/* items-stretch (grid varsayılanı) + kartlardaki h-full — açıklama
+            uzunlukları farklı olsa bile kartlar aynı yükseklikte kalıyor,
+            satır içinde kırık bir taban çizgisi oluşmuyor. */}
         <div className="mt-10 grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
           {services.map((service) => (
             <ServiceCard key={service.id} {...service} />

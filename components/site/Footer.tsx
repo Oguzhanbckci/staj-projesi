@@ -1,7 +1,14 @@
+import { ExternalLink, Mail, MapPin, Phone } from "lucide-react";
 import { Container } from "@/components/ui/Container";
 import { getContactSection, getPageSections, getSiteSettings } from "@/lib/supabase/queries";
 import { buildSectionNavLinks } from "@/lib/sections/config";
 
+// 2026-08-19: Platform LOGOLARI kullanılmadı — kurulu lucide-react (v1.30)
+// marka ikonlarını (Facebook/Instagram/LinkedIn) artık ihraç etmiyor,
+// 6059 ikonun içinde hiçbiri yok (marka/telif gerekçesiyle kaldırılmışlar).
+// Üçüne birden aynı jenerik ikonu koymak hiçbir bilgi katmazdı; onun
+// yerine ExternalLink kullanıldı çünkü GERÇEK bir şey söylüyor: bu
+// bağlantılar target="_blank" ile siteden ayrılıyor.
 const SOCIAL_LINKS = [
   { key: "facebookUrl", label: "Facebook" },
   { key: "instagramUrl", label: "Instagram" },
@@ -33,8 +40,11 @@ export async function Footer() {
   const year = new Date().getFullYear();
   const socialLinks = SOCIAL_LINKS.filter((social) => settings?.[social.key]);
 
+  // Üstteki bölümden ayrışsın diye ince bir kenarlık (2026-08-19) —
+  // Footer'ın zemini (surface-raised) bazı bölümlerin zeminiyle aynı
+  // olabiliyor (ör. Referanslar), o durumda ikisi tek bir blok gibi akıyordu.
   return (
-    <footer className="bg-surface-raised py-12 text-text">
+    <footer className="border-t border-neutral-300 bg-surface-raised py-12 text-text">
       <Container>
         {/* KISITLAR (kullanıcı isteği, 2026-08-18): "yazılar çok küçük,
             genişlik de az geldi" — üç değişiklik: (1) asıl okunacak içerik
@@ -53,22 +63,38 @@ export async function Footer() {
             {settings?.slogan && (
               <p className="mt-1 text-base text-text-muted">{settings.slogan}</p>
             )}
+            {/* İkonlar 2026-08-19'da eklendi — üç satır da düz metindi ve
+                hangisinin adres, hangisinin telefon olduğu ancak okunarak
+                anlaşılıyordu. İkonlar dekoratif (aria-hidden): gerçek bilgi
+                zaten metinde ve tel:/mailto: bağlantısında. `mt-0.5` +
+                `shrink-0`, çok satıra sarabilen adreste ikonun ilk satırla
+                hizalı kalmasını sağlıyor. */}
             {contact && (
-              <ul className="mt-4 space-y-2 text-h6 text-text-muted">
-                {contact.address && <li>{contact.address}</li>}
+              <ul className="mt-4 space-y-3 text-h6 text-text-muted">
+                {contact.address && (
+                  <li className="flex gap-3">
+                    <MapPin aria-hidden="true" className="mt-0.5 h-5 w-5 shrink-0 text-brand" />
+                    <span>{contact.address}</span>
+                  </li>
+                )}
                 {contact.phone && (
-                  <li>
+                  <li className="flex gap-3">
+                    <Phone aria-hidden="true" className="mt-0.5 h-5 w-5 shrink-0 text-brand" />
                     <a
                       href={`tel:${contact.phone.replace(/\s+/g, "")}`}
-                      className="hover:text-brand"
+                      className="transition-colors hover:text-brand motion-reduce:transition-none"
                     >
                       {contact.phone}
                     </a>
                   </li>
                 )}
                 {contact.email && (
-                  <li>
-                    <a href={`mailto:${contact.email}`} className="hover:text-brand">
+                  <li className="flex gap-3">
+                    <Mail aria-hidden="true" className="mt-0.5 h-5 w-5 shrink-0 text-brand" />
+                    <a
+                      href={`mailto:${contact.email}`}
+                      className="break-all transition-colors hover:text-brand motion-reduce:transition-none"
+                    >
                       {contact.email}
                     </a>
                   </li>
@@ -85,7 +111,10 @@ export async function Footer() {
               <ul className="mt-4 space-y-2">
                 {navLinks.map((link) => (
                   <li key={link.href}>
-                    <a href={link.href} className="text-h6 text-text-muted hover:text-brand">
+                    <a
+                      href={link.href}
+                      className="text-h6 text-text-muted transition-colors hover:text-brand motion-reduce:transition-none"
+                    >
                       {link.label}
                     </a>
                   </li>
@@ -106,9 +135,13 @@ export async function Footer() {
                       href={settings![social.key]!}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-h6 text-text-muted hover:text-brand"
+                      className="group inline-flex items-center gap-3 text-h6 text-text-muted transition-colors hover:text-brand motion-reduce:transition-none"
                     >
                       {social.label}
+                      <ExternalLink
+                        aria-hidden="true"
+                        className="h-4 w-4 shrink-0 text-brand opacity-0 transition-opacity duration-200 group-hover:opacity-100 motion-reduce:transition-none"
+                      />
                     </a>
                   </li>
                 ))}

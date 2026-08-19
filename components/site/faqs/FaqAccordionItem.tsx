@@ -1,6 +1,7 @@
 "use client";
 
 import { useId, useState } from "react";
+import { ChevronDown } from "lucide-react";
 import type { FaqItem } from "./types";
 
 // Klavyeyle tam kullanılabilir (gerçek <button>, Tab/Enter/Space native
@@ -31,14 +32,21 @@ export function FaqAccordionItem({
           aria-expanded={open}
           aria-controls={panelId}
           onClick={() => setOpen((prev) => !prev)}
-          className="flex w-full items-center justify-between gap-4 text-left text-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand"
+          className="group flex w-full items-center justify-between gap-4 text-left text-text transition-colors hover:text-brand focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand motion-reduce:transition-none"
         >
           {item.question}
+          {/* 2026-08-19: düz "▾" metin karakteriyken gerçek bir ikona
+              çevrildi — karakterin görünümü fonttan fonta değişiyordu ve
+              projenin geri kalanı (lucide-react) zaten ikon kullanıyor.
+              Marka renkli daire, kapalı durumda da tıklanabilirliği belli
+              ediyor. */}
           <span
             aria-hidden="true"
-            className={`shrink-0 transition-transform motion-reduce:transition-none ${open ? "rotate-180" : ""}`}
+            className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-brand/10 text-brand transition-transform duration-200 group-hover:bg-brand/20 motion-reduce:transition-none ${
+              open ? "rotate-180" : ""
+            }`}
           >
-            ▾
+            <ChevronDown className="h-4 w-4" />
           </span>
         </button>
       </Heading>

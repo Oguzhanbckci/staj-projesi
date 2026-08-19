@@ -11,8 +11,27 @@ export async function CtaSection() {
   if (!settings?.ctaTitle) return null;
 
   return (
-    <section id="cta" className="bg-brand py-16 text-brand-on sm:py-24">
-      <Container className="text-center">
+    <section id="cta" className="relative overflow-hidden bg-brand py-16 text-brand-on sm:py-24">
+      {/* İstatistikler bölümüyle AYNI dekoratif katman — ikisi de marka
+          rengi bandı, aynı görünmeleri bilinçli (bkz. StatsSection). */}
+      <div
+        aria-hidden="true"
+        className="absolute inset-0 opacity-[0.07]"
+        style={{
+          backgroundImage:
+            "linear-gradient(currentColor 1px, transparent 1px), linear-gradient(90deg, currentColor 1px, transparent 1px)",
+          backgroundSize: "40px 40px",
+        }}
+      />
+      <div
+        aria-hidden="true"
+        className="absolute inset-0 opacity-20"
+        style={{
+          backgroundImage:
+            "radial-gradient(circle at 50% 0%, currentColor, transparent 60%)",
+        }}
+      />
+      <Container className="relative text-center">
         <h2 className="text-h2 font-bold">{settings.ctaTitle}</h2>
         {settings.ctaDescription && (
           <p className="mx-auto mt-4 max-w-2xl text-base">{settings.ctaDescription}</p>
