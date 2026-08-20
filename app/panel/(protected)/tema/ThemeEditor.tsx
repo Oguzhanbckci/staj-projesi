@@ -2,6 +2,7 @@
 
 import { useActionState, useMemo, useState } from "react";
 import { TextField } from "@/components/ui/TextField";
+import { TextareaField } from "@/components/ui/TextareaField";
 import { SelectField } from "@/components/ui/SelectField";
 import { ColorPickerField } from "@/components/ui/ColorPickerField";
 import { SubmitButton } from "@/components/ui/SubmitButton";
@@ -226,13 +227,26 @@ export function ThemeEditor({ initialData }: { initialData: ThemeSettingsData })
               defaultValue={initialData.email ?? undefined}
               error={fieldErrors.email}
             />
-            <TextField
+            {/* TextField (tek satırlık <input>) DEĞİL TextareaField —
+                2026-08-20'de canlı sitede görülen GERÇEK BİR VERİ KAYBI:
+                `working_hours` migration'da satır sonlarıyla dolduruluyor
+                (20260811120000, `chr(10)`) ve İletişim sayfası bunu
+                `whitespace-pre-line` ile 3 satır olarak basıyor. Ama bu alan
+                tek satırlık bir `<input>` idi ve HTML'de bir input satır
+                sonu TAŞIYAMAZ — Tema ekranı bir kez kaydedildiği anda,
+                bu alana hiç dokunulmasa bile, satır sonları siliniyor ve
+                değer "…18:00Cumartesi: 09:00 - 13:00Pazar: Kapalı" gibi
+                birbirine yapışık tek satıra dönüşüyordu. Ekran görüntüsünde
+                tam olarak bu görüldü. Referans puanındaki hatayla aynı sınıf:
+                panel gidiş-dönüşü veriyi sessizce bozuyor. */}
+            <TextareaField
               id={`${FIELD_ID_PREFIX}-workingHours`}
               label="Çalışma Saatleri (opsiyonel)"
               name="workingHours"
+              rows={3}
               defaultValue={initialData.workingHours ?? undefined}
               error={fieldErrors.workingHours}
-              helpText="İletişim sayfasında görünür (ör. Hafta içi 08:00 - 18:00)."
+              helpText="Her satır ayrı gösterilir. Ör. birinci satır “Pazartesi - Cuma: 09:00 - 18:00”, ikinci satır “Cumartesi: 09:00 - 13:00”."
             />
 
             <div>
