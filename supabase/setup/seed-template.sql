@@ -127,10 +127,21 @@ begin
     (v_tenant_id, 'testimonials', 50, true, 'grid'),
     (v_tenant_id, 'stats', 60, true, null),
     (v_tenant_id, 'faq', 70, true, 'single'),
-    (v_tenant_id, 'team', 80, true, null),
-    (v_tenant_id, 'cta', 90, true, null),
-    (v_tenant_id, 'contact', 100, true, null)
+    (v_tenant_id, 'cta', 90, true, null)
   on conflict (tenant_id, section_key) do nothing;
+
+  -- 'team' ve 'contact' BİLEREK YOK — 2026-08-13'te ana sayfadan çıkarılıp
+  -- kendi sayfalarına taşındılar (/ekip, /iletisim; bkz. migration
+  -- 20260813120000_split_team_contact_into_pages.sql ve docs/PRD.md madde
+  -- 3.3). Bu şablon onları 2026-08-20'ye kadar hâlâ page_sections'a
+  -- `is_visible = true` ile ekliyordu; yani her YENİ müşteri kurulumunda
+  -- Ekip ve İletişim hem ana sayfada hem kendi sayfasında görünecek,
+  -- içerik ikiye katlanacaktı (2026-08-20 mentör denetimi, bulgu 07).
+  -- Kodun tamamı (lib/sections/config.ts STATIC_NAV_LINKS,
+  -- buildSectionNavLinks) bu iki bölümün ana sayfada OLMADIĞINI varsayıyor.
+  --
+  -- Not: order_index'te 80 ve 100 bilerek boş bırakıldı — mevcut
+  -- kurulumların sıralamasıyla karşılaştırma yapmak kolay kalsın diye.
 
   raise notice 'Kurulum tamamlandı — tenant_id: %', v_tenant_id;
 end $$;
