@@ -118,7 +118,33 @@
 
   /* Hero ve kenarlık — bkz. :root'taki tanım, burada koyu tema karşılığı. */
   --color-hero: #183b6b;
+
   --color-neutral-300: #303844;
+
+  /*
+   * 2026-08-20 mentör denetimi (bulgu 15): --color-neutral-100 bu blokta
+   * HİÇ tanımlı değildi, yani koyu temada da :root'taki #e2e5e9 (neredeyse
+   * beyaz) render ediliyordu. Üzerine gelen --color-text-muted (#aeb7c2)
+   * ile kontrast 1.14:1'e düşüyordu — pratikte okunamaz. Etkilenenler:
+   * Badge'in "neutral" varyantı (bg-neutral-100 + text-text-muted),
+   * Button/LinkButton "secondary" ve "ghost" hover'ları, panel tablo satır
+   * kenarlıkları (border-neutral-100) ve 9 görsel yükleyicideki önizleme
+   * kutusu.
+   *
+   * Değer surface-raised'ın (#242a33) bir adım üstü — aynı yüzeye oturan
+   * bir "hafif vurgu" katmanı olarak, açık temadaki #e2e5e9'un beyaza göre
+   * konumuyla aynı rol. Kontrol: text (#f1f4f7) üzerinde 11.2:1,
+   * text-muted (#aeb7c2) üzerinde 6.3:1 — ikisi de AA'yı rahat geçiyor.
+   *
+   * DİKKAT — --color-neutral-50 ve --color-neutral-900 BİLEREK burada
+   * tanımlanmıyor, eksik değiller: ikisi de tema-duyarlı DEĞİL, sabit
+   * rollere sahip. neutral-900 modal/menü karartması (bg-neutral-900/50,
+   * bkz. PanelShell/MobileMenu) ve Tooltip zemini; neutral-50 da o
+   * Tooltip'in metni. İkisi her iki temada da aynı kalmalı, yoksa koyu
+   * temada karartma açık renge döner ve Tooltip açık-üstüne-açık olur.
+   * --color-neutral-500/700/800 ise şu an hiçbir bileşende kullanılmıyor.
+   */
+  --color-neutral-100: #2d343e;
 
   --background: var(--color-surface);
   --foreground: var(--color-text);
