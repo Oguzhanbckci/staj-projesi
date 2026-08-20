@@ -5548,3 +5548,299 @@ yerleşim. Kullanıcıya bu ödünleşim açıkça söylendi ve onaylandı.
 **Ek fayda:** bir soru açıldığında karşısındaki hücre de birlikte uzuyor, hiza
 bozulmuyor — `columns` düzeninde açılma tüm sütun akışını yeniden
 hesaplatıyordu.
+
+---
+
+## 2026-08-20 (on birinci oturum) — Baştan aşağı mentör denetimi: 8 boyutlu, karşıt-doğrulamalı tarama
+
+**Karar:** Kullanıcının isteği üzerine ("projemi baştan aşağı bir mentör gibi
+incele") depo, sekiz ayrı boyutta paralel olarak taranıp her bulgu ayrı bir
+"çürütücü" ajana verildi. Boyutlar: güvenlik, Next.js 16 uyumu, mantık
+doğruluğu, erişilebilirlik, test kapsamı, mimari/kod tekrarı, doküman-kod
+tutarlılığı, SEO/performans/KVKK.
+
+**Yöntem — neden karşıt-doğrulama:** Tek yönlü bir inceleme, makul görünen ama
+yanlış bulgular üretir. Her boyutun bulguları, varsayılanı "bu bulgu yanlış"
+olan ikinci bir ajana verildi; o ajan iddia edilen dosyayı açıp alıntının
+gerçekten orada olduğunu, başka bir katmanda koruma olup olmadığını ve Next.js
+iddialarının `node_modules/next/dist/docs/` ile uyuştuğunu denetledi.
+**Sonuç: 107 bulgu üretildi, 105'i sağ çıktı, 2'si çürütüldü.** Ayrıca
+ajanlara "bilinçli kararlar" listesi verildi (panelin çok-kiracılığı, "tofe
+İnşaat", e2e'nin CI'da olmaması, blog/çoklu dil kapsam dışılığı) — bu
+maddelerin tekrar gündeme getirilmesi engellendi.
+
+**Manşet bulgular ayrıca ELLE teyit edildi** (ajan raporuna güvenilmedi):
+migration SQL'i, `.next/server/app/*.html` build çıktısı ve kaynak kod
+doğrudan okundu. 105 bulgu tekilleştirilince 52 madde kaldı; tam liste ve
+öncelik sırası bir Artifact olarak yayımlandı.
+
+### Bu oturumda düzeltilenler ("hızlı kazanımlar" paketi, kullanıcı seçimi)
+
+1. **`<html lang="en">` → `lang="tr"`** (`app/layout.tsx`). Build çıktısındaki
+   üç sayfanın da HTML'i `lang="en"` yayınlıyordu; ekran okuyucular tüm Türkçe
+   metni İngilizce fonetikle okuyor, arama motorlarına yanlış dil sinyali
+   gidiyordu. `global-error.tsx` aynı projede zaten `lang="tr"` kullanıyordu —
+   kalıp biliniyordu, kök layout'a uygulanmamıştı.
+
+2. **Koyu temada `--color-neutral-100` tanımsızdı** (`app/globals.css`).
+   `[data-theme="dark"]` bloğu bu token'ı hiç override etmediği için koyu
+   temada da `#e2e5e9` (neredeyse beyaz) render ediliyordu; üzerine gelen
+   `--color-text-muted` ile kontrast **1.14:1**'e düşüyordu. Etkilenenler:
+   `Badge` nötr varyantı, `Button`/`LinkButton` secondary+ghost hover'ları,
+   panel tablo satır kenarlıkları, 9 görsel yükleyicinin önizleme kutusu.
+   **Denetim raporu 5 token eksik diyordu; kod okunduğunda gerçek sayının 1
+   olduğu görüldü** — `--color-neutral-50` ve `-900` bilinçli olarak
+   tema-bağımsız (Tooltip metni/zemini ve modal karartması), `-500/-700/-800`
+   ise hiçbir bileşende kullanılmıyor. Ters çevirmek Tooltip'i ve modal
+   karartmasını bozardı. Gerekçe koda yorum olarak yazıldı ki sonraki oturumlar
+   bunu "eksik" sanıp düzeltmeye kalkmasın.
+
+3. **Hiçbir sayfada `<meta name="description">` yoktu**
+   (`app/(site)/layout.tsx`). Sebep: `description: settings?.seoDescription ??
+   undefined`. Next.js metadata'yı sığ birleştiriyor ve alt segmentte VAR OLAN
+   bir anahtar üsttekini değiştiriyor (bkz. `generate-metadata.md`, "Merging"),
+   yani `undefined` kök layout'un dolu yedeğini siliyordu. Artık gerçek bir
+   yedek veriliyor. **Bu bulgu `.next/server/app/index.html`, `ekip.html` ve
+   `iletisim.html` taranarak kanıtlandı** — teorik bir çıkarım değil.
+
+4. **Kanonik adres ve alt sayfa açıklamaları eklendi.** Hiçbir sayfada
+   `<link rel="canonical">` yoktu (UTM/fbclid'li adresler ayrı sayfa olarak
+   dizine girebilirdi); `/ekip` ve `/iletisim` yalnızca `title` veriyor,
+   açıklamayı ana sayfadan miras alıyordu. İkisine de kendi `description` ve
+   `alternates.canonical` değeri verildi.
+
+   **Build çıktısı doğrulanırken canonical'ın İLK HÂLİ tehlikeli bulundu ve
+   düzeltildi.** İlk uygulamada canonical `metadataBase`'e (yani
+   `getSiteUrl(domain)`) bağlıydı. Yerelde `NEXT_PUBLIC_SITE_URL` ve
+   `ACTIVE_TENANT_DOMAIN` boş olduğu için `getKnownSiteUrl()` `null` dönüyor
+   ve `getSiteUrl()` en son çareye — veritabanındaki `tenants.domain`'e —
+   düşüyordu; üretilen etiket `<link rel="canonical"
+   href="https://akmeinsaat.com.tr">` oldu. Oysa `getSiteUrl`'ün kendi
+   yorumu bu değer için açıkça şunu diyor: *"gerçek bir adrese hiç karşılık
+   gelmeyebilir, ör. bu demo dağıtımında."*
+
+   **Neden canonical'da bu, sitemap'tekinden çok daha ciddi:** yanlış bir
+   sitemap adresi sadece taranamaz; yanlış bir canonical ise arama motoruna
+   *"bu sayfa bir kopya, aslı şu adreste"* der ve hedef adres gerçek
+   değilse sayfa dizinden tamamen düşebilir. Yani etiketi eklemek, hiç
+   eklememekten KÖTÜ bir sonuca yol açabilirdi. 2026-08-17'de mutlak URL'in
+   yanlış domain'e işaret etmesi canlı Lighthouse SEO skorunu 92'den 58'e
+   düşürmüştü — aynı hata sınıfı, daha yüksek bedelli hâli.
+
+   **Çözüm — projenin kendi "fail closed" ilkesi canonical'a da uygulandı:**
+   canonical artık yalnızca `getKnownSiteUrl()` dolu olduğunda üretiliyor
+   (`alternates: knownSiteUrl ? { canonical: "/" } : undefined`). Bu
+   fonksiyon zaten tam bu amaçla var — `proxy.ts`'teki kanonik-adrese-
+   yönlendirme kararı için "yeterince güvenilir olmayan" kaynakları (
+   `VERCEL_URL`, `tenantDomain`) bilerek dışlıyor. Canonical de en az bir
+   yönlendirme kadar sonuçlu bir karardır, aynı eşiği hak ediyor.
+   `knownSiteUrl` doluyken `getSiteUrl()` de aynı değeri döndürdüğü için
+   `metadataBase` ona eşit olur ve göreli yol doğru mutlak adrese çözülür;
+   boşken hiç etiket üretilmez.
+
+   **Sonuç:** yerel build'de artık canonical YOK — beklenen ve doğru
+   davranış. Canlıda çıkması için Vercel'de `NEXT_PUBLIC_SITE_URL`
+   ayarlanmış olmalı (ya da Vercel'in otomatik verdiği
+   `VERCEL_PROJECT_PRODUCTION_URL` devreye girer).
+
+5. **Kesirli referans puanı panelden düzenlenince SESSİZCE siliniyordu —
+   gerçek veri kaybı.** 2026-08-19'da kolon `integer` → `numeric(2,1)`
+   yapılmış ve `TestimonialCard` yarım yıldız çizmeye başlamıştı, ama
+   `lib/validation/testimonial.ts` `^[1-5]?$` olarak kalmış ve form yalnızca
+   1-5 tam sayı `<option>`'ı taşıyordu. DB'de 4.5 olan bir kayıt panelde
+   açılınca select hiçbir seçenekle eşleşmeyip "Belirtilmedi"ye düşüyor,
+   kaydedilince `rating` null oluyordu — ne hata, ne uyarı.
+   **Çözüm ve neden select'i 0,5 adıma genişletmedik:** kart `4.3` gibi
+   herhangi bir oranı da çizebiliyor ve DB `numeric(2,1)` 0,1 adıma izin
+   veriyor; 0,5'lik bir select aynı hatayı 4,3 için tekrar üretirdi. Bunun
+   yerine serbest metin alanı (`inputMode="decimal"`) + yeni `parseRating()`
+   yardımcısı. **`type="number"` de bilinçli olarak seçilmedi:** geçersiz
+   girişte tarayıcı `value`'yu boş string gönderir, bu da aynı sınıf "sessizce
+   silinme" hatasını geri getirirdi. Türkçe ondalık ayıracı (virgül) kabul
+   ediliyor. Doğrulama ve çevirme artık AYNI fonksiyonu kullanıyor, böylece
+   "doğrulamadan geçti ama farklı çevrildi" sapması oluşamaz.
+
+   **Düzeltme sırasında İKİNCİ bir veri kaybı yolu bulundu — formu
+   düzeltmek tek başına YETMİYORMUŞ.** `lib/supabase/queries.ts` içinde
+   zaten `parseRating(value: unknown)` adında yerel bir yardımcı vardı ve
+   yorumu şunu açıkça yazıyordu: "PostgREST `numeric` değerleri duruma göre
+   JSON sayısı YA DA string olarak döndürebilir; sadece
+   `typeof === 'number'` kontrolü yapmak, string geldiğinde puanı sessizce
+   null'a düşürürdü." Ziyaretçi sorgusu (`getTestimonials`) bunu 2026-08-19'da
+   doğru ele almıştı — ama **panel sorgusu (`getTestimonialById`) tam olarak
+   o hatalı kontrolü yapıyordu:** `rating: typeof data.rating === "number" ?
+   data.rating : null`. Yani PostgREST string döndürdüğünde puan panelde boş
+   görünüyor, kaydedilince siliniyordu; form düzeltilse bile kayıp burada
+   oluşmaya devam ederdi. Bu, oturumun **üçüncü** "doğru karar diğer kopyaya
+   yayılmamış" örneği.
+
+   **Çözüm — isim çakışması da giderildi:** iki ayrı `parseRating`
+   bırakmak (biri form metni için, biri DB değeri için, farklı imzalarla,
+   farklı modüllerde) tam da bu denetimin işaret ettiği sapma türüydü.
+   Kavram tek modülde toplandı: `lib/validation/testimonial.ts` artık
+   **yazma yönü** için `parseRatingInput(raw: string)` (katı: 1-5 aralığı,
+   tek ondalık, virgül kabul) ve **okuma yönü** için
+   `coerceStoredRating(value: unknown)` (gevşek: sayı ya da numeric-string
+   kabul, aralık doğrulaması YAPMAZ — çünkü değer zaten DB'nin CHECK
+   kısıtından geçmiş bir kayıt, aralığı burada tekrar denetlemek geçerli ama
+   beklenmedik bir değeri sessizce yok etmek olurdu) ihraç ediyor.
+   `queries.ts`'teki yerel kopya silindi; hem ziyaretçi hem panel sorgusu
+   artık aynı fonksiyonu çağırıyor. `coerceStoredRating`'in string girdiyi
+   kabul ettiği testte ayrıca kilitlendi.
+
+6. **`lib/validation/project.ts`'teki `year` alanı DB CHECK kısıtıyla
+   uyuşmuyordu.** Şema `^\d{0,4}$` idi, yani "202", "7", "0000" doğrulamadan
+   geçiyor ama `check (year between 1800 and 2100)` kısıtına takılıyordu;
+   kullanıcı alan-bazlı hata yerine genel bir "sistem hatası" görüyordu.
+   Aralık kontrolü eklendi. **Not:** aynı kalıp `lib/validation/about.ts`'teki
+   `foundedYear` alanında ZATEN doğru kurulmuş ve gerekçesi ("şema DB'nin izin
+   verdiğinden DAHA GEVŞEK olamaz") yorum olarak yazılmıştı — yalnızca
+   `project.ts`'e taşınmamıştı.
+
+7. **Tema ve Ayarlar ekranları `.update()` kullanıyordu.** Düz `.update()`
+   eşleşen satır yoksa hata vermez, sessizce hiçbir şey yazmaz ve eylem yine
+   "Değişiklikler kaydedildi." döner. Bu hata dokuzuncu oturumda
+   Hero/Hakkımızda eylemlerinde tespit edilip `.upsert(…, { onConflict:
+   "tenant_id" })` ile düzeltilmiş, hatta gerekçesi koda yorum olarak
+   yazılmıştı — ama Tema (2 çağrı) ve Ayarlar (1 çağrı) eylemlerine
+   taşınmamıştı. Üçü upsert'e çevrildi. **`tenants` tablosuna yapılan iki
+   `.update()` bilinçli olarak DEĞİŞTİRİLMEDİ:** o satır zaten var olmak
+   zorunda (`tenantId` ondan geliyor), upsert orada yanlış olurdu.
+   `site_settings` ve `contact_sections`'ta `unique (tenant_id)` kısıtı olduğu
+   ve `tenant_id` dışında NOT NULL kolon bulunmadığı önce doğrulandı.
+
+8. **`supabase/setup/seed-template.sql` yeni kurulumu bozuyordu.** Şablon
+   `('team', 80, true)` ve `('contact', 100, true)` satırlarını hâlâ
+   `page_sections`'a yazıyordu; oysa bu iki bölüm 2026-08-13'te ana sayfadan
+   çıkarılıp kendi sayfalarına taşınmıştı (`/ekip`, `/iletisim`) ve kodun
+   tamamı (`STATIC_NAV_LINKS`, `buildSectionNavLinks`) bunun tersini
+   varsayıyor. Bir sonraki gerçek müşteri kurulumunda Ekip ve İletişim hem ana
+   sayfada hem kendi sayfasında görünecek, içerik ikiye katlanacaktı. İki satır
+   çıkarıldı, gerekçe SQL'e yorum olarak yazıldı.
+
+9. **CI'a `permissions: contents: read` ve `timeout-minutes` eklendi.**
+   `GITHUB_TOKEN` gereğinden yetkiliydi; asılı kalan bir koşu varsayılan olarak
+   6 saate kadar ücretsiz Actions dakikası yakabiliyordu.
+
+10. **İki yeni test dosyası:** `lib/validation/testimonial.test.ts` ve
+    `lib/validation/project.test.ts`. Bunlar süs değil — 5. ve 6. maddedeki
+    hataların ikisi de tam olarak bu şemaların testi olmadığı için doğdu ve
+    testler o iki hatanın regresyon koruması olarak yazıldı. Testlerin asıl
+    koruduğu şey **zod şeması ile DB CHECK kısıtının uyumu**; sınır değerler
+    bilerek migration dosyasından alındı.
+
+**Gerekçe (bu denetimden çıkan asıl ders):** 52 tekil bulgunun büyük
+çoğunluğu tek bir kalıptan doğuyor — **bir yerde verilen doğru karar, aynı
+kalıbın diğer kopyalarına yayılmamış.** Yukarıdaki 5, 6 ve 7. maddelerin üçü de
+bu biçimde: doğru çözüm zaten projede vardı, hatta gerekçesi yorumla birlikte
+yazılıydı, sadece ikinci/üçüncü kopyaya taşınmamıştı. Bu, kod tekrarının somut
+faturasıdır ve raporun mimari bölümünün (9 kopyalı `imageActions`, 4 kopyalı
+görsel yükleyici, 5 kopyalı toggle/move/delete) neden bir "temizlik" değil bir
+**hata önleme** işi olduğunu açıklıyor.
+
+**Açık kalan en yüksek öncelikli madde:** `20260818150000` migration'ındaki üç
+`security definer` fonksiyonuna hiç `revoke` verilmemiş. PostgreSQL yeni
+fonksiyonlarda EXECUTE'u varsayılan olarak PUBLIC'e verdiği ve Supabase
+`public` şemasında anon/authenticated için varsayılan yetki tanımladığı için
+`anon` bu üçünü PostgREST üzerinden çağırabiliyor olabilir — ki bu,
+`GUVENLIK.md` madde 17'nin "anon istisnasız hiçbir tabloya yazamaz" iddiasını
+doğrudan çürütürdü. Üstelik `submit_contact_message_if_allowed` içinde
+`if p_ip is not null then` bloğu hız sınırının tamamını sardığı için
+`p_ip: null` gönderen bir istek honeypot'u, zod doğrulamasını ve 15dk/3 mesaj
+sınırını hep birden atlıyor. **Madde 17'deki denetim yalnızca TABLO
+politikalarını taramış, fonksiyon yetkilerine hiç bakmamış** — asıl ders bu.
+Doğrulama sorgusu ve düzeltme migration'ı `DURUM.md` "Sıradaki adım" madde
+10'da.
+
+---
+
+## 2026-08-20 (aynı gün) — Bulgu 01 canlıda doğrulandı: hız sınırı RPC'leri anon'a açıkmış, kapatıldı
+
+**Karar:** Mentör denetiminin 1 numaralı bulgusu (`security definer` RPC'lerine
+hiç `revoke` verilmemiş olması) önce **canlı veritabanında doğrulandı**, sonra
+düzeltildi. Sıra bilinçli: bir güvenlik açığı "muhtemelen vardır" diye
+düzeltilmez, önce var olduğu kanıtlanır.
+
+**Doğrulama (Supabase SQL Editor):**
+
+```sql
+select p.proname, p.prosecdef,
+       has_function_privilege('anon', p.oid, 'execute'),
+       has_function_privilege('authenticated', p.oid, 'execute'),
+       has_function_privilege('service_role', p.oid, 'execute')
+from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+where n.nspname = 'public' order by p.proname;
+```
+
+Sorgu bilerek üç fonksiyonu adıyla değil, `public` şemasındaki TÜM
+fonksiyonları listeleyecek şekilde yazıldı — migration'lara girmemiş, elle
+oluşturulmuş bir fonksiyon varsa o da görünsün diye (bu projede daha önce
+"uygulandı ama kayda geçmedi" durumu yaşanmıştı). Sonuç: tam olarak 3
+fonksiyon, **üçünde de `security_definer = true` ve `anon = true`.** Yani
+açık gerçekti.
+
+**Neden açıktı (asıl ders):** `20260818150000` migration'ı her fonksiyona
+`grant execute ... to service_role` verdi ama hiç `revoke` yazmadı.
+**Grant eklemek, varsayılanı kaldırmaz.** PostgreSQL yeni fonksiyonlara
+EXECUTE'u varsayılan olarak PUBLIC'e verir (`anon` PUBLIC'in içindedir) ve
+Supabase ayrıca `public` şemasında anon/authenticated için varsayılan
+fonksiyon yetkisi tanımlar. Kapı zaten açıktı; migration yanına bir anahtar
+daha astı.
+
+**Etki:** `security definer` fonksiyonlar RLS'i tamamen atladığı için, anon
+key'i olan herkes (ki o anahtar tasarım gereği site JS paketinde herkese
+açık) `submit_contact_message_if_allowed`'ı doğrudan çağırıp
+`contact_messages`'a sınırsız kayıt yazabiliyordu — honeypot, zod
+doğrulaması ve "15 dakikada 3 mesaj" sınırının üçü de uygulama katmanında
+yaşadığı için hepsi atlanıyordu. İki ayrı atlatma yolu vardı: `p_ip: null`
+göndermek (hız sınırı sayımı `if p_ip is not null then` bloğunun içinde) ve
+`p_max_per_window: 999999` göndermek (politika parametreleri istemciden
+geliyordu). Gereken `p_tenant_id` de erişilebilirdi — `20260807130000` anon'a
+`tenants` üzerinde sınırlı SELECT veriyor.
+
+**Düzeltmeden ÖNCE yapılan kritik kontrol:** revoke yazmadan önce, bu
+RPC'lerin hangi Supabase istemcisiyle çağrıldığı koddan doğrulandı. Bu
+önemliydi çünkü **giriş hız sınırı kullanıcı henüz giriş YAPMAMIŞKEN**,
+**iletişim formu da ANONİM ziyaretçiyle** çalışıyor — eğer anon istemcisi
+kullanılsaydı, anon'dan yetkiyi almak girişi ve iletişim formunu tamamen
+kırardı. İki çağrı da `createServiceRoleClient()` kullanıyor
+(`app/panel/giris/page.tsx:46`, `components/site/contact/actions.ts:84`),
+yani revoke güvenliydi.
+
+**Uygulama:** `20260820120000_revoke_rpc_execute_from_anon.sql` — üç
+fonksiyondan da `revoke execute ... from public, anon, authenticated`.
+İmzalar `20260818150000`'deki `grant` satırlarından birebir kopyalandı
+(PostgreSQL'de fonksiyonlar aşırı yüklenebildiği için revoke doğru imzayı
+gerektirir). Kullanıcı SQL Editor'de çalıştırdı, **doğrulama sorgusu tekrar
+koşuldu: anon ve authenticated `false`, service_role `true`.** Açık kapandı.
+
+**Yan fayda:** fonksiyonu artık yalnızca sunucu çağırabildiği için
+`p_max_per_window`/`p_window_minutes` her zaman koddaki sabitlerden gelir
+(`LOGIN_RATE_LIMIT_MAX_ATTEMPTS`, `CONTACT_RATE_LIMIT_MAX_SUBMISSIONS`) —
+"politika parametreleri istemciden geliyor" sorunu için ayrı bir düzeltme
+gerekmedi.
+
+**`GUVENLIK.md` madde 17'ye eklenen asıl ders:** o madde 2026-08-17'de
+"anon İSTİSNASIZ hiçbir tabloya hiçbir koşulda yazamaz" sonucuna varmıştı ve
+bu sonuç yazıldığı tarihte YANLIŞTI. Sebep bir hesap hatası değil, bir
+**kapsam** hatası: denetim yalnızca TABLO/BUCKET politikalarını
+(`create policy`) taradı, fonksiyon yetkilerine hiç bakmadı. "Anon ne
+yapabilir" sorusunun en az üç ayrı yüzeyi var — tablo/bucket politikaları,
+kolon yetkileri, ve fonksiyon yetkileri (özellikle `security definer`
+olanlar) — ve üçüncüsü 2026-08-20'ye kadar hiç denetlenmemişti. Madde 17'ye
+hem bu ders hem yeniden çalıştırılabilir bir denetim sorgusu eklendi.
+
+**Bundan sonraki kural (migration dosyasına da yazıldı):** yeni bir
+`security definer` fonksiyon yazıldığında `grant ... to service_role`
+YETMEZ, yanına mutlaka `revoke execute ... from public, anon, authenticated`
+yazılmalı. Ayrıca `create or replace` mevcut yetkileri KORUR, ama `drop` +
+`create` varsayılanları geri getirir — o durumda revoke tekrar
+çalıştırılmalıdır.
+
+**Açık kalan iki küçük iş:** (1) `login_attempts` için TTL/temizlik yok —
+artık anon tetikleyemediği için sınırsız büyüme riski büyük ölçüde ortadan
+kalktı, geriye KVKK saklama süresi boyutu kaldı, o yüzden madde 13'teki KVKK
+işiyle birlikte yapılacak. (2) `scripts/test-rls.mjs` yalnızca `services` ve
+`contact_messages` tablolarını sınıyor, RPC yüzeyini hiç test etmiyor —
+anon istemcisiyle bu üç fonksiyonu çağırma testi eklenmeli, böylece aynı
+sınıf açık bir daha sessizce geri gelemez.

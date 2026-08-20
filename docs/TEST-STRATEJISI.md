@@ -271,6 +271,36 @@ duymuyor:**
   MASKELENMİYOR, testin kendi idempotency'sinin gerçekten sağlaması
   isteniyor. `timeout: 60_000` (KABUL KRİTERİ).
 
+### Güncelleme *(2026-08-20, on birinci oturum — mentör denetimi)*
+
+⚠️ **Yukarıdaki birim test tablosu bayat: "3 dosya" diyor ama diskte artık
+10 dosya var.** Tablo 2026-08-17'de yazıldıktan sonra eklenen 5 dosya
+(`contactNotification`, `contactHoneypot`, `getClientIp`, `breadcrumbList`,
+`getSiteUrl`) hiç işlenmemiş. Bu, `DURUM.md` "Sıradaki adım" madde 17'deki
+doküman-kod sapması kaleminin bir parçası — tablo baştan yazılmalı.
+
+Bu oturumda eklenen **2 yeni dosya** ve neden eklendikleri:
+
+| Dosya | Test edilen | Neden — bu testler bir hatanın ARDINDAN yazıldı |
+|---|---|---|
+| `lib/validation/testimonial.test.ts` | `testimonialFormSchema`, `parseRatingInput`, `coerceStoredRating` | Kesirli referans puanı (4,5) panelden düzenlenince SESSİZCE siliniyordu — **iki ayrı yoldan**: (a) kolon 2026-08-19'da `numeric(2,1)` yapılmış ama şema `^[1-5]?$` kalmıştı; (b) `getTestimonialById` PostgREST'in string dönebilen `numeric` değerlerini kabul etmiyordu. İkisinin de regresyon testi burada. |
+| `lib/validation/project.test.ts` | `projectFormSchema` | `year` alanı `^\d{0,4}$` idi, yani "202"/"0000" doğrulamadan geçip DB'nin `check (year between 1800 and 2100)` kısıtına takılıyor ve kullanıcı anlamsız bir "sistem hatası" görüyordu. |
+
+**Bu iki testin asıl koruduğu şey madde 1'e (test felsefesi) yeni bir
+kalem ekliyor: ZOD ŞEMASI İLE DB CHECK KISITININ UYUMU.** Şema, DB'nin izin
+verdiğinden daha gevşek olduğunda doğrulama "tamam" der, INSERT patlar ve
+kullanıcı alan-bazlı bir hata yerine genel bir hata görür — yani hata
+kullanıcıya en işe yaramaz biçimde ulaşır. Bu yüzden her sınır değer testi
+bilerek migration dosyasından alınıyor, uydurulmuyor. Yeni bir doğrulama
+şeması yazılırken bu eşleştirme kontrol edilmeli.
+
+**Hâlâ kapsanmayan, risk sıralı** (ayrıntı: `DURUM.md` madde 19): 40+ sunucu
+eyleminde `requireAdminUser()` çağrısını doğrulayan hiçbir test yok (bunu bir
+test değil bir **tarama** ile çözmek daha ucuz); `THEME_PRESETS` için
+kontrast değişmez testi yok (araç `lib/theme/contrast.ts`'te hazır); iletişim
+formu e2e testi mesajın DB'ye yazıldığını hiç doğrulamıyor; jsdom + Testing
+Library kurulu ama sıfır bileşen testi var.
+
 ## 11. Testleri Çalıştırma *(2026-08-17 eklendi)*
 
 **İlk kurulum (bir kere):**

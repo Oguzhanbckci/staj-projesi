@@ -15,7 +15,57 @@ geçmişi) oku. Yeni bir müşteri kurulumu yapılacaksa `KURULUM.md`'ye
 (sıfırdan kurulum, geliştirici için), panelin günlük kullanımı için
 `MUSTERİ-KILAVUZU.md`'ye (teknik olmayan okuyucu için) bakılır.
 
-**Son güncelleme:** 2026-08-19 (onuncu oturum) — Uzun bir oturum; beş ana iş
+**Son güncelleme:** 2026-08-20 (on birinci oturum) — **Baştan aşağı mentör
+denetimi.** Kullanıcının isteğiyle depo sekiz boyutta (güvenlik, Next.js 16
+uyumu, mantık doğruluğu, erişilebilirlik, test, mimari/kod tekrarı,
+doküman-kod tutarlılığı, SEO/performans/KVKK) paralel tarandı ve **her bulgu,
+varsayılanı "bu bulgu yanlış" olan ayrı bir çürütücü ajana verildi.**
+**107 bulgu üretildi, 105'i sağ çıktı, 2'si çürütüldü; tekilleştirilince 52
+madde kaldı.** Manşet bulgular ajan raporuna güvenilmeden ELLE teyit edildi
+(migration SQL'i, `.next/server/app/*.html` build çıktısı, kaynak kod).
+Tam liste ve öncelik sırası bir Artifact olarak yayımlandı.
+
+**Bu oturumda düzeltilenler (kullanıcı "hızlı kazanımlar" paketini seçti — 8
+düzeltme + 2 yeni test dosyası):** (1) `<html lang="en">` → `lang="tr"`;
+(2) koyu temada tanımsız kalan `--color-neutral-100` (kontrast 1.14:1'e
+düşüyordu); (3) **hiçbir sayfada `<meta name="description">` yoktu** —
+`description: undefined` kök layout'un yedeğini siliyordu, build HTML'i ile
+kanıtlandı; (4) kanonik adres + `/ekip` ve `/iletisim` için kendi açıklamaları
+(**canonical yalnızca `getKnownSiteUrl()` dolu olduğunda üretiliyor** —
+ilk hâli `tenants.domain`'e düşüp var olmayan bir adrese işaret ediyordu,
+bu eksik canonical'dan daha zararlı olurdu; build çıktısı incelenirken
+yakalandı);
+(5) **kesirli referans puanı panelden düzenlenince SESSİZCE siliniyordu**
+(gerçek veri kaybı — şema ve form 2026-08-19'daki `numeric(2,1)` geçişine
+güncellenmemişti; düzeltirken **İKİNCİ bir kayıp yolu daha bulundu:**
+`getTestimonialById` PostgREST'in string dönebilen `numeric` değerlerini
+kabul etmiyordu, yani formu düzeltmek tek başına yetmezdi — puan çevirme
+mantığı `parseRatingInput` / `coerceStoredRating` olarak tek modülde
+toplandı, `queries.ts`'teki yerel kopya silindi);
+(6) `project.ts`'teki `year` alanı DB CHECK kısıtıyla
+uyuşmuyordu; (7) Tema/Ayarlar'daki 3 `.update()` çağrısı `.upsert()`'e
+çevrildi (dokuzuncu oturumda Hero/Hakkımızda'da düzeltilmiş ama buraya
+taşınmamış hata); (8) **`seed-template.sql` yeni müşteri kurulumunu
+bozuyordu** — `team` ve `contact` bölümlerini hâlâ ana sayfaya ekliyordu;
+(9) CI'a `permissions` + `timeout-minutes`. Yeni testler:
+`lib/validation/testimonial.test.ts` ve `project.test.ts` — ikisi de 5. ve
+6. maddedeki hataların regresyon koruması.
+
+**Denetimden çıkan asıl ders:** 52 bulgunun büyük çoğunluğu tek bir kalıptan
+doğuyor — **bir yerde verilen doğru karar, aynı kalıbın diğer kopyalarına
+yayılmamış.** Yukarıdaki 5, 6 ve 7. maddelerin üçünde de doğru çözüm zaten
+projede vardı, gerekçesi bile yorumla yazılıydı; sadece ikinci/üçüncü kopyaya
+taşınmamıştı. Bu yüzden mimari bölümündeki kod tekrarı maddeleri (9 kopyalı
+`imageActions`, 4 kopyalı görsel yükleyici, 5 kopyalı toggle/move/delete) bir
+"temizlik" değil, **hata önleme** işi.
+
+**BU OTURUMDAN SONRAKİ OTURUM İÇİN:** `npm run lint`, `npx tsc --noEmit`,
+`npm test` ve `npm run build` bu oturumda HENÜZ ÇALIŞTIRILMADI (komutlar
+kullanıcıya verildi, bkz. `AI-KURALLARI.md` madde 9.2) — bir sonraki oturum
+önce bunların temiz geçtiğini teyit etmeli. En yüksek öncelikli açık madde
+aşağıdaki **madde 10** (anon'a açık RPC yetkileri).
+
+**Önceki güncelleme (2026-08-19, onuncu oturum):** Uzun bir oturum; beş ana iş
 yapıldı. **12 commit atıldı ve hepsi `origin/main`'e push'landı.**
 
 **(1) Proje yeni bir makineye taşındı ve sıfırdan kuruldu**
@@ -1926,6 +1976,204 @@ işaretliyor, daha kesin bir ikinci katman. Detay: `SEO-PERFORMANS.md`.
    "projects/" önekli bir `image_path` veriliyor (bkz.
    `lib/supabase/storage.ts`). Kaynak DB kaydı mı yoksa fonksiyon mu
    hatalı, henüz belirlenmedi.
+
+10. **(ÇÖZÜLDÜ — 2026-08-20, aynı gün. Açık GERÇEKTİ ve canlı veritabanında
+    doğrulandı:** üç fonksiyon için de
+    `has_function_privilege('anon', p.oid, 'execute')` → `true` döndü.
+    Düzeltme migration'ı `20260820120000_revoke_rpc_execute_from_anon.sql`
+    yazıldı, kullanıcı Supabase'de çalıştırdı, **doğrulama sorgusu tekrar
+    koşuldu: anon/authenticated artık `false`, `service_role` `true`.**
+    Revoke'tan ÖNCE kod okunarak her iki çağrının da service role
+    istemcisiyle yapıldığı teyit edildi (`app/panel/giris/page.tsx:46`,
+    `components/site/contact/actions.ts:84`) — bu kritikti: giriş hız sınırı
+    kullanıcı henüz giriş yapmamışken, iletişim formu anonim ziyaretçiyle
+    çalışıyor; anon istemcisi kullanılsaydı revoke ikisini de kırardı.
+    `GUVENLIK.md` madde 17'ye "bu denetimin kör noktası vardı" başlıklı bir
+    bölüm eklendi — asıl ders: "anon ne yapabilir" sorusu yalnızca
+    `pg_policies` taranarak cevaplanamaz, fonksiyon yetkileri ayrı bir
+    yüzeydir. **Kalan iki küçük iş:** `login_attempts` için TTL/temizlik
+    (KVKK saklama süresi işiyle birlikte, madde 13) ve
+    `scripts/test-rls.mjs`'e anon istemcisiyle RPC çağırma testi eklemek.)**
+
+    ~~**(YENİ — 2026-08-20 mentör denetimi, EN YÜKSEK ÖNCELİK.)**~~
+    `supabase/migrations/20260818150000_add_atomic_rate_limit_functions.sql`
+    içindeki üç fonksiyon da `security definer` ve dosyada **hiç `revoke`
+    yok** — yalnızca `grant execute … to service_role` var. PostgreSQL yeni
+    fonksiyonlarda EXECUTE'u varsayılan olarak PUBLIC'e verir ve Supabase
+    `public` şemasında anon/authenticated için ayrıca varsayılan yetki
+    tanımlar; bu durumda `anon` üç RPC'yi de PostgREST üzerinden
+    çağırabilir. Anon key zaten tasarım gereği herkese açık (site JS
+    paketinde). Üstelik `submit_contact_message_if_allowed` içinde
+    `if p_ip is not null then` bloğu hız sınırının TAMAMINI sarıyor, yani
+    `p_ip: null` gönderen bir istek honeypot'u, zod doğrulamasını ve
+    15dk/3 mesaj sınırını hep birden atlayıp doğrudan INSERT'e düşüyor.
+    Bu, `GUVENLIK.md` madde 2/17'nin "anon istisnasız hiçbir tabloya
+    yazamaz" iddiasını doğrudan çürütürdü — **madde 17'deki denetim yalnızca
+    TABLO politikalarını taramış, fonksiyon yetkilerine hiç bakmamış.**
+
+    **Önce DOĞRULA** (Supabase SQL Editor; düzeltmeden önce `true` dönerse
+    açık gerçek, `false` dönerse zaten kapalıymış demektir):
+
+    ```sql
+    select has_function_privilege('anon',
+      'public.submit_contact_message_if_allowed(uuid,inet,integer,integer,text,text,text,text,text)',
+      'execute');
+    ```
+
+    **Sonra düzelt** (yeni migration, ör. `20260820120000_revoke_rpc_execute_from_anon.sql`):
+
+    ```sql
+    revoke execute on function public.check_and_reserve_login_attempt(inet, integer, integer)
+      from public, anon, authenticated;
+    revoke execute on function public.delete_login_attempt(uuid)
+      from public, anon, authenticated;
+    revoke execute on function public.submit_contact_message_if_allowed(
+      uuid, inet, integer, integer, text, text, text, text, text
+    ) from public, anon, authenticated;
+    ```
+
+    Aynı işte: `login_attempts` tablosuna bir TTL temizliği ekle (tabloda
+    hiç silme politikası yok, anon tetiklemesiyle sınırsız büyüyebilir) ve
+    `scripts/test-rls.mjs`'e anon istemcisiyle bu üç RPC'yi çağırma testi
+    ekle — mevcut script yalnızca `services` ve `contact_messages`
+    tablolarını sınıyor, RPC yüzeyini hiç test etmiyor. Düzeltmeden sonra
+    `GUVENLIK.md` madde 17'ye "fonksiyon yetkileri de denetlendi" satırı
+    eklenmeli.
+
+11. **(YENİ — 2026-08-20 denetimi.)** Panel giriş hız sınırı, Supabase Auth
+    uç noktasına doğrudan istek atılarak tamamen atlatılabiliyor:
+    `login_attempts` sayacı yalnızca `/panel/giris`'ten geçen denemeleri
+    sayıyor, ama `POST /auth/v1/token?grant_type=password` anon key'le
+    dışarıdan doğrudan çağrılabiliyor. Asıl sınır Supabase katmanında olmalı
+    (Dashboard → Authentication → Attack Protection: CAPTCHA + Auth rate
+    limit). Mevcut mekanizma silinmemeli, ikinci katman olarak değerli.
+    Ayrıca `GUVENLIK.md` madde 19'daki "bilinçli sınırlar" listesine bu
+    baypas yazılmalı — şu an koruma, olduğundan güçlü dokümante edilmiş
+    durumda. **İlgili:** `requireAdminUser()` yalnızca "oturum var mı" diye
+    bakıyor, kullanıcının admin olduğunu hiçbir yerde doğrulamıyor; bugün
+    tek kullanıcı olduğu için etki yok ama koruma tamamen "Supabase'de başka
+    kullanıcı yok" varsayımına dayanıyor ve bu varsayım kodda yazılı değil.
+    Yapılacak: (a) Dashboard'da self-signup'ı kapat, (b) beklenen admin
+    kimliğini kodda doğrula.
+
+12. **(YENİ — 2026-08-20 denetimi.)** Erişilebilirlikte otomatik denetimin
+    (Lighthouse 100) göremediği açık maddeler: ana sayfada `<h1>` garantisi
+    yok (tek `<h1>` Hero'dan geliyor ve Hero, Sayfa Düzeni'nde
+    **gizlenebilir** bir satır — Navbar/Footer gibi "Zorunlu" değil; en
+    temiz çözüm Hero'yu `RequiredSectionRow`'a almak); modal kapanınca odak
+    tetikleyiciye dönmüyor ve `useDialogBehavior`'daki odak tuzağı seçicisi
+    `input`/`select`/`textarea`'yı atlıyor (ikisi de aynı hook'ta, birlikte
+    düzeltilmeli); 11 formun 5'inde `FormErrorSummary`'ye `ref` bağlanmamış
+    (ThemeEditor, SeoEditor, NotificationSettingsEditor, HeroEditor,
+    AboutEditor); SSS akordiyonunda kapalı panel erişilebilirlik ağacından
+    çıkarılmıyor; `/panel/giris`, 404 ve hata sayfalarında `<main>` landmark
+    yok; Toast'lar `aria-live` bölgesi içerikle birlikte DOM'a girdiği için
+    duyurulmuyor. Ayrıca `text-brand` koyu temada 13px metinlerde 3.56:1 —
+    `presets.ts`'in arayüz yorumu "≥4.5:1 doğrulandı" diyor ama aynı
+    dosyadaki preset yorumu gerçek sayıyı (4.26/3.56) dürüstçe yazıyor;
+    iki yorum çelişiyor, biri düzeltilmeli.
+
+13. **(YENİ — 2026-08-20 denetimi.)** KVKK paketi somut plana bağlandı
+    (`GUVENLIK.md` madde 10'daki açık maddenin uygulanabilir hâli): üç
+    politika sayfası (`/kvkk-aydinlatma`, `/gizlilik`, `/cerez-politikasi`) +
+    Footer bağlantıları + `sitemap.ts`'e ekleme; iletişim formuna aydınlatma
+    bildirimi ve **ön işaretli OLMAYAN** zorunlu onay kutusu
+    (`z.literal(true)`) + `contact_messages`'a `consent_at` / `consent_version`
+    kolonları; yurt dışına aktarım beyanı (Supabase, Vercel, Resend);
+    `contact_messages` ve `login_attempts` için saklama süresi + otomatik
+    silme. Metinler koda sabitlenmemeli — firma adı/adres/e-posta
+    `site_settings`/`contact_sections`'tan gelmeli (`AI-KURALLARI.md` madde
+    5.5). **Sürpriz iyi haber:** gerçek çerez envanteri çıkarıldı — ziyaretçiye
+    HİÇBİR çerez yazılmıyor (Supabase auth çerezleri yalnızca panel
+    oturumunda, tema tercihi `localStorage`). Yani onay banner'ı GEREKMİYOR,
+    bilgilendirme metni yeterli; `KURUMSAL-SITE-STANDARTLARI.md`'deki "çerez
+    bildirimi ekle" maddesi bu bulguya atıfla güncellenmeli.
+
+14. **(YENİ — 2026-08-20 denetimi.)** Ürün boşluğu, PRD madde 3.4'te sözü
+    verilmiş ama panelde yok: **İstatistikler** ve **Eylem Çağrısı**
+    içerikleri hiçbir ekrandan düzenlenemiyor. Sonuç: müşterinin canlı
+    sitesinde kendi firması hakkında şablondan gelen uydurma rakamlar kalıcı
+    olarak görünebilir ve bu yalnızca SQL ile değiştirilebilir. Ayrıca
+    **Medya Kütüphanesi** 6 bucket'tan yalnızca `projects`'i listeliyor ve
+    ekranın kendi metni "diğer içerik türleri için görsel yükleme henüz
+    eklenmedi" diyerek kullanıcıya doğrudan yanlış bilgi veriyor (5 bucket
+    2026-08-18'de eklenmişti). Buna bağlı: hiçbir silme eylemi Storage'a
+    dokunmadığı için silinen kayıtların görselleri yetim kalıyor ve panelden
+    hiç görünmüyor.
+
+15. **(YENİ — 2026-08-20 denetimi.)** Mimari borç — bu raporun kök nedeni,
+    "temizlik" değil **hata önleme** işi. Sırasıyla: (a) 9 görsel
+    yükleme/silme eylem çifti, 8 dosya, 1.398 satır, birebir aynı iskelet →
+    `lib/panel/createImageActions.ts` fabrikası (~1.100 satır siliniyor,
+    yetim dosya sorunu tek noktada çözülüyor); (b) `BrandImageUploader`
+    zaten genelleştirilmiş ve 5 yerde kullanılıyor ama 4 CRUD ekranı onun
+    608 satırlık kopyasını taşıyor (~560 satır); (c) 5 CRUD dosyasındaki
+    toggle/move/delete blokları, 602 satır, yalnızca tablo adı değişiyor.
+    Önce (a), sonra (c) — aynı fabrika deseni ikincisinde ucuzlar. Ayrıca:
+    zod hata→alan eşlemesi 13 kez kopyalanmış ve `issue.path[0]` guard'sız
+    (yol taşımayan bir `.refine()` hatası kullanıcıya hiç gösterilmeden
+    yutulur) → tek bir `toFieldErrors()` yardımcısı, bu bugün yapılabilir.
+    `noUncheckedIndexedAccess` açılırsa çıkan hata sayısı ölçüldü: **16**.
+
+16. **(YENİ — 2026-08-20 denetimi.)** Sorgu katmanı tüm hataları yutup
+    `[]`/`null` dönüyor; "kayıt yok" ile "DB erişilemiyor" ayırt edilemiyor.
+    İki somut sonucu var: düzenleme sayfası geçici hatada gerçek bir 404
+    gösterip kullanıcıya kaydın silindiğini düşündürüyor; ve **statik üretim
+    sırasında** boş dönen bir sorgu boş sayfayı önbelleğe kalıcı yazıyor,
+    bir sonraki `revalidatePath`'e kadar kendi kendine iyileşmiyor. Ziyaretçi
+    sorgularında "satır yok" boş dönmeli ama GERÇEK hata fırlatmalı (Next.js
+    o zaman sayfayı önbelleğe yazmaz); panel tarafında `null` yerine
+    `{ ok: false, reason }` dönülmeli. Tema ve Hero sorgularının catch
+    bloklarında `console.error` bile yok.
+
+17. **(YENİ — 2026-08-20 denetimi.)** Doküman-kod sapması, 9 nokta. Öncelik
+    sırası: **`MUSTERİ-KILAVUZU.md`** (4 noktada uyuşmuyor, birinde ürünün
+    yaptığının TERSİNİ söylüyor — müşteriye verilen belge) ve
+    **`TESLIM-PAKETI.md`** (4 somut sayı/iddia gerçeğin dışında — aynı
+    gerekçe). Sonra: `TEMA-MIMARISI.md` (anlattığı FOUC mekanizması artık
+    kodda yok, `forceLightScript` dokuzuncu oturumda kaldırıldı);
+    `TASARIM-SISTEMI.md` (kendi içinde çelişiyor ve "`components/site/` hâlâ
+    boş" diyor — 30'dan fazla bölüm bileşeni var; kontrast tablosu da
+    yukarıdaki madde 12'yi yansıtmıyor); `SEO-PERFORMANS.md`
+    (`getSiteUrl()` öncelik sırasını yanlış anlatıyor, `VERCEL_URL`'i
+    "kendiliğinden düzeltir" diye sunuyor — kod ve `MIMARI.md` tersini
+    söylüyor, geçmişte gerçek bir SEO hatasına yol açmış konu);
+    `MIMARI.md` madde 11 ("Kapsam" paragrafı iki oturum öncesini anlatıyor);
+    `VERİ-MODELİ.md` (`og_image_path` yedeği, var olmayan WhatsApp butonu,
+    hiçbir sorguda okunmayan `tenants.is_published`); `DURUM.md` madde 0d
+    ("TAMAMLANDI" ama tarif ettiği "görsel yoksa boş kutu" boşluğu
+    `AboutSection` ve `HeroVariantB`'de duruyor).
+
+18. **(YENİ — 2026-08-20 denetimi.)** Kalan SEO/performans maddeleri:
+    `/api/og` sitedeki tek dinamik public rota ve hiç önbelleklenmiyor (her
+    istekte 2 Supabase sorgusu + PNG üretimi — kimlik doğrulamasız kaynak
+    tüketim kapısı); `priority` prop'u Next.js 16'da kullanımdan kalktı ve
+    ekran altındaki 3 proje görselini gerçek LCP ile yarıştırıyor;
+    `seed-template.sql`'deki `[Adres — panelden güncelleyin]` yer tutucuları
+    schema.org JSON-LD'sinde canlı yayınlanıyor (`localBusiness.ts` köşeli
+    parantezle başlayan değerleri elemeli); Footer telif yılı ve sitemap
+    `lastModified` build anında donuyor; Geist için `latin-ext` subset'i
+    preload edilmiyor (Türkçe ğ/ş/İ harfleri); OG kartında `og:type`,
+    `og:locale`, `og:site_name`, `og:url` ve görsel boyutları yok; proxy
+    matcher'ı tüm public trafikte gereksiz `getUser()` çağırıyor; panelde
+    hiç `loading.tsx` yok.
+
+19. **(YENİ — 2026-08-20 denetimi.)** Kalan test maddeleri, risk sıralı:
+    (a) 19 dosyadaki 40+ sunucu eyleminde `requireAdminUser()` çağrısını
+    doğrulayan hiçbir test yok — bunu bir test değil bir **tarama** ile
+    çözmek daha ucuz: `app/panel/**/*actions.ts` dosyalarını okuyup her
+    `export async function …Action` gövdesinde `requireAdminUser` geçtiğini
+    doğrulayan ~20 satırlık tek bir Vitest testi, yeni eklenenleri de
+    otomatik kapsar; (b) `THEME_PRESETS` için kontrast değişmez testi —
+    yazılsaydı madde 12'deki `kurumsal-mavi` sorunu anında kırmızı dönerdi,
+    araç (`lib/theme/contrast.ts`) zaten mevcut; (c) iletişim formu e2e
+    testi mesajın DB'ye yazıldığını hiç doğrulamıyor, yani 2026-08-18'deki
+    "sessizce yutulan mesaj" hatası tekrarlansa test yine yeşil geçer;
+    (d) admin e2e testi üretim verisine yayınlanmış kayıt yazıyor — kayıt
+    `is_published: false` ile oluşturulmalı ki sızsa bile ziyaretçi görmesin;
+    (e) jsdom + Testing Library kurulu ama sıfır bileşen testi var —
+    `useDialogBehavior` ve `FormErrorSummary`'den başlanmalı, ikisi de bu
+    denetimde hata çıkardı.
 
 ## Açık sorular
 

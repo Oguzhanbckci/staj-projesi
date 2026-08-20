@@ -994,6 +994,88 @@ sadece select, authenticated tam CRUD) — bu maddenin yukarıdaki genel
 sonucunu ("anon sadece okur, hiç yazamaz") DEĞİŞTİRMİYOR, sadece
 kurulu bucket sayısını 2'den 7'ye çıkarıyor.
 
+### ⚠️ Bu denetimin KÖR NOKTASI vardı — düzeltildi *(2026-08-20 mentör denetimi)*
+
+**Yukarıdaki "anon İSTİSNASIZ hiçbir tabloya hiçbir koşulda yazamaz"
+sonucu, yazıldığı tarihte YANLIŞTI.** Sebep bir hesap hatası değil, bir
+**kapsam** hatası: bu denetim yalnızca TABLO ve BUCKET politikalarını
+(`create policy`) taradı, **FONKSİYON YETKİLERİNE (`grant execute`) hiç
+bakmadı.**
+
+`security definer` bir fonksiyon, çağıranın değil kendisini oluşturan
+rolün yetkisiyle çalışır ve **RLS'i tamamen atlar** — yani politika
+tablosunun yanından geçen ikinci bir kapıdır. Bu proje 2026-08-18'de
+(`20260818150000_add_atomic_rate_limit_functions.sql`) tam olarak böyle
+üç fonksiyon ekledi ve her birine yalnızca
+`grant execute ... to service_role` verdi, hiç `revoke` yazmadı.
+
+**Grant eklemek, varsayılanı kaldırmaz.** PostgreSQL yeni bir fonksiyona
+EXECUTE'u varsayılan olarak PUBLIC'e verir (`anon` PUBLIC'in içindedir) ve
+Supabase ayrıca `public` şemasında anon/authenticated için varsayılan
+fonksiyon yetkisi tanımlar. Sonuç: anon key'i olan herkes — ki o anahtar
+tasarım gereği site JS paketinde herkese açıktır — üç fonksiyonu da
+PostgREST üzerinden doğrudan çağırabiliyordu.
+
+**Canlı veritabanında DOĞRULANDI (2026-08-20):** üç fonksiyon için de
+`has_function_privilege('anon', p.oid, 'execute')` → `true`.
+
+Somut etki, en ciddiden en zayıfa:
+
+1. `submit_contact_message_if_allowed` doğrudan çağrılarak
+   `contact_messages`'a **sınırsız kayıt yazılabiliyordu.** Honeypot
+   (madde 14), zod doğrulaması ve "15 dakikada 3 mesaj" sınırı — üçü de
+   uygulama katmanında yaşıyor, doğrudan RPC çağrısı hepsini atlıyor.
+   İki ayrı atlatma yolu vardı: (a) `p_ip: null` göndermek — fonksiyondaki
+   `if p_ip is not null then` bloğu hız sınırı sayımının TAMAMINI sarıyor;
+   (b) `p_max_per_window: 999999` göndermek — politika parametreleri
+   istemciden geliyordu. Gereken `p_tenant_id` de erişilebilirdi, çünkü
+   yukarıdaki tabloya göre anon `tenants`'tan `id` okuyabiliyor.
+2. `check_and_reserve_login_attempt` doğrudan çağrılarak seçilen bir IP
+   için sayaç doldurulup `/panel/giris` o IP'ye kilitlenebilirdi (pratikte
+   zayıf — saldırganın adminin IP'sini bilmesi gerekir).
+
+**Düzeltme:** `20260820120000_revoke_rpc_execute_from_anon.sql` — üç
+fonksiyondan da `revoke execute ... from public, anon, authenticated`.
+Uygulandı ve **doğrulandı: anon/authenticated artık `false`,
+`service_role` `true`.** Uygulama akışları etkilenmedi; düzeltmeden önce
+kod okunarak her iki çağrının da service role istemcisiyle yapıldığı
+teyit edildi (`app/panel/giris/page.tsx:46`,
+`components/site/contact/actions.ts:84`) — bu kritikti, çünkü giriş hız
+sınırı kullanıcı henüz giriş yapmamışken ve iletişim formu anonim
+ziyaretçiyle çalışıyor; anon istemcisi kullanılsaydı revoke ikisini de
+kırardı. Yan fayda: fonksiyonu artık yalnızca sunucu çağırabildiği için
+`p_max_per_window`/`p_window_minutes` her zaman koddaki sabitlerden gelir.
+
+**Bu maddenin kendisi için çıkan kural — bir sonraki denetim bunu
+atlamasın:** "anon ne yapabilir" sorusu YALNIZCA `pg_policies` taranarak
+cevaplanamaz. En az üç yüzey vardır ve üçü de ayrı ayrı denetlenmelidir:
+1. **Tablo/bucket politikaları** (`create policy`) — yukarıdaki tablolar.
+2. **Kolon yetkileri** (`grant`/`revoke ... (kolon)`) — ör. `tenants`'taki
+   `contact_recipient_email` REVOKE'u.
+3. **Fonksiyon yetkileri** (`grant/revoke execute`) — özellikle
+   `security definer` olanlar. **2026-08-20'ye kadar bu yüzey hiç
+   denetlenmemişti.**
+
+Denetim sorgusu (her yeni fonksiyondan sonra çalıştırılmalı):
+
+```sql
+select p.proname, p.prosecdef as security_definer,
+       has_function_privilege('anon', p.oid, 'execute')          as anon,
+       has_function_privilege('authenticated', p.oid, 'execute') as uye,
+       has_function_privilege('service_role', p.oid, 'execute')  as service_role
+from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+where n.nspname = 'public' order by p.proname;
+```
+
+**Kural:** yeni bir `security definer` fonksiyon yazıldığında
+`grant ... to service_role` YETMEZ, yanına mutlaka
+`revoke execute ... from public, anon, authenticated` yazılmalı. Ayrıca
+`create or replace` mevcut yetkileri korur ama `drop` + `create`
+varsayılanları geri getirir — o durumda revoke tekrar çalıştırılmalıdır.
+`scripts/test-rls.mjs` şu an yalnızca `services` ve `contact_messages`
+tablolarını sınıyor, RPC yüzeyini hiç test etmiyor; oraya anon istemcisiyle
+bu üç fonksiyonu çağırma testi eklenmeli (açık madde).
+
 ## 18. Realtime Erişimi — Panelde Anlık Bildirim *(2026-08-18 eklendi)*
 
 Panel açıkken yeni bir iletişim mesajı geldiğinde sayfa yenilenmeden
