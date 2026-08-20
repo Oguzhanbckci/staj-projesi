@@ -215,6 +215,27 @@
   --text-h1--line-height: 1.1;
 
   /*
+   * Hero "display" boyutu — 2026-08-20 tasarım araştırmasıyla eklendi.
+   * BİLİNÇLİ OLARAK yukarıdaki 1.25 modüler ölçeğin DIŞINDA; bu yüzden
+   * h1-h6 dizisine yeni bir kademe değil, ayrı bir rol olarak duruyor ve
+   * SADECE ana sayfa hero başlığında kullanılır.
+   *
+   * İki gerekçe:
+   * 1. Ölçek karşıtlığı. İncelenen 93 sitede hiyerarşi, ardışık kademeler
+   *    arasındaki küçük farktan değil, çok küçük etiket ile çok büyük
+   *    içerik arasındaki SERT farktan geliyordu. 1.25 oranı (h1=61px,
+   *    h2=49px) tam ekran bir hero için fazla ihtiyatlı kalıyordu.
+   * 2. Mobil. `--text-h1` SABİT 61px — dar bir telefonda uzun bir Türkçe
+   *    başlık sıkışıyordu. `clamp()` alt sınırı 40px'e indirip üst sınırı
+   *    76px'e çıkarıyor, yani hem mobilde rahatlıyor hem masaüstünde
+   *    büyüyor.
+   *
+   * 7vw: 40px'e ~571px genişlikte, 76px'e ~1086px genişlikte ulaşır.
+   */
+  --text-display: clamp(2.5rem, 7vw, 4.75rem); /* 40px → 76px */
+  --text-display--line-height: 1.05;
+
+  /*
    * Köşe yarıçapları — Tailwind'in varsayılan sm/md/lg/xl'ini (4/6/8/12px)
    * boşluk ölçeğiyle aynı 4px ritmine (4/8/12/16px) hizalamak için
    * override ediyoruz; xs/2xl/3xl/4xl/full Tailwind varsayılanında kalıyor.

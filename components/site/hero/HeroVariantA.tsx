@@ -1,4 +1,6 @@
 import Image from "next/image";
+import { ArrowRight } from "lucide-react";
+import { Container } from "@/components/ui/Container";
 import { LinkButton } from "@/components/ui/LinkButton";
 import { getPublicImageUrl } from "@/lib/supabase/storage";
 import type { HeroSectionData } from "./types";
@@ -26,9 +28,14 @@ export function HeroVariantA({
     : null;
 
   return (
+    // `items-center` -> `items-end`: metin dikey ortada değil, altta.
+    // `80vh` -> `85svh`: (a) daha yüksek, ilk ekranı gerçekten dolduruyor;
+    // (b) `svh` mobilde `vh`'nin tarayıcı çubuğunu da sayıp içeriği kesme
+    // sorununu çözer. Tam 100 değil 85 — bir sonraki bölümün üst kenarı
+    // görünsün ve "aşağıda devamı var" sinyali kendiliğinden çıksın diye.
     <section
       id="hero"
-      className="relative flex min-h-[80vh] items-center justify-center overflow-hidden bg-hero"
+      className="relative flex min-h-[85svh] items-end overflow-hidden bg-hero"
     >
       {imageUrl ? (
         <Image src={imageUrl} alt="" fill priority sizes="100vw" className="object-cover" />
@@ -55,47 +62,71 @@ export function HeroVariantA({
           />
         </div>
       )}
-      <div className="absolute inset-0 bg-black/40" aria-hidden="true" />
+      {/* Düz `bg-black/40` yerine ALTA DOĞRU KOYULAŞAN degrade (2026-08-20).
+          Metin artık sol-altta olduğu için kontrasta asıl orada ihtiyaç var.
+          ÜST değer bilerek %45 — yani eski düz %40'tan DAHA KOYU, daha açık
+          değil: Navbar hero üzerinde `bg-transparent` duruyor ve metni
+          tema rengiyle (`text-text`) yazılıyor, üstü açmak onu okunmaz
+          yapardı. Bu haliyle hem başlık hem navbar eskisinden iyi durumda. */}
+      {/* SADECE gerçek fotoğraf varken: fotoğrafın parlaklığı öngörülemez,
+          metnin okunabilirliğini garanti eden tek şey bu katman. Fotoğraf
+          YOKKEN uygulanmıyor — `bg-hero` (#1e4278) zaten kontrollü, koyu bir
+          yüzey ve beyaz metinle ~10:1 kontrast veriyor; üstüne %80 siyah
+          koymak dekoratif degrade/ızgara desenini gereksiz yere
+          çamurlaştırırdı. */}
+      {imageUrl && (
+        <div
+          aria-hidden="true"
+          className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/55 to-black/45"
+        />
+      )}
 
-      <div className="relative z-10 mx-auto max-w-3xl animate-fade-in-up px-6 text-center text-white motion-reduce:animate-none">
-        <h1 className="text-h1 font-bold tracking-tight">{title}</h1>
-        {subtitle && <p className="mt-4 text-h6 font-normal text-white/85">{subtitle}</p>}
-        <div className="mt-8 flex flex-wrap justify-center gap-4">
-          {ctaText && ctaLink && (
-            <LinkButton
-              href={ctaLink}
-              size="lg"
-              className="shadow-lg transition-transform hover:-translate-y-0.5"
-            >
-              {ctaText}
-            </LinkButton>
+      {/* Metin `Container` içinde — yani sol kenarı sayfadaki DİĞER TÜM
+          bölümlerle aynı hizada. Önceden `mx-auto max-w-3xl` ile ORTALANMIŞ
+          ve başka bir genişlikteydi; sayfanın geri kalanıyla hiçbir hizası
+          yoktu. İncelenen 93 sitede hâkim düzen kenara yaslı kompozisyon. */}
+      <Container className="relative z-10 w-full pb-20 pt-32 sm:pb-28">
+        <div className="max-w-3xl animate-fade-in-up text-white motion-reduce:animate-none">
+          <h1 className="text-display font-semibold tracking-tight text-balance">{title}</h1>
+          {subtitle && (
+            <p className="mt-6 max-w-xl text-h6 font-normal text-white/85">{subtitle}</p>
           )}
-          {secondaryCtaText && secondaryCtaLink && (
-            <LinkButton
-              href={secondaryCtaLink}
-              variant="secondary"
-              size="lg"
-              className="border-white/30 bg-white/10 text-white transition-transform hover:-translate-y-0.5 hover:bg-white/20"
-            >
-              {secondaryCtaText}
-            </LinkButton>
+
+          {(ctaText || secondaryCtaText) && (
+            <div className="mt-10 flex flex-wrap items-center gap-x-8 gap-y-4">
+              {ctaText && ctaLink && (
+                <LinkButton
+                  href={ctaLink}
+                  size="lg"
+                  className="shadow-lg transition-transform hover:-translate-y-0.5 motion-reduce:transform-none"
+                >
+                  {ctaText}
+                </LinkButton>
+              )}
+              {/* İKİNCİ CTA ARTIK BUTON DEĞİL, ALT ÇİZGİLİ METİN BAĞLANTISI.
+                  Derinlemesine incelenen 13 sitenin HİÇBİRİNDE yan yana iki
+                  eşit ağırlıklı dolu buton yoktu; CTA sayısı 0 ya da 1'di.
+                  İkisini eşit ağırlıkta göstermek ziyaretçiye hangisinin
+                  asıl eylem olduğunu söylemiyor. Bağlantı olarak kalması
+                  ikincil yolu kaybetmeden birincil eylemi öne çıkarıyor.
+                  Odak halkası beyaz — koyu fotoğraf üzerinde marka rengi
+                  yeterince ayrışmayabilir. */}
+              {secondaryCtaText && secondaryCtaLink && (
+                <a
+                  href={secondaryCtaLink}
+                  className="group inline-flex items-center gap-2 text-base font-semibold text-white underline decoration-white/40 underline-offset-4 transition-colors hover:decoration-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-black/50"
+                >
+                  {secondaryCtaText}
+                  <ArrowRight
+                    aria-hidden="true"
+                    className="h-4 w-4 transition-transform group-hover:translate-x-0.5 motion-reduce:transform-none"
+                  />
+                </a>
+              )}
+            </div>
           )}
         </div>
-      </div>
-
-      {/* Alt kenar — düz bir kesim yerine ince bir dalga, AboutSection'ın
-          zemin rengine (bg-surface-raised) yumuşak geçiş. Salt dekoratif. */}
-      <svg
-        aria-hidden="true"
-        viewBox="0 0 1440 60"
-        preserveAspectRatio="none"
-        className="absolute inset-x-0 bottom-0 h-10 w-full text-surface-raised"
-      >
-        <path
-          d="M0,32 C240,64 480,0 720,16 C960,32 1200,64 1440,32 L1440,60 L0,60 Z"
-          fill="currentColor"
-        />
-      </svg>
+      </Container>
     </section>
   );
 }
