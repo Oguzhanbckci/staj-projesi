@@ -25,7 +25,7 @@ export function ServiceCardImage({ title, description, icon, imagePath }: Servic
 
   return (
     <Card className="group h-full ring-1 ring-neutral-300/60 transition duration-300 hover:-translate-y-1 hover:shadow-lg hover:ring-brand/40 motion-reduce:transform-none motion-reduce:transition-none">
-      <div className="relative aspect-video overflow-hidden">
+      <div className="relative aspect-[3/2] overflow-hidden">
         {imageUrl ? (
           <Image
             src={imageUrl}

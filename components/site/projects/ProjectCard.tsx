@@ -50,7 +50,7 @@ export function ProjectCard({
         onClick={() => onSelect(project)}
         className="flex h-full flex-col text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand"
       >
-        <div className={`relative overflow-hidden ${fill ? "flex-1" : "aspect-[4/3]"}`}>
+        <div className={`relative overflow-hidden ${fill ? "flex-1" : "aspect-[3/2]"}`}>
           {imageUrl ? (
             <Image
               src={imageUrl}

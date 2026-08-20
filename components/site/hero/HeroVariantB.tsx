@@ -1,5 +1,6 @@
 import Image from "next/image";
 import { LinkButton } from "@/components/ui/LinkButton";
+import { ImagePlaceholder } from "@/components/ui/ImagePlaceholder";
 import { getPublicImageUrl } from "@/lib/supabase/storage";
 import type { HeroSectionData } from "./types";
 
@@ -39,7 +40,7 @@ export function HeroVariantB({
             )}
           </div>
         </div>
-        <div className="relative aspect-[4/3] overflow-hidden rounded-lg">
+        <div className="relative aspect-[3/2] overflow-hidden rounded-lg">
           {imageUrl ? (
             <Image
               src={imageUrl}
@@ -50,7 +51,7 @@ export function HeroVariantB({
               className="object-cover"
             />
           ) : (
-            <div className="h-full w-full bg-surface-raised" aria-hidden="true" />
+            <ImagePlaceholder />
           )}
         </div>
       </div>

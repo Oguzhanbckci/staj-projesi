@@ -32,7 +32,7 @@ export function ProjectDetailModal({
         aria-labelledby="project-detail-title"
         className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-lg bg-surface-raised"
       >
-        <div className="relative aspect-video bg-surface">
+        <div className="relative aspect-[3/2] bg-surface">
           {imageUrl && (
             <Image
               src={imageUrl}
