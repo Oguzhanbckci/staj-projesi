@@ -12,7 +12,7 @@ import {
 import { getPublicImageUrl } from "@/lib/supabase/storage";
 import { buildSectionNavLinks } from "@/lib/sections/config";
 import { LocalBusinessJsonLd } from "@/components/site/LocalBusinessJsonLd";
-import { getSiteUrl } from "@/lib/seo/getSiteUrl";
+import { getKnownSiteUrl, getSiteUrl } from "@/lib/seo/getSiteUrl";
 
 // site_settings.seo_title/seo_description'tan — kök layout.tsx'teki
 // create-next-app varsayılanının (yer tutucu metin) yerini alıyor.
@@ -32,11 +32,44 @@ export async function generateMetadata(): Promise<Metadata> {
     ? getPublicImageUrl("branding", settings.ogImagePath)
     : `${getSiteUrl(domain)}/api/og`;
 
+  const tenantName = settings?.tenantName ?? "Firma";
+  const knownSiteUrl = getKnownSiteUrl();
+
   return {
     metadataBase: new URL(getSiteUrl(domain)),
     title: settings?.seoTitle ?? settings?.tenantName ?? "Kurumsal Web Sitesi",
-    description: settings?.seoDescription ?? undefined,
+    // `?? undefined` DEĞİL — 2026-08-20 mentör denetimi (bulgu 26): Next.js
+    // metadata'yı sığ birleştiriyor ve alt segmentte VAR OLAN bir anahtar
+    // üsttekini değiştiriyor (bkz. node_modules/next/dist/docs/01-app/
+    // 03-api-reference/04-functions/generate-metadata.md, "Merging").
+    // `description: undefined` bu yüzden kök layout.tsx'teki dolu yedeği
+    // siliyordu — build çıktısındaki ÜÇ sayfanın da (index/ekip/iletisim)
+    // HTML'inde <meta name="description"> hiç yoktu. Artık burada gerçek
+    // bir yedek veriliyor, panelden SEO açıklaması girilmemiş kurulumlarda
+    // bile arama sonucunda açıklama satırı çıkıyor.
+    description:
+      settings?.seoDescription ??
+      `${tenantName} — kurumsal web sitesi. Hizmetlerimiz, projelerimiz ve iletişim bilgilerimiz.`,
     keywords: settings?.seoKeywords ?? undefined,
+    // Kanonik adres (bulgu 27). Bu olmadan UTM/fbclid gibi parametreli
+    // adresler ayrı birer sayfa olarak dizine girebiliyordu.
+    //
+    // ⚠️ SADECE ADRES KESİN BİLİNİYORSA yayınlanıyor — `getSiteUrl()` değil
+    // `getKnownSiteUrl()` kontrol ediliyor. Gerekçe: `getSiteUrl()`'ün son
+    // çaresi veritabanındaki `tenants.domain`'dir ve o değerin GERÇEK bir
+    // yayın adresine karşılık geleceğinin garantisi yoktur (fonksiyonun
+    // kendi yorumu: "gerçek bir adrese hiç karşılık gelmeyebilir, ör. bu
+    // demo dağıtımında"). Yanlış bir canonical, eksik canonical'dan çok
+    // daha zararlıdır: sitemap'teki yanlış adres sadece taranamaz, ama
+    // yanlış canonical arama motoruna "bu sayfa kopya, aslı şu adreste"
+    // der ve sayfa dizinden tamamen düşebilir. 2026-08-17'de mutlak URL'in
+    // yanlış domain'e işaret etmesi canlı Lighthouse SEO skorunu 92'den
+    // 58'e düşürmüştü (bkz. KARAR-GUNLUGU.md) — aynı hata sınıfı.
+    //
+    // `knownSiteUrl` doluysa `getSiteUrl()` de AYNI değeri döndürür, yani
+    // `metadataBase` ona eşittir ve göreli "/" doğru mutlak adrese çözülür.
+    // Boşsa hiç canonical üretilmez — güvenli taraf.
+    alternates: knownSiteUrl ? { canonical: "/" } : undefined,
     icons: settings?.faviconPath
       ? { icon: getPublicImageUrl("branding", settings.faviconPath) }
       : undefined,

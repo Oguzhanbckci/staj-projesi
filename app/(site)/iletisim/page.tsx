@@ -4,6 +4,7 @@ import { getSiteSettings } from "@/lib/supabase/queries";
 import { Container } from "@/components/ui/Container";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { BreadcrumbJsonLd } from "@/components/site/BreadcrumbJsonLd";
+import { getKnownSiteUrl } from "@/lib/seo/getSiteUrl";
 
 const BREADCRUMB_PATH = [
   { label: "Ana Sayfa", path: "/" },
@@ -14,10 +15,17 @@ const BREADCRUMB_PATH = [
 // docs/KARAR-GUNLUGU.md, 2026-08-13). Navbar'daki "İletişim" butonu ve
 // Eylem Çağrısı'nın buton linki de buraya (/iletisim) işaret edecek
 // şekilde güncellendi.
+// EkipPage ile aynı gerekçe (2026-08-20 denetimi, bulgu 27) — kendi
+// açıklaması ve kanonik adresi.
 export async function generateMetadata(): Promise<Metadata> {
   const settings = await getSiteSettings();
   const tenantName = settings?.tenantName ?? "Firma";
-  return { title: `İletişim | ${tenantName}` };
+  // EkipPage ile aynı koruma — bkz. app/(site)/layout.tsx'teki gerekçe.
+  return {
+    title: `İletişim | ${tenantName}`,
+    description: `${tenantName} iletişim bilgileri — adres, telefon, e-posta ve çalışma saatleri. Teklif ve sorularınız için iletişim formu.`,
+    alternates: getKnownSiteUrl() ? { canonical: "/iletisim" } : undefined,
+  };
 }
 
 // EkipPage ile AYNI breadcrumb şeridi deseni (bkz. o dosyadaki yorum).
