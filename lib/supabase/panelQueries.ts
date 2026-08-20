@@ -3,6 +3,7 @@ import { isBorderRadiusScaleKey, type BorderRadiusScaleKey } from "@/lib/theme/r
 import { isFontFamilyKey, type FontFamilyKey } from "@/lib/theme/fonts";
 import { isSectionKey, type SectionKey } from "@/lib/sections/config";
 import { DEFAULT_THEME_PRESET, THEME_PRESET_KEYS, type ThemePresetKey } from "@/lib/theme/presets";
+import { coerceStoredRating } from "@/lib/validation/testimonial";
 
 // Bu dosyadaki sorgular sadece `app/panel/(protected)/` altından çağrılır
 // — çağıran taraf zaten oturumu doğrulamış olmalı (bkz. o layout'taki
@@ -404,7 +405,14 @@ export async function getTestimonialById(id: string): Promise<TestimonialDetail 
       authorName: String(data.author_name),
       authorTitle: typeof data.author_title === "string" ? data.author_title : null,
       quote: String(data.quote),
-      rating: typeof data.rating === "number" ? data.rating : null,
+      // 2026-08-20 mentör denetimi (bulgu 06, İKİNCİ veri kaybı yolu):
+      // burada `typeof data.rating === "number"` kontrolü vardı. PostgREST
+      // `numeric` kolonlarını duruma göre STRING olarak da döndürebiliyor
+      // (ziyaretçi sorgusu getTestimonials bunu 2026-08-19'da doğru ele
+      // almıştı, bu sorguya taşınmamıştı) — string geldiğinde puan panelde
+      // boş görünüyor, kaydedilince sessizce siliniyordu. Formun düzeltilmesi
+      // TEK BAŞINA yetmezdi, kayıp burada da oluşuyordu.
+      rating: coerceStoredRating(data.rating),
       isPublished: Boolean(data.is_published),
       logoPath: typeof data.logo_path === "string" ? data.logo_path : null,
     };

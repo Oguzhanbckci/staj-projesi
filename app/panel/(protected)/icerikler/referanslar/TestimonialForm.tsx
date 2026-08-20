@@ -3,7 +3,6 @@
 import { useActionState, useEffect, useRef } from "react";
 import { TextField } from "@/components/ui/TextField";
 import { TextareaField } from "@/components/ui/TextareaField";
-import { SelectField } from "@/components/ui/SelectField";
 import { SubmitButton } from "@/components/ui/SubmitButton";
 import { FormErrorSummary } from "@/components/ui/FormErrorSummary";
 import { TESTIMONIAL_FIELD_LABELS, type TestimonialFormValues } from "@/lib/validation/testimonial";
@@ -93,20 +92,30 @@ export function TestimonialForm({ testimonial }: { testimonial?: TestimonialDeta
         defaultValue={testimonial?.quote}
         error={fieldErrors.quote}
       />
-      <SelectField
+      {/*
+        2026-08-20 mentör denetimi (bulgu 06): burası SelectField'dı ve
+        yalnızca 1-5 tam sayı seçeneği taşıyordu. Puan 2026-08-19'da
+        kesirli hale getirilince (numeric(2,1)) DB'deki 4.5 hiçbir
+        seçenekle eşleşmiyor, select "Belirtilmedi"ye düşüyor ve kaydedince
+        puan SESSİZCE siliniyordu. Serbest metin alanı ham değeri koruyor;
+        doğrulama testimonialFormSchema'da, çevirme parseRatingInput'ta.
+      */}
+      <TextField
         id={`${FIELD_ID_PREFIX}-rating`}
         label="Puan (opsiyonel)"
         name="rating"
-        defaultValue={testimonial?.rating ? String(testimonial.rating) : ""}
+        type="text"
+        inputMode="decimal"
+        autoComplete="off"
+        placeholder="ör. 4,5"
+        helpText="1 ile 5 arasında, yarım puan verilebilir (4,5). Boş bırakılırsa kartta yıldız gösterilmez."
+        defaultValue={
+          testimonial?.rating != null
+            ? String(testimonial.rating).replace(".", ",")
+            : ""
+        }
         error={fieldErrors.rating}
-      >
-        <option value="">Belirtilmedi</option>
-        <option value="1">1</option>
-        <option value="2">2</option>
-        <option value="3">3</option>
-        <option value="4">4</option>
-        <option value="5">5</option>
-      </SelectField>
+      />
       <label className="flex items-center gap-2 text-base text-text">
         <input
           type="checkbox"

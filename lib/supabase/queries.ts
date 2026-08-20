@@ -5,6 +5,7 @@ import {
   THEME_PRESET_KEYS,
   type ThemePresetKey,
 } from "@/lib/theme/presets";
+import { coerceStoredRating } from "@/lib/validation/testimonial";
 import type { SiteThemeSettings } from "@/lib/theme/resolve";
 import { isBorderRadiusScaleKey } from "@/lib/theme/radiusScales";
 import { isFontFamilyKey } from "@/lib/theme/fonts";
@@ -390,16 +391,12 @@ export async function getFaqs(): Promise<FaqItem[]> {
   }
 }
 
-/** DB'den gelen puanı (sayı ya da numeric-string) güvenli biçimde çözer.
- *  Geçersiz/boş değer null döner — kartta yıldızlar hiç gösterilmez. */
-function parseRating(value: unknown): number | null {
-  if (typeof value === "number") return Number.isFinite(value) ? value : null;
-  if (typeof value === "string") {
-    const parsed = Number.parseFloat(value);
-    return Number.isFinite(parsed) ? parsed : null;
-  }
-  return null;
-}
+// NOT: Buradaki yerel `parseRating` 2026-08-20 mentör denetiminde
+// `lib/validation/testimonial.ts`'e `coerceStoredRating` adıyla taşındı.
+// Gerekçe: panel sorgusu (getTestimonialById) aynı işi yapmıyordu —
+// yalnızca `typeof === "number"` kabul ediyor, PostgREST'in string dönen
+// numeric değerlerini sessizce null'a düşürüyordu. İki sorgu artık AYNI
+// fonksiyonu kullanıyor (bkz. o dosyadaki ayrıntılı yorum).
 
 /**
  * testimonials.logo_path için tip artık var (migration uygulandı +
@@ -440,7 +437,7 @@ export async function getTestimonials(): Promise<TestimonialItem[]> {
       // — sadece `typeof === "number"` kontrolü yapmak, string geldiğinde
       // puanı sessizce null'a düşürüp yıldızları yok ederdi. İkisini de
       // kabul ediyoruz; ayrıştırılamayan değer null olur (yıldız gösterilmez).
-      rating: parseRating(row.rating),
+      rating: coerceStoredRating(row.rating),
       logoPath: typeof row.logo_path === "string" ? row.logo_path : null,
     }));
   } catch (err) {

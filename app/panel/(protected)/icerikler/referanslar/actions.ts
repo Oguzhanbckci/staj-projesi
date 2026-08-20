@@ -1,7 +1,11 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { testimonialFormSchema, type TestimonialFormValues } from "@/lib/validation/testimonial";
+import {
+  parseRatingInput,
+  testimonialFormSchema,
+  type TestimonialFormValues,
+} from "@/lib/validation/testimonial";
 import { requireAdminUser, type ActionResult } from "@/lib/panel/actionResult";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { getActiveTenantId } from "@/lib/supabase/queries";
@@ -55,7 +59,10 @@ export async function createTestimonialAction(
     author_name: result.data.authorName,
     author_title: result.data.authorTitle || null,
     quote: result.data.quote,
-    rating: result.data.rating ? Number(result.data.rating) : null,
+    // Number() DEĞİL parseRatingInput — şemanın kabul ettiği "4,5" biçimini de
+    // doğru çevirsin ve doğrulama ile çevirme mantığı ayrışmasın
+    // (bkz. lib/validation/testimonial.ts, 2026-08-20 denetimi bulgu 06).
+    rating: result.data.rating ? parseRatingInput(result.data.rating) : null,
     is_published: result.data.isPublished,
     order_index: orderIndex,
   });
@@ -118,7 +125,7 @@ export async function updateTestimonialAction(
   }
 
   const nextAuthorTitle = result.data.authorTitle || null;
-  const nextRating = result.data.rating ? Number(result.data.rating) : null;
+  const nextRating = result.data.rating ? parseRatingInput(result.data.rating) : null;
   const hasChanges =
     current.authorName !== result.data.authorName ||
     current.authorTitle !== nextAuthorTitle ||
