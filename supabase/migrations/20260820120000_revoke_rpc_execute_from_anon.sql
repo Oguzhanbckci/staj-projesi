@@ -1,0 +1,115 @@
+-- Hız sınırı RPC'lerinin EXECUTE yetkisini anon/authenticated'dan geri alır.
+--
+-- ============================================================================
+-- SORUN (2026-08-20 mentör denetimi, bulgu 01 — CANLI VERİTABANINDA DOĞRULANDI)
+-- ============================================================================
+--
+-- 20260818150000_add_atomic_rate_limit_functions.sql üç fonksiyon oluşturdu ve
+-- her birine SADECE `grant execute ... to service_role` verdi. Hiç `revoke`
+-- yoktu. Bu, ekleyici (additive) bir işlemdir ve yeterli DEĞİLDİR:
+--
+--   1. PostgreSQL yeni bir fonksiyona EXECUTE'u varsayılan olarak PUBLIC'e
+--      verir (yani "herkes"), ve `anon` PUBLIC'in içindedir.
+--   2. Supabase ayrıca `public` şemasında
+--      `alter default privileges ... grant all on functions to anon,
+--      authenticated, service_role` tanımlar.
+--
+-- Üç fonksiyon da `security definer` — yani çağıranın değil, fonksiyonu
+-- oluşturan rolün (postgres) yetkisiyle çalışırlar ve RLS'i TAMAMEN atlarlar.
+-- `NEXT_PUBLIC_SUPABASE_ANON_KEY` ise tasarım gereği herkese açıktır (site
+-- JS paketinde yayınlanır). Sonuç: anon key'i olan herkes bu üç fonksiyonu
+-- PostgREST üzerinden doğrudan çağırabiliyordu.
+--
+-- CANLI DOĞRULAMA (SQL Editor, düzeltmeden ÖNCE) — üçü de `true` döndü:
+--   select p.proname, p.prosecdef,
+--          has_function_privilege('anon', p.oid, 'execute')
+--   from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+--   where n.nspname = 'public';
+--
+-- ============================================================================
+-- SOMUT SALDIRI YOLLARI
+-- ============================================================================
+--
+-- (a) `submit_contact_message_if_allowed` doğrudan çağrılarak
+--     `contact_messages`'a SINIRSIZ kayıt yazılabiliyordu. Honeypot
+--     (lib/security/contactHoneypot.ts), zod doğrulaması
+--     (lib/validation/contact.ts) ve "15 dakikada 3 mesaj" sınırı — üçü de
+--     uygulama katmanında yaşıyor, doğrudan RPC çağrısı hepsini atlıyor.
+--     İki ayrı atlatma yolu vardı:
+--       · `p_ip: null` göndermek — fonksiyondaki `if p_ip is not null then`
+--         bloğu hız sınırı sayımının TAMAMINI sarıyor, null'da doğrudan
+--         INSERT'e düşülüyor.
+--       · `p_max_per_window` gibi POLİTİKA PARAMETRELERİ istemciden geliyor —
+--         `p_max_per_window: 999999` göndermek IP dolu olsa bile sınırı
+--         etkisiz kılıyor.
+--     Gereken `p_tenant_id` de erişilebilirdi: 20260807130000 migration'ı
+--     anon'a `tenants` üzerinde sınırlı SELECT veriyor.
+--
+-- (b) `check_and_reserve_login_attempt` doğrudan çağrılarak, seçilen bir IP
+--     için sayaç doldurulup `/panel/giris` o IP'ye kilitlenebilirdi. (Pratikte
+--     zayıf — saldırganın adminin IP'sini bilmesi gerekir.)
+--
+-- Bu, `GUVENLIK.md` madde 2/17'deki "anon İSTİSNASIZ hiçbir tabloya hiçbir
+-- koşulda yazamaz" iddiasını doğrudan çürütüyordu. ASIL DERS: madde 17'deki
+-- denetim yalnızca TABLO politikalarını (`pg_policies`) taramış, FONKSİYON
+-- yetkilerine hiç bakmamıştı. `security definer` bir fonksiyon, RLS'in
+-- yanından geçen ikinci bir kapıdır.
+--
+-- ============================================================================
+-- BU DÜZELTMENİN GÜVENLİ OLDUĞU NASIL DOĞRULANDI
+-- ============================================================================
+--
+-- Yetkiyi geri almak, uygulamanın kendi akışlarını KIRMAZ — çünkü her iki
+-- çağrı da service role istemcisiyle yapılıyor (kod okunarak doğrulandı):
+--   · app/panel/giris/page.tsx:46  → `createServiceRoleClient()`
+--   · components/site/contact/actions.ts:84 → `createServiceRoleClient()`
+-- Bu önemliydi: giriş hız sınırı kullanıcı HENÜZ GİRİŞ YAPMAMIŞKEN, iletişim
+-- formu da ANONİM ziyaretçiyle çalışıyor. Eğer bu çağrılar anon istemcisiyle
+-- yapılsaydı, aşağıdaki revoke girişi ve iletişim formunu tamamen kırardı.
+-- service_role'ün açık grant'ı korunuyor, o yüzden ikisi de çalışmaya devam
+-- eder.
+--
+-- Ayrıca (a)'daki "politika parametreleri istemciden geliyor" sorunu da bu
+-- düzeltmeyle kapanıyor: fonksiyonu artık yalnızca sunucu çağırabildiği için
+-- `p_max_per_window`/`p_window_minutes` her zaman koddaki sabitlerden gelir
+-- (LOGIN_RATE_LIMIT_MAX_ATTEMPTS, CONTACT_RATE_LIMIT_MAX_SUBMISSIONS).
+--
+-- İmzalar 20260818150000'deki `grant` satırlarından BİREBİR kopyalandı —
+-- PostgreSQL'de fonksiyonlar aşırı yüklenebildiği (overload) için `revoke`
+-- doğru imzayı gerektirir.
+
+revoke execute on function public.check_and_reserve_login_attempt(inet, integer, integer)
+  from public, anon, authenticated;
+
+revoke execute on function public.delete_login_attempt(uuid)
+  from public, anon, authenticated;
+
+revoke execute on function public.submit_contact_message_if_allowed(
+  uuid, inet, integer, integer, text, text, text, text, text
+) from public, anon, authenticated;
+
+-- ============================================================================
+-- BUNDAN SONRA YAZILACAK HER `security definer` FONKSİYON İÇİN KURAL
+-- ============================================================================
+--
+-- `grant ... to service_role` YETMEZ, mutlaka yanına yukarıdaki gibi bir
+-- `revoke ... from public, anon, authenticated` yazılmalı. Yetki vermek ile
+-- yetki kısıtlamak aynı şey değildir: grant ekler, varsayılanı kaldırmaz.
+--
+-- NOT: `create or replace function` mevcut yetkileri (ACL) KORUR, yani bu
+-- fonksiyonların gövdesi ileride değiştirilirse revoke geçerli kalır. Ama
+-- `drop function` + `create function` yapılırsa varsayılan yetkiler yeniden
+-- uygulanır ve bu dosyadaki revoke'lar TEKRAR çalıştırılmalıdır.
+--
+-- DOĞRULAMA (bu migration'dan SONRA çalıştırın — anon sütunu artık `false`
+-- olmalı, service_role `true` kalmalı):
+--
+--   select p.proname                                                 as fonksiyon,
+--          p.prosecdef                                               as security_definer,
+--          has_function_privilege('anon', p.oid, 'execute')          as anon_calistirabilir,
+--          has_function_privilege('authenticated', p.oid, 'execute') as uye_calistirabilir,
+--          has_function_privilege('service_role', p.oid, 'execute')  as service_role
+--   from pg_proc p
+--   join pg_namespace n on n.oid = p.pronamespace
+--   where n.nspname = 'public'
+--   order by p.proname;
