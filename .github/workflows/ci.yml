@@ -23,10 +23,22 @@ concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
+# En az yetki ilkesi (2026-08-20 mentör denetimi). GITHUB_TOKEN varsayılan
+# olarak depo ayarına göre yazma yetkisi de alabiliyor; bu workflow yalnızca
+# kodu OKUYOR (checkout + npm ci + test + build), hiçbir şey yazmıyor.
+# Fork'tan gelen bir PR'da çalışan üçüncü parti bir bağımlılığın token'ı
+# kötüye kullanamaması için kapsam burada daraltılıyor.
+permissions:
+  contents: read
+
 jobs:
   dogrulama:
     name: Lint, tip kontrolü, birim testleri ve build
     runs-on: ubuntu-latest
+    # Asılı kalan bir koşu varsayılan olarak 6 SAAT boyunca ücretsiz Actions
+    # dakikalarını yakabiliyor (2026-08-20 denetimi). Bu iş yerelde birkaç
+    # dakika sürüyor; 15 dakika rahat bir tavan.
+    timeout-minutes: 15
 
     steps:
       - name: Depoyu çek
@@ -95,6 +107,7 @@ jobs:
   guvenlik:
     name: Bağımlılık güvenlik taraması
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     # Bilgi amaçlı — yeni bir advisory yayınlandığında build'i kırmasın diye
     # başarısızlığı koşuyu düşürmüyor. 2026-08-19'da `nanoid` açığı tam da
     # böyle ortaya çıkmıştı (bkz. docs/GUVENLIK.md madde 10).
