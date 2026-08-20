@@ -93,10 +93,18 @@ export function AboutEditor({ initialData }: { initialData: AboutSettingsData | 
           id={`${FIELD_ID_PREFIX}-coreValues`}
           label="Değerlerimiz (opsiyonel)"
           name="coreValues"
-          rows={4}
+          rows={6}
           defaultValue={data.coreValues.join("\n")}
           error={fieldErrors.coreValues}
-          helpText="Her satıra bir değer yazın (ör. Kalite, Güvenilirlik, Zamanında Teslim)."
+          helpText={
+            // Yardım metni 2026-08-20'de değişti. Eski hâli tek kelimelik
+            // değerler öneriyordu ("Kalite, Güvenilirlik") — 38 gerçek
+            // "Hakkımızda" sayfasının incelenmesinde çıplak sıfat listeleri
+            // en zayıf, "Başlık — somut cümle" biçimi en inandırıcı bulundu.
+            // Sitede başlık kalın, açıklama altında soluk render ediliyor;
+            // tire yazılmazsa madde yalnızca başlıktan ibaret kalır, bozulmaz.
+            "Her satıra bir değer yazın. Önerilen biçim: kısa bir başlık, tire, sonra ne yaptığınızı söyleyen tek cümle — ör. “Söz verilen tarih — Teslim tarihini sözleşmeye yazar, sapmayı beklemeden bildiririz.” Sıfat sıralamak (“Kaliteli, güvenilir”) yerine fiil kullanmak daha ikna edici olur. 4-6 madde yeterlidir."
+          }
         />
 
         <SubmitButton pendingLabel="Kaydediliyor…">Değişiklikleri Kaydet</SubmitButton>
