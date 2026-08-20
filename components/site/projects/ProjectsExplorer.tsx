@@ -35,7 +35,7 @@ export function ProjectsExplorer({
 
   return (
     <div>
-      <div role="group" aria-label="Kategoriye göre filtrele" className="mt-6 flex flex-wrap gap-2">
+      <div role="group" aria-label="Kategoriye göre filtrele" className="mt-12 flex flex-wrap gap-2">
         {[ALL_LABEL, ...categories].map((category) => {
           const isSelected = category === selectedCategory;
           return (

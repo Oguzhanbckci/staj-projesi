@@ -31,9 +31,9 @@ export async function ProjectsSection({
   ).sort();
 
   return (
-    <section id="projeler" className="bg-surface-raised py-16 sm:py-24">
+    <section id="projeler" className="bg-surface py-16 sm:py-24">
       <Container>
-        <SectionHeader title="Projelerimiz" headingLevel="h2" />
+        <SectionHeader title="Projelerimiz" headingLevel="h2" rule />
         <ProjectsExplorer
           projects={projects}
           categories={categories}

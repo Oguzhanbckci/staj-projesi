@@ -11,8 +11,8 @@ export async function FaqsSection({ variant = "single" }: { variant?: FaqVariant
   return (
     <section id="sss" className="bg-surface py-16 sm:py-24">
       <Container>
-        <SectionHeader title="Sıkça Sorulan Sorular" headingLevel="h2" />
-        <div className="mt-8">
+        <SectionHeader title="Sıkça Sorulan Sorular" headingLevel="h2" rule />
+        <div className="mt-12">
           <FaqList items={faqs} columns={variant === "two-column" ? 2 : 1} />
         </div>
       </Container>

@@ -20,10 +20,10 @@ export async function TeamSection({
   if (members.length === 0) return null;
 
   return (
-    <section id="ekip" className="bg-surface-raised py-16 sm:py-24">
+    <section id="ekip" className="bg-surface py-16 sm:py-24">
       <Container>
-        <SectionHeader title="Ekibimiz" headingLevel={headingLevel} />
-        <div className="mt-10 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+        <SectionHeader title="Ekibimiz" headingLevel={headingLevel} rule={headingLevel === "h2"} />
+        <div className="mt-12 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
           {members.map((member) => (
             <TeamMemberCard key={member.id} {...member} />
           ))}

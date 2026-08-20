@@ -29,15 +29,16 @@ export async function ContactSection({
   const contact = await getContactSection();
 
   return (
-    <section id="iletisim" className="bg-surface-raised py-16 sm:py-24">
+    <section id="iletisim" className="bg-surface py-16 sm:py-24">
       <Container>
         <SectionHeader
           title="İletişim"
           description="Projeniz hakkında konuşmak için bize ulaşın."
           headingLevel={headingLevel}
+          rule={headingLevel === "h2"}
         />
 
-        <div className="mt-10 grid gap-10 lg:grid-cols-2">
+        <div className="mt-12 grid gap-10 lg:grid-cols-2">
           {contact && (
             <div className="space-y-6 text-base text-text">
               {contact.address && (

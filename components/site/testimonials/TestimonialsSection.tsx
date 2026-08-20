@@ -24,10 +24,10 @@ export async function TestimonialsSection({
   const Variant = TESTIMONIALS_VARIANTS[isTestimonialsVariant(variant) ? variant : "grid"];
 
   return (
-    <section id="referanslar" className="bg-surface-raised py-16 sm:py-24">
+    <section id="referanslar" className="bg-surface py-16 sm:py-24">
       <Container>
-        <SectionHeader title="Müşterilerimiz Ne Diyor?" headingLevel="h2" />
-        <div className="mt-8">
+        <SectionHeader title="Müşterilerimiz Ne Diyor?" headingLevel="h2" rule />
+        <div className="mt-12">
           <Variant items={items} />
         </div>
       </Container>
