@@ -38,7 +38,18 @@ export function TeamMemberCard({ fullName, role, bio, photoPath }: TeamMember) {
         )}
       </div>
       <p className="mt-4 text-h6 font-bold text-text">{fullName}</p>
-      <p className="mt-1 text-caption font-semibold text-brand">{role}</p>
+      {/* `text-brand` DEĞİL — 2026-08-20 denetimi: marka rengi 13px metinde
+          koyu temada `surface-raised` üzerinde 3.56:1'e düşüyor, WCAG AA
+          eşiği 4.5:1. Aynı düzeltme SectionHeader'ın eyebrow'unda da
+          yapıldı; bu, o değişikliğin kaçırılmış son yeriydi. Marka rengi
+          artık yalnızca (a) etkileşimli öğelerde ve (b) İstatistikler'deki
+          61px rakamlar gibi WCAG'in "büyük metin" (3:1) eşiğine giren
+          yerlerde kullanılıyor — incelenen 93 sitedeki hâkim kullanım da
+          bu. Unvan satırı bölüm etiketleriyle aynı dile geçti: küçük,
+          büyük harfli, geniş aralıklı, nötr. */}
+      <p className="mt-1 text-caption font-semibold uppercase tracking-[0.14em] text-text-muted">
+        {role}
+      </p>
       {bio && <p className="mt-3 line-clamp-3 text-base text-text-muted">{bio}</p>}
     </Card>
   );
