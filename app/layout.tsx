@@ -92,9 +92,15 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
 
   const themeScript = `(function(){try{var s=localStorage.getItem(${JSON.stringify(THEME_STORAGE_KEY)});if(s!=="light"&&s!=="dark")return;var d=${themeTokensJson};var t=d[s];if(!t)return;var h=document.documentElement;h.setAttribute("data-theme",s);for(var k in t){h.style.setProperty(k,t[k])}}catch(e){}})();`;
 
+  // `lang="tr"`: site içeriğinin tamamı Türkçe (çoklu dil PRD madde 4'te
+  // kapsam dışı). Bu değer create-next-app'ten kalma "en" idi — ekran
+  // okuyucular tüm Türkçe metni İngilizce fonetikle okuyor, arama
+  // motorlarına da yanlış dil sinyali gidiyordu. `global-error.tsx` aynı
+  // projede zaten doğru şekilde `lang="tr"` kullanıyordu; kalıp biliniyordu,
+  // kök layout'a uygulanmamıştı (2026-08-20 mentör denetimi, bulgu 14).
   return (
     <html
-      lang="en"
+      lang="tr"
       data-theme={active.dataTheme}
       suppressHydrationWarning
       style={active.styleVars as CSSProperties}
