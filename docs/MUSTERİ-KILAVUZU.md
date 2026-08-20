@@ -5,16 +5,26 @@ yayınlayacak/kaldıracak veya silecek kişi için yazıldı — **teknik bilgi
 gerektirmez**. Diğer `docs/` dosyalarından farklı olarak bu dosya
 geliştirici/AI için değil, panelin gerçek kullanıcısı içindir.
 
-**Önemli:** Panel şu an **Hizmetler, Projeler, Referanslar, SSS ve Ekip**
-için birebir aynı şekilde çalışır — hangi bölümde olursanız olun, aşağıdaki
-adımlar aynıdır. Sadece formdaki alanlar (ör. Hizmetler'de "İkon",
-Projeler'de "Konum/Yıl") içerik türüne göre değişir; bunların listesi en
-altta.
+**Önemli — iki tür içerik ekranı var.** İçerikler menüsünde **7 bölüm**
+bulunur ve bunlar iki gruba ayrılır:
+
+- **Liste bölümleri** (5 tane): **Hizmetler, Projeler, Referanslar, SSS,
+  Ekip.** Bunlarda birden çok kayıt olur; ekleyebilir, düzenleyebilir,
+  sıralayabilir ve silebilirsiniz. Bu kılavuzdaki "İçerik Ekleme",
+  "Düzenleme", "Sıralama ve Silme" adımları bu 5 bölüm için birebir
+  aynıdır. Sadece formdaki alanlar (ör. Hizmetler'de "İkon",
+  Projeler'de "Konum/Yıl") değişir; listesi en altta.
+- **Tekil bölümler** (2 tane): **Ana Görsel (Hero)** ve **Hakkımızda.**
+  Bunlarda tek bir kayıt vardır — liste yoktur, "Ekle" veya "Sil"
+  butonu yoktur. Ekranı açtığınızda doğrudan bir form görürsünüz,
+  değiştirip **"Değişiklikleri Kaydet"** dersiniz. Tema ve Ayarlar
+  ekranları da aynı mantıkla çalışır.
 
 **Panele giriş:** `[alan adınız]/panel` adresine gidin, size verilen
 e-posta ve şifreyle giriş yapın. Soldaki menüden (mobilde üstteki
 ☰ simgesinden) **İçerikler**'e, sonra düzenlemek istediğiniz bölüme
-(Hizmetler / Projeler / Referanslar / SSS / Ekip) tıklayın.
+(Ana Görsel / Hakkımızda / Hizmetler / Projeler / Referanslar / SSS /
+Ekip) tıklayın.
 
 ## Özet Ekranı
 
@@ -66,11 +76,30 @@ ilgili sayfaya geçmek içindir.
 5. Hatalı/eksik bir alan varsa aynı ekleme formundaki gibi üstte özet,
    alanın altında kırmızı açıklama gösterilir.
 
-## Görsel Ekleme *(şu an sadece Projeler için)*
+## Görsel Ekleme
 
-Bir projeyi **düzenleme** sayfasında (yeni proje eklerken değil —
-önce projeyi ekleyip kaydedin, sonra "Düzenle"ye tıklayıp görseli
-ekleyin), formun altında "Proje Görseli" bölümü var:
+Görsel yükleme **8 ekranda** mevcut:
+
+| Nerede | Ne yüklenir |
+|---|---|
+| İçerikler → Ana Görsel | Ana sayfanın büyük arka plan görseli |
+| İçerikler → Hakkımızda | Firma tanıtım görseli |
+| İçerikler → Hizmetler | Her hizmet kartının görseli |
+| İçerikler → Projeler | Her projenin fotoğrafı |
+| İçerikler → Referanslar | Referans veren firmanın logosu |
+| İçerikler → Ekip | Ekip üyesinin fotoğrafı |
+| Tema | Logo ve favicon (tarayıcı sekmesindeki küçük simge) |
+| Ayarlar | Sosyal medya paylaşım görseli |
+
+*(SSS'de görsel alanı yoktur — soru/cevap metinden ibarettir.)*
+
+Aşağıdaki adımlar hepsinde aynıdır; örnek olarak Projeler anlatılıyor.
+
+**Liste bölümlerinde önce kaydı oluşturun:** Bir projeyi **düzenleme**
+sayfasında (yeni proje eklerken değil — önce projeyi ekleyip kaydedin,
+sonra "Düzenle"ye tıklayıp görseli ekleyin), formun altında "Proje
+Görseli" bölümü var. Tekil bölümlerde (Ana Görsel, Hakkımızda, Tema,
+Ayarlar) böyle bir ön adım yoktur, görsel alanı ekranda hazır bekler:
 
 1. **"Görsel yükle"** (veya bir görsel zaten varsa "Görseli değiştir")
    alanına tıklayıp bilgisayarınızdan/telefonunuzdan bir fotoğraf seçin.
@@ -280,12 +309,15 @@ dönülecek. Bu işlem geri alınamaz."*
 ayarları sıfırlar — Site Kimliği, İletişim Bilgileri, Sosyal Medya,
 Logo/Favicon alanlarınıza dokunmaz, onlar olduğu gibi kalır.
 
-## SEO Ayarları
+## Ayarlar (SEO ve Bildirimler)
 
-Soldaki menüden **"Ayarlar"**'a girerek sitenizin arama motorlarında
-(Google vb.) ve sosyal medyada nasıl göründüğünü yönetebilirsiniz.
-Bu ekranın davranışı Tema ile aynı: değişiklikler otomatik kaydedilmez,
-formun altındaki **"Değişiklikleri Kaydet"** butonuna basmanız gerekir.
+Soldaki menüden **"Ayarlar"**'a girerek iki şeyi yönetirsiniz: sitenizin
+arama motorlarında (Google vb.) ve sosyal medyada nasıl göründüğü, bir de
+yeni mesaj bildirimlerinin nereye gideceği. Bu ekranın davranışı Tema ile
+aynı: değişiklikler otomatik kaydedilmez, her bloğun altındaki
+**"Değişiklikleri Kaydet"** butonuna basmanız gerekir.
+
+### Arama motoru görünümü (SEO)
 
 - **Sayfa Başlığı ve Açıklama:** Yazdıkça altlarında bir karakter
   sayacı belirir (ör. "42 / 60 karakter"). Önerilen sınırı aşarsanız
@@ -302,6 +334,25 @@ formun altındaki **"Değişiklikleri Kaydet"** butonuna basmanız gerekir.
   platformlarda birisi paylaştığında görünecek görseli
   yükleyebilirsiniz (yükleme akışı diğer görsel alanlarıyla aynı).
   Önerilen boyut 1200×630 pikseldir.
+
+### Bildirimler
+
+Aynı ekranın altındaki **"Bildirimler"** bloğunda tek bir alan vardır:
+**"Bildirim E-postası (opsiyonel)"**.
+
+- Buraya bir adres yazıp kaydederseniz, sitenizdeki iletişim formundan
+  her yeni mesaj geldiğinde o adrese bir bildirim e-postası gönderilir.
+  Böylece paneli sürekli açık tutmanız gerekmez.
+- Alanı **boş bırakırsanız** e-posta gönderilmez; mesajlar yine de
+  panele düşer ve Mesajlar ekranında görünür.
+- Bu adres yalnızca size bildirim göndermek için kullanılır, sitenizde
+  hiçbir yerde görünmez.
+
+**Not:** E-posta bildiriminin çalışması, kurulum sırasında bir e-posta
+servisi anahtarının tanımlanmış olmasına bağlıdır. Tanımlı değilse
+özellik sessizce devre dışı kalır — **mesaj yine kaydedilir ve panelde
+görünür**, sadece e-posta gitmez. Emin değilseniz kurulumu yapan kişiye
+sorun.
 
 ## Gelen Mesajları Yönetme
 
@@ -338,25 +389,44 @@ programınız üzerinden gönderilir:
 4. Gönderenin bir telefon numarası paylaştıysa, detay sayfasındaki
    telefon numarasına tıklayarak da doğrudan arayabilirsiniz.
 
-**Not:** Sistem şu an mesajlara e-posta ile otomatik bildirim
-göndermiyor — yeni bir mesaj geldiğinde haberdar olmak için paneli
-düzenli aralıklarla kontrol etmeniz (veya menüdeki okunmamış sayısına
-bakmanız) gerekir.
+**Yeni mesajlardan nasıl haberdar olursunuz — üç yol var:**
+
+1. **Panel açıkken anlık bildirim.** Panel açık dururken yeni bir mesaj
+   gelirse, sayfayı yenilemenize gerek kalmadan ekranda bir bildirim
+   belirir ve menüdeki okunmamış sayısı kendiliğinden artar.
+2. **E-posta bildirimi.** **Ayarlar → Bildirimler** bloğuna bir e-posta
+   adresi yazarsanız, her yeni mesaj için o adrese "yeni mesaj geldi"
+   bildirimi gönderilir — böylece paneli sürekli açık tutmanız
+   gerekmez. Adresi boş bırakırsanız e-posta gönderilmez.
+3. **Menüdeki okunmamış sayısı.** Panele her girdiğinizde soldaki
+   menüde ve Özet ekranında kaç okunmamış mesajınız olduğu yazar.
+
+**Not:** E-posta bildiriminin çalışması için kurulum sırasında bir
+e-posta servisi anahtarının tanımlanmış olması gerekir. Tanımlı değilse
+bu özellik sessizce devre dışı kalır — **mesajlarınız yine de kaydedilir
+ve panelde görünür, hiçbir şey kaybolmaz**, sadece e-posta gitmez. Emin
+değilseniz kurulumu yapan kişiye sorun.
 
 ## Bölüm Bazlı Alan Farkları
 
 Formdaki alanlar içerik türüne göre değişir, aşağıda özetlendi
 (hepsinde ortak: Başlık/Ad benzeri bir zorunlu alan + "Hemen yayınla"):
 
-| Bölüm | Alanlar |
-|---|---|
-| Hizmetler | Başlık*, Açıklama, İkon |
-| Projeler | Başlık*, Açıklama, Kategori, Konum, Yıl, Canlı Bağlantı |
-| Referanslar | Ad Soyad*, Unvan/Firma, Yorum*, Puan (1-5) |
-| SSS | Soru*, Cevap* |
-| Ekip | Ad Soyad*, Unvan*, Kısa Biyografi |
+| Bölüm | Tür | Alanlar |
+|---|---|---|
+| Ana Görsel (Hero) | Tekil | Başlık*, Alt Başlık, Varsayılan Görünüm, Buton Metni, Buton Bağlantısı, İkinci Buton Metni, İkinci Buton Bağlantısı, **Arka Plan Görseli** |
+| Hakkımızda | Tekil | Başlık*, Açıklama, Kuruluş Yılı (1800-2100), Değerlerimiz (her satıra bir madde), **Görsel** |
+| Hizmetler | Liste | Başlık*, Açıklama, İkon, **Görsel** |
+| Projeler | Liste | Başlık*, Açıklama, Kategori, Konum, Yıl (1800-2100), Canlı Bağlantı, **Görsel** |
+| Referanslar | Liste | Ad Soyad*, Unvan/Firma, Yorum*, Puan (1-5, yarım puan verilebilir: 4,5), **Logo** |
+| SSS | Liste | Soru*, Cevap* |
+| Ekip | Liste | Ad Soyad*, Unvan*, Kısa Biyografi, **Fotoğraf** |
 
-`*` zorunlu alan.
+`*` zorunlu alan. **Kalın** yazılanlar görsel alanlarıdır — bunlar formun
+altında ayrı bir bölümde bulunur (bkz. "Görsel Ekleme").
+
+**Tekil** bölümlerde tek kayıt vardır (ekle/sil yok, sadece düzenle ve
+kaydet); **Liste** bölümlerinde birden çok kayıt olur ve sıralanabilir.
 
 **Not (Ekip için özel):** Ekip üyeleri ana sayfada değil, sitenin ayrı
 **"Ekip"** sayfasında görünür — bir ekip üyesini yayınladıktan sonra

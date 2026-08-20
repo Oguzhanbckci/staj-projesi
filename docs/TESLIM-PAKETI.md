@@ -7,6 +7,21 @@ sürecinin teknik detayları için `docs/` klasöründeki diğer dosyalara
 yerine geçmez.*
 
 **Hazırlanma tarihi:** 2026-08-17
+**Son doğrulama:** 2026-08-20 (mentör denetimi)
+
+> **Bu belgedeki sayılar nereden doğrulanır** — 2026-08-20 denetiminde bu
+> belgede dört sapma bulundu (bölüm sayısı, varyant sayısı, test sayısı ve
+> e-posta bildiriminin yanlışlıkla "kapsam dışı" listesinde olması). Belge
+> müşteriye/karar vericiye gittiği için en yüksek doğruluk çıtasına sahip
+> olmalı. Güncellerken sayıları tahmin etmeyin, kaynaktan sayın:
+>
+> | İddia | Doğruluk kaynağı |
+> |---|---|
+> | Bölüm sayısı | `lib/sections/config.ts` → `SECTION_KEYS` (şu an 10) |
+> | Varyantı olan bölümler | `lib/sections/variantOptions.ts` → `SECTION_VARIANT_OPTIONS` (şu an 5 bölüm, her birinde 2) |
+> | Panel içerik ekranları | `app/panel/(protected)/icerikler/page.tsx` (şu an 7 kart) |
+> | Görsel yükleme ekranları | `imageActions.ts` dosyalarının sayısı (şu an 8) |
+> | Birim test sayısı | `npm run test:unit` çıktısındaki son satır (şu an 95) |
 
 ---
 
@@ -23,12 +38,18 @@ Sitenin içeriğini (hizmetler, projeler, referanslar, iletişim bilgileri
 vb.) güncellemek için, tarayıcıdan girilen basit bir **yönetim
 paneli** kullanılır — tıpkı bir e-posta hesabına giriş yapmak gibi.
 
-Sitenin kendisi **11 farklı bölümden** oluşur (Ana Görsel, Hakkımızda,
+Sitenin kendisi **10 farklı bölümden** oluşur: Ana Görsel, Hakkımızda,
 Hizmetler, Projeler, Referanslar, İstatistikler, Sık Sorulan Sorular,
-Ekip, Eylem Çağrısı, İletişim + otomatik oluşan üst menü/alt bilgi) —
-her bölümün **2-3 farklı görsel düzeni (varyantı)** arasından seçim
-yapılabilir, yani her müşteri sitesi aynı kalıptan çıkma değil, kendine
-özgü bir görünüme sahip olabilir.
+Ekip, Eylem Çağrısı, İletişim. Bunlara ek olarak her sayfada üst menü ve
+alt bilgi otomatik oluşur — ama bunlar birer *bölüm* değildir: açılıp
+kapatılamaz, sıralanamaz, sayfanın sabit parçalarıdır.
+
+Bu 10 bölümden **5'inde ikişer farklı görsel düzeni (varyant)** arasından
+seçim yapılabilir: **Ana Görsel, Hizmetler, Projeler, Referanslar ve Sık
+Sorulan Sorular.** Kalan 5 bölümün (Hakkımızda, İstatistikler, Ekip,
+Eylem Çağrısı, İletişim) tek bir görünümü vardır. Yani her müşteri sitesi
+aynı kalıptan çıkma değildir, ama varyant seçimi tüm bölümlerde değil, bu
+5 bölümde sunulur.
 
 ## Kapsam ve Kapsam Dışı
 
@@ -45,7 +66,15 @@ yapılabilir, yani her müşteri sitesi aynı kalıptan çıkma değil, kendine
 - **İletişim formu** — ziyaretçiden gelen mesajlar panelde bir "gelen
   kutusu" gibi listelenir; **spam/bot koruması** dahildir (gizli tuzak
   alanı + otomatik hız sınırlama — bkz. "Kapsam Dışı" bölümündeki
-  CAPTCHA notu).
+  CAPTCHA notu). Panel açıkken yeni bir mesaj geldiğinde sayfa
+  yenilenmeden anlık bildirim gösterilir.
+- **Yeni mesaj için e-posta bildirimi** — Ayarlar ekranındaki
+  "Bildirimler" bloğuna bir e-posta adresi yazıldığında, her yeni mesaj
+  için o adrese bildirim e-postası gider; böylece paneli sürekli açık
+  tutmak gerekmez. *Kurulumda bir e-posta servisi anahtarı
+  (`RESEND_API_KEY`) tanımlanmasını gerektirir — tanımlanmazsa özellik
+  sessizce devre dışı kalır, form ve panel normal çalışmaya devam eder,
+  hiçbir mesaj kaybolmaz.*
 - **Arama motoru optimizasyonu (SEO)** — sayfa başlığı/açıklaması,
   site haritası, arama motorlarının siteyi doğru okuması için gerekli
   teknik veri (yapısal veri/"structured data"), sosyal medyada
@@ -73,12 +102,8 @@ konusu olarak konuşulabilir:
   yerine kapsam dışı bırakıldı).
 - **Çoklu dil desteği** — site şu an sadece Türkçe.
 - **Serbest sürükle-bırak sayfa tasarımı** — hazır bölüm kütüphanesinden
-  seçim var (11 bölüm × 2-3 varyant), ama tam serbest bir sayfa
+  seçim var (10 bölüm, 5'inde ikişer varyant), ama tam serbest bir sayfa
   düzenleyici (Wix/Elementor tarzı) değil.
-- **İletişim formu için otomatik e-posta bildirimi** — mesajlar panelde
-  görünür, ama şu an ayrıca bir e-posta ile "yeni mesaj geldi"
-  bildirimi gönderilmiyor; panel düzenli kontrol edilmeli. (Bu, kolay
-  eklenebilecek bir sonraki adım — bkz. "Bakım ve Destek".)
 - **CAPTCHA/görsel doğrulama** — spam koruması var (yukarıda) ama
   görsel bulmaca tarzı bir CAPTCHA şu an yok; gerçek bir spam artışı
   görülürse eklenmesi önerilir (net bir eşik `GUVENLIK.md`'de
@@ -94,12 +119,15 @@ konusu olarak konuşulabilir:
 
 1. **Çalışan, test edilmiş kaynak kod** — GitHub deposu üzerinden tam
    erişimle.
-2. **Ziyaretçi sitesi** — 11 bölüm, her biri 2-3 görsel varyantla,
+2. **Ziyaretçi sitesi** — 10 bölüm (5'inde ikişer görsel varyant),
    açık/koyu tema, mobil+masaüstü uyumlu.
-3. **Yönetim paneli** — 7 ekran: Özet, İçerikler (5 içerik türü: Hizmet/
-   Proje/Referans/SSS/Ekip Üyesi), Sayfa Düzeni, Medya, Tema, Mesajlar,
-   Ayarlar (SEO).
-4. **Otomatik testler** — 26 birim test + 3 uçtan uca senaryo testi
+3. **Yönetim paneli** — 7 ekran: Özet, İçerikler (**7 içerik türü:**
+   Ana Görsel/Hakkımızda/Hizmet/Proje/Referans/SSS/Ekip Üyesi), Sayfa
+   Düzeni, Medya, Tema, Mesajlar, Ayarlar (SEO + Bildirimler). Görsel
+   yükleme 8 ekranda mevcut: Ana Görsel, Hakkımızda, Hizmetler,
+   Projeler, Referanslar, Ekip, Tema (logo/favicon) ve Ayarlar (sosyal
+   medya paylaşım görseli).
+4. **Otomatik testler** — 95 birim test + 3 uçtan uca senaryo testi
    (ziyaretçi akışı, yönetici akışı, yetkisiz erişim engeli) — her yeni
    değişiklikte tekrar çalıştırılıp ürünün bozulmadığından emin
    olunabilir. Bu 3 senaryo, ürünün gerçek bir canlı adrese karşı da

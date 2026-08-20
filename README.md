@@ -1,7 +1,7 @@
 # staj-projesi — Kurumsal Web Sitesi Hizmeti
 
 İnşaat firmaları gibi işletmelere satılabilen, tam yönetilen bir
-kurumsal web sitesi ürünü: 11 bölümlü bir ziyaretçi sitesi + tema
+kurumsal web sitesi ürünü: 10 bölümlü bir ziyaretçi sitesi + tema
 düzenleyicili, medya yönetimli, SEO ayarlı bir yönetim paneli.
 Mimari/iş modeli detayı için `docs/PRD.md`, satış/teslim odaklı özet
 için `docs/TESLIM-PAKETI.md`.

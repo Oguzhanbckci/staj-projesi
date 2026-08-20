@@ -223,6 +223,51 @@ yuvarlak (bubbly, tüketici-uygulaması hissi veren) bir görünümden
 kaçınıldı. `rounded-full` (pill/avatar) Tailwind varsayılanında bırakıldı,
 override edilmedi.
 
+## 5.1 Fotoğraf En-Boy Oranı *(2026-08-20 eklendi)*
+
+**Kural: ziyaretçi sitesinde fotoğraf gösteren her kap `aspect-[3/2]`
+kullanır.** İstisnası yok.
+
+| Bileşen | Önce | Sonra |
+|---|---|---|
+| `AboutSection` | `aspect-[4/3]` | `aspect-[3/2]` |
+| `HeroVariantB` | `aspect-[4/3]` | `aspect-[3/2]` |
+| `ProjectCard` | `aspect-[4/3]` | `aspect-[3/2]` |
+| `ProjectDetailModal` | `aspect-video` (16:9) | `aspect-[3/2]` |
+| `ServiceCardImage` | `aspect-video` (16:9) | `aspect-[3/2]` |
+
+*(`HeroVariantA` bu kuralın dışında — orada fotoğraf bir kap içinde değil,
+tüm bölümü kaplayan bir arka plan.)*
+
+**Neden gerekti (gerçek bir kullanıcı şikayeti):** Kullanıcı panelden
+fotoğraf yükledikten sonra "resimler aşırı büyütülmüş görünüyor" dedi.
+Sebep şuydu: yüklenen fotoğraflar 1264×848, yani **3:2**; kaplar ise 4:3
+ve 16:9'du. `object-cover` kabı TAMAMEN doldurmak zorunda olduğu için,
+oran tutmadığında görseli büyütüp taşan kısmı kesiyor:
+
+- 3:2 fotoğraf → 16:9 kap: **%19 büyütme, alt+üstten %16 kırpma.** Bir
+  bina fotoğrafında bu, gökyüzünü ve zemini kesip binayı ortadan bir şerit
+  hâline getiriyordu — şikayetin asıl kaynağı buydu.
+- 3:2 fotoğraf → 4:3 kap: %12 büyütme, yanlardan kırpma. Daha hafif ama
+  aynı sınıf.
+
+**Neden 3:2 seçildi:** (a) 3:2, fotoğraf makinelerinin ve DSLR'ların
+standart oranı — gerçek bir şantiye fotoğrafının büyük olasılıkla geleceği
+oran; (b) bu kurulumdaki tüm görseller zaten 3:2, yani kırpma sıfıra
+iniyor; (c) tek bir oranda birleşmek, kart ızgaralarında satır
+yüksekliklerinin tutarlı kalmasını sağlıyor.
+
+**Neden `object-contain` DEĞİL:** contain, görseli hiç kırpmaz ama kabı
+dolduramadığında boş şeritler (letterbox) bırakır ve kart yükseklikleri
+görselden görsele değişir — ızgara düzeni bozulur. Kırpmayı kabul edip
+oranı doğru seçmek, bir CMS'te daha sağlam bir tercih.
+
+**Bir sonraki oturum için:** Müşteri farklı oranda (ör. 4:3 telefon
+fotoğrafı, 16:9 drone karesi) bir görsel yüklerse yine kırpma olacak —
+bu kaçınılmaz ve kabul edilmiş. Çözüm oranı değiştirmek değil, panelde
+yükleme alanına "önerilen oran 3:2" yardım metni eklemek olur (henüz
+yapılmadı).
+
 ## 6. Gölge Seviyeleri
 
 | Token       | Açık tema                                                        | Koyu tema                                                  |
