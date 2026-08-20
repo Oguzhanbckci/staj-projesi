@@ -67,14 +67,23 @@ export async function updateSeoSettingsAction(
   }
 
   const supabase = await createServerSupabaseClient();
+  // `.update()` DEĞİL `.upsert()` — 2026-08-20 mentör denetimi (bulgu 08),
+  // aynı gerekçe tema/actions.ts'te ayrıntılı yazılı: düz update eşleşen
+  // satır yoksa hata vermeden hiçbir şey yazmaz, eylem yine "kaydedildi"
+  // döner. site_settings_tenant_id_key UNIQUE kısıtı onConflict'i güvenli
+  // kılıyor; tenant_id dışında NOT NULL kolon olmadığı için insert dalı da
+  // sorunsuz çalışır.
   const { error } = await supabase
     .from("site_settings")
-    .update({
-      seo_title: nextTitle,
-      seo_description: nextDescription,
-      seo_keywords: nextKeywords,
-    })
-    .eq("tenant_id", tenantId);
+    .upsert(
+      {
+        tenant_id: tenantId,
+        seo_title: nextTitle,
+        seo_description: nextDescription,
+        seo_keywords: nextKeywords,
+      },
+      { onConflict: "tenant_id" }
+    );
 
   if (error) {
     console.error("updateSeoSettingsAction güncelleme hatası:", error);

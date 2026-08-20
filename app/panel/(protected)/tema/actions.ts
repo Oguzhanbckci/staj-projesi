@@ -135,19 +135,31 @@ export async function updateThemeSettingsAction(
   }
 
   if (settingsChanged) {
+    // `.update()` DEĞİL `.upsert()` — 2026-08-20 mentör denetimi (bulgu 08).
+    // Düz `.update()`, eşleşen satır yoksa HATA VERMEZ, sessizce hiçbir şey
+    // yazmaz ve eylem "Değişiklikler kaydedildi." döner. Bu hata dokuzuncu
+    // oturumda Hero/Hakkımızda eylemlerinde tespit edilip düzeltilmişti
+    // (bkz. icerikler/hero/actions.ts:11 yorumu) ama aynı düzeltme buraya
+    // taşınmamıştı — henüz site_settings satırı oluşmamış taze bir
+    // kurulumda tema ayarları sessizce kayboluyordu.
+    // `onConflict: "tenant_id"` güvenli: site_settings_tenant_id_key
+    // UNIQUE kısıtı var (20260806120000_create_content_tables.sql:69).
     const { error } = await supabase
       .from("site_settings")
-      .update({
-        slogan: nextSlogan,
-        primary_color: nextPrimaryColor,
-        secondary_color: nextSecondaryColor,
-        border_radius_scale: nextBorderRadiusScale,
-        font_family_key: nextFontFamilyKey,
-        facebook_url: nextFacebookUrl,
-        instagram_url: nextInstagramUrl,
-        linkedin_url: nextLinkedinUrl,
-      })
-      .eq("tenant_id", tenantId);
+      .upsert(
+        {
+          tenant_id: tenantId,
+          slogan: nextSlogan,
+          primary_color: nextPrimaryColor,
+          secondary_color: nextSecondaryColor,
+          border_radius_scale: nextBorderRadiusScale,
+          font_family_key: nextFontFamilyKey,
+          facebook_url: nextFacebookUrl,
+          instagram_url: nextInstagramUrl,
+          linkedin_url: nextLinkedinUrl,
+        },
+        { onConflict: "tenant_id" }
+      );
     if (error) {
       console.error("updateThemeSettingsAction site_settings güncelleme hatası:", error);
       return {
@@ -159,20 +171,25 @@ export async function updateThemeSettingsAction(
   }
 
   if (contactChanged) {
+    // Yukarıdaki site_settings ile aynı gerekçe (bulgu 08).
+    // contact_sections_tenant_id_key UNIQUE kısıtı var (aynı migration:188).
     const { error } = await supabase
       .from("contact_sections")
-      .update({
-        address: nextAddress,
-        phone: nextPhone,
-        email: nextEmail,
-        working_hours: nextWorkingHours,
-        weekday_opens: nextWeekdayOpens,
-        weekday_closes: nextWeekdayCloses,
-        weekend_opens: nextWeekendOpens,
-        weekend_closes: nextWeekendCloses,
-        service_areas: nextServiceAreas,
-      })
-      .eq("tenant_id", tenantId);
+      .upsert(
+        {
+          tenant_id: tenantId,
+          address: nextAddress,
+          phone: nextPhone,
+          email: nextEmail,
+          working_hours: nextWorkingHours,
+          weekday_opens: nextWeekdayOpens,
+          weekday_closes: nextWeekdayCloses,
+          weekend_opens: nextWeekendOpens,
+          weekend_closes: nextWeekendCloses,
+          service_areas: nextServiceAreas,
+        },
+        { onConflict: "tenant_id" }
+      );
     if (error) {
       console.error("updateThemeSettingsAction contact_sections güncelleme hatası:", error);
       return {
@@ -227,16 +244,21 @@ export async function applyThemePresetAction(
   }
 
   const supabase = await createServerSupabaseClient();
+  // updateThemeSettingsAction ile aynı gerekçe (bulgu 08) — düz `.update()`
+  // satır yoksa sessizce hiçbir şey yazmaz ve önayar uygulanmış görünürdü.
   const { error } = await supabase
     .from("site_settings")
-    .update({
-      theme_preset: presetKey,
-      primary_color: null,
-      secondary_color: null,
-      border_radius_scale: null,
-      font_family_key: null,
-    })
-    .eq("tenant_id", tenantId);
+    .upsert(
+      {
+        tenant_id: tenantId,
+        theme_preset: presetKey,
+        primary_color: null,
+        secondary_color: null,
+        border_radius_scale: null,
+        font_family_key: null,
+      },
+      { onConflict: "tenant_id" }
+    );
 
   if (error) {
     console.error("applyThemePresetAction hata:", error);
