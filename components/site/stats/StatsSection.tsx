@@ -29,7 +29,14 @@ export async function StatsSection() {
             `auto-fit` + `1fr`: boş kolonlar çöker, öğeler kalan genişliği
             EŞİT paylaşır. Böylece hem sayıdan bağımsız hem de sol kenarı
             sayfadaki diğer bölümlerle hizalı (ortalanmış değil). */}
-        <dl className="grid grid-cols-[repeat(auto-fit,minmax(9rem,1fr))] gap-x-8 gap-y-10">
+        {/* Sütun tabanı 9rem (144px) idi; `Intl.NumberFormat("tr-TR")`
+            binlik ayracı eklediği için seed'deki gerçek 1200 değeri
+            "1.200+" olarak 61px puntoda 191px yer istiyor ve komşu
+            sütunla çakışıyordu (768px'te 35px taşma). 12rem taban +
+            aşağıdaki kademeli punto ikisini birden çözüyor. `grid-cols-2`
+            tabanı da 320px'de tek sütuna düşüp "ölçek karşıtlığı"
+            tasarımının tamamen kaybolmasını engelliyor. */}
+        <dl className="grid grid-cols-2 gap-x-8 gap-y-10 sm:grid-cols-[repeat(auto-fit,minmax(12rem,1fr))]">
           {stats.map((stat) => (
             // Eskiden düz <p> çiftleriydi; artık gerçek bir tanım listesi:
             // etiket = terim (dt), rakam = değer (dd). Geçerli HTML `dt`nin
@@ -58,7 +65,7 @@ export async function StatsSection() {
                   tanımına giriyor ve orada eşik 3:1. Yani rengi küçük
                   etiketten alıp büyük rakama taşımak aynı anda hem marka
                   varlığını koruyor hem erişilebilirliği düzeltiyor. */}
-              <dd className="text-h2 font-semibold tabular-nums tracking-tight text-brand sm:text-h1">
+              <dd className="text-h3 font-semibold tabular-nums tracking-tight text-brand sm:text-h2 lg:text-h1">
                 {formatStat(stat)}
               </dd>
             </div>

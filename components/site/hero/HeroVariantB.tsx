@@ -23,9 +23,18 @@ export function HeroVariantB({
 
   return (
     <section id="hero" className="bg-surface py-16 sm:py-24">
-      <div className="mx-auto grid max-w-6xl items-center gap-10 px-6 sm:grid-cols-2">
+      {/* Kırılma `sm:` değil `md:`: 640px'de iki kolona geçince sol kolon
+          276px'e düşüyor ve başlık mobilden DAHA çok taşıyordu. */}
+      <div className="mx-auto grid max-w-6xl items-center gap-10 px-6 md:grid-cols-2">
         <div>
-          <h1 className="text-h1 font-bold text-text">{title}</h1>
+          {/* `text-h1` (sabit 61px) DEĞİL `text-display` (clamp): bu token
+              tam olarak "dar telefonda uzun Türkçe başlık sıkışıyor"
+              gerekçesiyle eklenmişti ama yalnızca HeroVariantA'ya
+              işlenmişti. Varyant panelden seçilebildiği için bu ölü kod
+              değil; 320px'de başlık kutuyu 31px aşıyordu. */}
+          <h1 className="text-display font-bold tracking-tight text-balance text-text">
+            {title}
+          </h1>
           {subtitle && <p className="mt-4 text-base text-text-muted">{subtitle}</p>}
           <div className="mt-8 flex flex-wrap gap-4">
             {ctaText && ctaLink && (

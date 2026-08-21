@@ -204,7 +204,17 @@ export function PanelShell({
           ekran okuyucunun sanal imleç/tarama modunu (ok tuşları vb.)
           kısıtlamıyor. `inert`, çekmece açıkken bu içeriği erişilebilirlik
           ağacından ve klavye/fare etkileşiminden tamamen çıkarır. */}
-      <div className="flex min-h-full flex-1 flex-col" inert={mobileNavOpen}>
+      {/* `min-w-0` KRİTİK: flex öğelerinin varsayılan `min-width: auto`
+          değeri, öğenin min-content genişliğinin altına inmesini engeller.
+          Bu sütun olmadan içindeki tabloların `overflow-x-auto`
+          sarmalayıcıları HİÇ devreye girmiyordu — tarayıcı, scroll kabının
+          min-content genişliğini yukarı doğru ataya taşıdığı için
+          sarmalayıcı kaymak yerine SÜTUN genişliyordu. Ölçüm (2026-08-21
+          denetimi, projenin kendi derlenmiş CSS'i + Chromium): 320px
+          görünümde Mesajlar tablosunda sütun 628.7px'e çıkıp sayfayı 309px
+          yatay kaydırıyordu. `min-w-0` ile sütun tam görünüm genişliğine
+          oturuyor, kaydırma olması gerektiği gibi tablonun İÇİNDE kalıyor. */}
+      <div className="flex min-h-full min-w-0 flex-1 flex-col" inert={mobileNavOpen}>
         <header className="sticky top-0 z-10 flex items-center justify-between border-b border-neutral-300 bg-surface-raised/90 px-4 py-3 backdrop-blur-sm sm:px-6">
           <Tooltip label="Menü" side="bottom">
             <button

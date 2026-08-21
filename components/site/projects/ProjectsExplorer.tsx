@@ -35,7 +35,16 @@ export function ProjectsExplorer({
 
   return (
     <div>
-      <div role="group" aria-label="Kategoriye göre filtrele" className="mt-12 flex flex-wrap gap-2">
+      {/* Mobilde tek satır yatay kaydırma, sm ve üstünde sarma. Kategori
+          sayısının üst sınırı yok (panelden girilen serbest metinden
+          türüyor) ve Türkçe adlar uzun: 5 kategoriyle şerit 320px'de
+          128px, yani galeriden önce yarım ekran yer kaplıyordu. Kalıp
+          TestimonialsGrid'de zaten kullanılıyor. */}
+      <div
+        role="group"
+        aria-label="Kategoriye göre filtrele"
+        className="mt-12 flex snap-x gap-2 overflow-x-auto pb-2 sm:flex-wrap sm:overflow-visible sm:pb-0"
+      >
         {[ALL_LABEL, ...categories].map((category) => {
           const isSelected = category === selectedCategory;
           return (

@@ -88,14 +88,27 @@ export async function AboutSection() {
             kılıyordu — yani kod, iyi metnin yazılmasını engelliyordu. */}
         {about.coreValues.length > 0 && (
           <ul className="mt-14 grid grid-cols-1 gap-x-10 gap-y-8 sm:grid-cols-2 lg:grid-cols-3">
-            {about.coreValues.map((value) => {
+            {about.coreValues.map((value, index) => {
               // "Başlık — açıklama" biçimini ikiye ayırır. Ayraç olarak em
               // dash, en dash veya düz tire kabul ediliyor (panelde hangisi
               // yazılırsa). Ayraç yoksa `detail` boş kalır ve madde sadece
               // başlıktan ibaret olur — yani eski tek kelimelik değerler
               // (ör. "Kalite") de bozulmadan çalışmaya devam eder.
-              const [title, ...rest] = value.split(/\s+[—–-]\s+/);
-              const detail = rest.join(" — ");
+              //
+              // Bölme YALNIZCA İLK ayraçta yapılır. Önceki hâli
+              // `value.split(regex)` + `rest.join(" — ")` idi: `split`
+              // regex ile TÜM eşleşmelerde böldüğü için açıklamanın
+              // içindeki her " - " / " – " ayracı da bölünüyor ve geri
+              // birleştirilirken hepsi em dash'e çevriliyordu. Somut
+              // sonuç: panelin kendi önerdiği biçimde yazılan
+              // "Kurumsal deneyim - 2010 - 2024 arasında 120 proje"
+              // sitede "2010 — 2024" olarak çıkıyordu. Panelden geçen
+              // verinin sessizce değişmesi bu projede tekrar eden bir
+              // hata sınıfı (bkz. kesirli puan, çalışma saatleri).
+              const separator = /\s+[—–-]\s+/;
+              const match = separator.exec(value);
+              const title = match ? value.slice(0, match.index) : value;
+              const detail = match ? value.slice(match.index + match[0].length) : "";
 
               return (
                 // Her maddenin KENDİ üst çizgisi var. "Düzensiz duruyor"
@@ -106,7 +119,13 @@ export async function AboutSection() {
                 // maddelerin farklı yükseklikte bitmesi artık görünmez.
                 // (Önceki hâlde tek bir blok çizgisi vardı ve tire imleri
                 // serbest yüzüyordu.)
-                <li key={value} className="border-t border-neutral-300 pt-4">
+                // Anahtar olarak değerin KENDİSİ kullanılamaz: aynı madde
+                // iki kez girilirse (kopyala-yapıştır ile düzenlerken çok
+                // olası) React "two children with the same key" uyarısı
+                // verir. Tekrarları eleyip veriyi değiştirmek yerine
+                // anahtara sıra numarası ekleniyor — kullanıcının yazdığı
+                // satır silinmiyor.
+                <li key={`${index}-${value}`} className="border-t border-neutral-300 pt-4">
                   <p className="text-base font-semibold text-text">{title}</p>
                   {detail && (
                     <p className="mt-1.5 text-base text-text-muted">{detail}</p>

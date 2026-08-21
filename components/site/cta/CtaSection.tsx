@@ -32,7 +32,10 @@ export async function CtaSection() {
         }}
       />
       <Container className="relative text-center">
-        <h2 className="text-h2 font-bold">{settings.ctaTitle}</h2>
+        {/* SectionHeader ile aynı kademe (bkz. HEADING_TEXT_CLASS): bu
+            başlık panelden serbest metin olarak giriliyor, yani taşma
+            riski sabit bölüm başlıklarından daha yüksek. */}
+        <h2 className="text-h4 font-bold sm:text-h2">{settings.ctaTitle}</h2>
         {settings.ctaDescription && (
           <p className="mx-auto mt-4 max-w-2xl text-base">{settings.ctaDescription}</p>
         )}

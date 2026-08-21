@@ -24,13 +24,21 @@ export function ProjectDetailModal({
     : null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+    // `items-start sm:items-center` + dışta `overflow-y-auto`: panel
+    // beklenenden yüksek kalırsa kaydırılarak tamamına ulaşılabilsin.
+    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/60 p-4 sm:items-center">
       <div
         ref={panelRef}
         role="dialog"
         aria-modal="true"
         aria-labelledby="project-detail-title"
-        className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-lg bg-surface-raised"
+        // `vh` DEĞİL `svh`: mobil tarayıcıda `position: fixed` kutu adres
+        // çubuğu görünürken KÜÇÜK görünüm alanına oturur, `vh` ise her
+        // zaman BÜYÜK alana göre hesaplanır — yani `90vh` dış kabın gerçek
+        // yüksekliğini aşabiliyor ve taşan alt kısım ("Kapat" butonu
+        // satırı) hiçbir şekilde kaydırılıp getirilemiyordu. Aynı fark
+        // HeroVariantA'da 2026-08-21'de zaten `85svh` ile çözülmüştü.
+        className="max-h-[90svh] w-full max-w-2xl overflow-y-auto rounded-lg bg-surface-raised"
       >
         <div className="relative aspect-[3/2] bg-surface">
           {imageUrl && (

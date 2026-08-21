@@ -13,7 +13,13 @@ export function ProjectsMosaicLayout({
   onSelect: (project: ProjectItem) => void;
 }) {
   return (
-    <div className="grid auto-rows-[160px] grid-cols-2 gap-4 sm:grid-cols-4">
+    // Satır yüksekliği dar ekranda DAHA BÜYÜK: kartın metin bloğu
+    // (başlık + "şehir · yıl") dar kartta ~105px sabit yer kaplıyor ve
+    // görsel `flex-1` ile kalanla yetiniyor — 160px satırda fotoğraf
+    // 320px'de 55px'lik bir şeride iniyordu (ölçüm: 136×55). 640px'te
+    // `sm:grid-cols-4` karoyu yine 136px'e düşürdüğü için tablet portre
+    // de aynı derde düşüyordu; 4 kolona geçiş `lg:`ye alındı.
+    <div className="grid auto-rows-[210px] grid-cols-2 gap-4 sm:auto-rows-[180px] lg:auto-rows-[160px] lg:grid-cols-4">
       {projects.map((project, index) => {
         const isFeatured = index % 5 === 0;
         return (

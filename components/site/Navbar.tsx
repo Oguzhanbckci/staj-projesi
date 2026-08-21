@@ -67,14 +67,22 @@ export function Navbar({
       }`}
     >
       <nav className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
-        <Link href="/" className="flex items-center gap-2 text-h6 font-bold text-text">
+        {/* `min-w-0` + `truncate`: firma adı panelden serbest metin.
+            "Yılmaz İnşaat Taahhüt ve Ticaret A.Ş." gibi bir ad 320px'de
+            sarıp sticky başlığı 70px'ten 122px'e çıkarıyordu — 568px
+            yüksekliğindeki bir telefonda ekranın %21'i, üstelik sayfa
+            boyunca kalıcı. Artık ad kesilir, başlık tek satırda kalır. */}
+        <Link
+          href="/"
+          className="flex min-w-0 items-center gap-2 text-base font-bold text-text sm:text-h6"
+        >
           {logoUrl && (
             <span className="relative h-8 w-8 shrink-0">
               {/* alt="" — bitişikteki logoText zaten erişilebilir adı taşıyor, ikisi birden aynı ismi iki kez duyurmasın. */}
               <Image src={logoUrl} alt="" fill sizes="32px" className="object-contain" />
             </span>
           )}
-          {logoText}
+          <span className="truncate">{logoText}</span>
         </Link>
         <ul className="hidden gap-6 lg:flex">
           {menuLinks.map((link) => (

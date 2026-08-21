@@ -30,10 +30,15 @@ export interface SectionHeaderProps {
   className?: string;
 }
 
+// Dar ekranda bir kademe küçülür. Sabit 61/49px iken uzun Türkçe tek
+// kelimeler 320px'de kutudan taşıyordu (Türkçe'de kelime bölme fırsatı
+// yok, `hyphens` da tanımlı değil): ölçümle "Müşterilerimiz" 322px yer
+// isteyip 288px'lik Container'ı 34px aşıyor ve ana sayfayı 18px yatay
+// kaydırıyordu. StatsSection'daki `text-h2 sm:text-h1` kalıbının aynısı.
 const HEADING_TEXT_CLASS: Record<"h1" | "h2" | "h3", string> = {
-  h1: "text-h1",
-  h2: "text-h2",
-  h3: "text-h3",
+  h1: "text-h3 sm:text-h1",
+  h2: "text-h4 sm:text-h2",
+  h3: "text-h5 sm:text-h3",
 };
 
 export function SectionHeader({
