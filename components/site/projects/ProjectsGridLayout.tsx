@@ -1,9 +1,13 @@
 import { ProjectCard } from "./ProjectCard";
 import type { ProjectItem } from "./types";
 
-// İlk satır (masaüstünde ilk 3 kart) priority — next/image bunları
-// erkenden yükler; geri kalanı next/image'ın varsayılan davranışıyla
-// (priority verilmezse) tembel yüklenir, ekstra kod gerekmez.
+// İlk satır (masaüstünde ilk 3 kart) `loading="eager"` — hemen yüklenir,
+// ama <head>'e preload bağlantısı KOYMAZ. Fark önemli: eskiden burada
+// `priority` vardı ve o, ekran altındaki kart görsellerini hero ile
+// (sayfanın gerçek LCP öğesi) yarıştıran preload bağlantıları
+// üretiyordu — 2026-08-21 denetim bulgusu. Next belgesinin kendi
+// önerisi de bu: "In most cases, you should use loading='eager' ...
+// instead of preload". Geri kalan kartlar varsayılan tembel yükleme.
 export function ProjectsGridLayout({ projects }: { projects: ProjectItem[] }) {
   return (
     <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
@@ -11,7 +15,7 @@ export function ProjectsGridLayout({ projects }: { projects: ProjectItem[] }) {
         <ProjectCard
           key={project.id}
           project={project}
-          priority={index < 3}
+          eager={index < 3}
         />
       ))}
     </div>

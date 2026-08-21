@@ -81,7 +81,7 @@ export function HeroVariantB({
               src={imageUrl}
               alt={title}
               fill
-              priority
+              preload
               sizes="(min-width: 640px) 50vw, 100vw"
               className="object-cover"
             />

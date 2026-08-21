@@ -20,7 +20,7 @@ export function ProjectsMosaicLayout({ projects }: { projects: ProjectItem[] }) 
           <ProjectCard
             key={project.id}
             project={project}
-            priority={index < 3}
+            eager={index < 3}
             fill
             className={isFeatured ? "col-span-2 row-span-2" : "col-span-1 row-span-1"}
           />

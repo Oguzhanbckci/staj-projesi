@@ -38,7 +38,10 @@ export function HeroVariantA({
       className="relative flex min-h-[85svh] items-end overflow-hidden bg-hero"
     >
       {imageUrl ? (
-        <Image src={imageUrl} alt="" fill priority sizes="100vw" className="object-cover" />
+        // `priority` DEĞİL `preload`: Next.js 16.0.0'da `priority`
+        // kullanımdan kaldırıldı. Hero fotoğrafı sayfanın LCP öğesi,
+        // yani preload burada doğru araç.
+        <Image src={imageUrl} alt="" fill preload sizes="100vw" className="object-cover" />
       ) : (
         // Gerçek bir fotoğraf yokken bölümün "boş" görünmemesi için
         // dekoratif degrade + ince ızgara deseni (bir inşaat/plan çizimine

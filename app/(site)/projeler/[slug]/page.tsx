@@ -134,7 +134,7 @@ export default async function ProjeDetayPage({ params }: { params: Promise<{ slu
                 src={imageUrl}
                 alt={project.title}
                 fill
-                priority
+                preload
                 sizes="(min-width: 1152px) 1152px, 100vw"
                 className="object-cover"
               />

@@ -35,12 +35,13 @@ import type { ProjectItem } from "./types";
 //   çerçeve + görselde yakınlaşma) — site genelinde tutarlı hissetmeli.
 export function ProjectCard({
   project,
-  priority = false,
+  eager = false,
   fill = false,
   className = "",
 }: {
   project: ProjectItem;
-  priority?: boolean;
+  /** İlk satırdaki kartlar için: görsel hemen yüklensin (preload DEĞİL). */
+  eager?: boolean;
   fill?: boolean;
   className?: string;
 }) {
@@ -62,7 +63,7 @@ export function ProjectCard({
               src={imageUrl}
               alt={project.title}
               fill
-              priority={priority}
+              loading={eager ? "eager" : undefined}
               sizes="(min-width: 1024px) 33vw, (min-width: 768px) 50vw, 100vw"
               className="object-cover transition-transform duration-500 group-hover:scale-105 motion-reduce:transform-none motion-reduce:transition-none"
             />

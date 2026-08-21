@@ -14,6 +14,7 @@
 // yapılıyor; tek kaynak NEXT_PUBLIC_SUPABASE_URL.
 
 import { spawnSync } from "node:child_process";
+import { createRequire } from "node:module";
 import { writeFileSync } from "node:fs";
 
 const OUTPUT = "types/database.types.ts";
@@ -38,11 +39,30 @@ if (!projectRef) {
 
 console.log(`Tipler üretiliyor — Supabase projesi: ${projectRef}`);
 
-// Windows'ta `supabase` bir .cmd sarmalayıcısı olabildiği için shell gerekli.
+// CLI, `supabase` paketinin bir devDependency'si (package.json) ve giriş
+// noktası düz bir Node script'i: node_modules/supabase/dist/supabase.js.
+// Bu yüzden doğrudan `node <script>` olarak çağrılıyor.
+//
+// İlk sürüm `spawnSync("supabase", …, { shell: true })` kullanıyordu —
+// Windows'ta `.cmd` sarmalayıcısını çözebilmek için. Node 20+ bunu
+// DEP0190 ile uyarıyor ve haklı: `shell: true` ile argümanlar kaçırılmaz,
+// yalnızca birleştirilir, yani argümandaki bir karakter kabuk tarafından
+// yorumlanabilir (projectRef bir ortam değişkeninden geliyor). Kabuk
+// tamamen devre dışı bırakılınca hem uyarı hem o sınıf risk kalkıyor.
+const require = createRequire(import.meta.url);
+let cliPath;
+try {
+  cliPath = require.resolve("supabase/dist/supabase.js");
+} catch {
+  throw new Error(
+    "Supabase CLI bulunamadı (node_modules/supabase). `npm install` çalıştırın."
+  );
+}
+
 const result = spawnSync(
-  "supabase",
-  ["gen", "types", "typescript", "--project-id", projectRef, "--schema", "public"],
-  { encoding: "utf8", shell: process.platform === "win32", maxBuffer: 32 * 1024 * 1024 }
+  process.execPath,
+  [cliPath, "gen", "types", "typescript", "--project-id", projectRef, "--schema", "public"],
+  { encoding: "utf8", maxBuffer: 32 * 1024 * 1024 }
 );
 
 if (result.error) {
