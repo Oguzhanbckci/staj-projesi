@@ -58,10 +58,41 @@ echo "=== Adım 2/3: Demo içerik hazırlanıyor ($TENANT_NAME / $TENANT_DOMAIN)
 TMP_SEED_FILE="$(mktemp)"
 trap 'rm -f "$TMP_SEED_FILE"' EXIT
 
+# Değerler seed şablonuna ham `sed` ile yazılıyor ve şablonda üçü de tek
+# tırnak içinde geçiyor ('__TENANT_NAME__'). Bu yüzden İKİ ayrı kaçırma
+# katmanı gerekiyor; ikisi de gerçek Türk firma adlarında karşımıza çıkar:
+#
+#   1. SQL — "Şahin'ler İnşaat" gibi bir ad tırnağı erken kapatır. İyi
+#      ihtimalle psql ON_ERROR_STOP ile sözdizimi hatası verip kurulum
+#      yarıda kalır; kötü ihtimalle SQL enjeksiyonu olur. Postgres'te
+#      kaçırma yolu tek tırnağı ikilemektir ('').
+#
+#   2. sed — replacement kısmında `&` "eşleşen metnin TAMAMI" demektir,
+#      ters bölü kaçış başlatır, `|` ise burada s komutunun ayracıdır.
+#      "Kaya & Ortakları İnşaat" kaçırılmazsa veritabanına "Kaya
+#      __TENANT_NAME__ Ortakları İnşaat" olarak SESSİZCE yazılır — hiç
+#      hata vermez, ama sitenin her sayfasında, sekme başlığında ve arama
+#      sonuçlarında görünür. `&` ortaklık isimlerinde standart olduğu için
+#      bu tek seferlik bir uç durum değil.
+#
+# Sıra önemli: ters bölü adımı `&` ve `|` adımlarından ÖNCE gelir, yoksa
+# onların eklediği kaçış işaretleri ikinci kez kaçırılır.
+escape_for_seed() {
+  printf '%s' "$1" \
+    | sed -e "s/'/''/g" \
+    | sed -e 's/\\/\\\\/g' \
+    | sed -e 's/&/\\&/g' \
+    | sed -e 's/|/\\|/g'
+}
+
+TENANT_NAME_SEED="$(escape_for_seed "$TENANT_NAME")"
+TENANT_DOMAIN_SEED="$(escape_for_seed "$TENANT_DOMAIN")"
+CONTACT_EMAIL_SEED="$(escape_for_seed "$CONTACT_EMAIL")"
+
 sed \
-  -e "s|__TENANT_NAME__|${TENANT_NAME}|g" \
-  -e "s|__TENANT_DOMAIN__|${TENANT_DOMAIN}|g" \
-  -e "s|__CONTACT_EMAIL__|${CONTACT_EMAIL}|g" \
+  -e "s|__TENANT_NAME__|${TENANT_NAME_SEED}|g" \
+  -e "s|__TENANT_DOMAIN__|${TENANT_DOMAIN_SEED}|g" \
+  -e "s|__CONTACT_EMAIL__|${CONTACT_EMAIL_SEED}|g" \
   "$(dirname "$0")/../supabase/setup/seed-template.sql" > "$TMP_SEED_FILE"
 
 echo "=== Adım 3/3: Demo içerik veritabanına yükleniyor ==="
@@ -70,6 +101,12 @@ psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f "$TMP_SEED_FILE"
 echo ""
 echo "✅ Kurulum tamamlandı. Sırada (bkz. docs/KURULUM.md):"
 echo "   1. Vercel'de ACTIVE_TENANT_DOMAIN=${TENANT_DOMAIN} ortam değişkenini ayarlayın."
+echo "      Aynı ekranda RESEND_API_KEY ve CONTACT_NOTIFICATION_FROM_EMAIL de"
+echo "      girilmezse iletişim formu e-posta bildirimi canlıda çalışmaz."
 echo "   2. Supabase Dashboard -> Authentication -> Users'dan admin hesabını oluşturun."
-echo "   3. npm run types:generate ile TypeScript tiplerini bu projeden yenileyin."
+echo "   3. npm run types:generate ile TypeScript tiplerini yenileyin (komut proje"
+echo "      ref'ini .env.local'deki NEXT_PUBLIC_SUPABASE_URL'den okur; package.json'da"
+echo "      elle ref değiştirmek GEREKMEZ)."
 echo "   4. Vercel'e deploy edin ve /panel/giris'ten giriş yapıp doğrulayın."
+echo "   5. Panelden bir görsel (ör. logo) yükleyip canlı sitede göründüğünü"
+echo "      doğrulayın — görsel host'u ortam değişkeninden türetiliyor."
