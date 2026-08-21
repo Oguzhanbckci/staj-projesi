@@ -423,10 +423,16 @@ Yirmi migration dosyası var, sırayla:
     tenant başına unique) + mevcut kayıtlar için geri doldurma. Proje
     detay sayfasının (`/projeler/<slug>`) temeli.
 
-Migration 1-27 gerçek Supabase projesine uygulandı. **28 uygulanmayı
-bekliyor** — uygulandıktan sonra `npm run types:generate` çalıştırılmalı,
-yoksa yeni kolona dokunan kod "does not exist in type" hatasıyla
-derlenmez (bkz. `KURULUM.md`, "Sık Yapılan Hatalar").
+**Migration 1-28'in tamamı gerçek Supabase projesine uygulandı**
+(27 ve 28 — `status` ve `slug` — 2026-08-21'de uygulandı,
+`npm run types:generate` ile tipler yenilendi ve `npm run build`
+6 proje detay sayfasını statik üreterek doğruladı). **Şu an uygulanmayı
+bekleyen migration yok.**
+
+Yeni bir migration yazıldığında sıra şudur: SQL'i Supabase'de çalıştır →
+`npm run types:generate` → sonra derle. Atlanırsa yeni kolona dokunan kod
+"does not exist in type" hatasıyla derlenmez (bkz. `KURULUM.md`,
+"Sık Yapılan Hatalar").
 
 *(Not: 21-26 arası bu listeye 2026-08-21'de toplu eklendi — liste
 2026-08-17'den beri güncellenmemişti ve "uygulanmayı bekleyen migration

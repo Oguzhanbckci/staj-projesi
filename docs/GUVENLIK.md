@@ -1103,11 +1103,18 @@ tam `SELECT` izinli, madde 2) açabiliyor; `NewMessageNotifier`, kanalı
 üstüne, ek bir uygulama-seviyesi filtre — RLS zaten anon'u tamamen
 dışarıda bırakıyor).
 
-**Doğrulama durumu:** Migration bu oturumda YAZILDI ama **henüz gerçek
-Supabase projesine uygulanmadı** — uygulanana kadar Realtime aboneliği
-sessizce hiçbir olay almaz (hata vermez, sadece bildirim gelmez).
-İki-sekmeli canlı test de henüz yapılmadı. Bkz. `docs/DURUM.md`,
-"Sıradaki adım" madde 0c.
+**Doğrulama durumu (güncellendi 2026-08-21):** Migration **uygulandı ve
+iki-sekmeli canlı testle DOĞRULANDI** (altıncı-yedinci oturum).
+Yol boyunca gerçek bir hata da bulundu: `NewMessageNotifier` istemciyi
+oluşturur oluşturmaz senkron `.subscribe()` çağırıyordu, oturum (JWT)
+çerezden asenkron okunduğu için ilk katılım "anon" rolüyle oluyor ve
+`contact_messages`'ta anon'un SELECT izni olmadığından olaylar SESSİZCE
+eleniyordu. Düzeltme: abone olmadan önce oturum bekleniyor,
+`supabase.realtime.setAuth()` ile token elle veriliyor. Detay:
+`KARAR-GUNLUGU.md`, "yedinci oturum".
+
+*(Bu paragraf 2026-08-21'e kadar "henüz uygulanmadı" diyordu — o bilgi
+aylardır geçersizdi ve bir sonraki oturumu yanlış yönlendirebilirdi.)*
 
 ## 19. Panel Girişine Hız Sınırı/Kilitleme *(2026-08-18 eklendi)*
 
@@ -1177,6 +1184,14 @@ kullanıcı tarafından test edildi ve 5 yanlış denemeden sonra kilitlendiği
 DOĞRULANDI — ama o test paralel/eşzamanlı istek senaryosunu kapsamıyordu
 (tek tarayıcıdan sırayla deneme), bu yüzden TOCTOU açığını yakalayamadı.
 Atomik düzeltme (`20260818150000_add_atomic_rate_limit_functions.sql`)
-henüz gerçek Supabase projesine uygulanmadı — sıradaki adım bu migration'ın
-çalıştırılması, ardından hem tekli hem (mümkünse) paralel istek
-senaryosuyla yeniden doğrulama.
+**uygulandı** — 2026-08-19'da `pg_proc` doğrudan sorgulanarak üç
+fonksiyonun da var olduğu ve imzalarının koddaki çağrılarla birebir
+eşleştiği doğrulandı. (2026-08-20'de ayrıca bu fonksiyonların
+`anon`/`authenticated`'e AÇIK olduğu bulundu ve
+`20260820120000_revoke_rpc_execute_from_anon.sql` ile kapatıldı, bkz.
+madde 17.) Paralel/eşzamanlı istek senaryosuyla canlı doğrulama hâlâ
+yapılmadı — mekanizma advisory lock kullandığı için teoride güvenli,
+ama ölçülmedi.
+
+*(Bu paragraf 2026-08-21'e kadar "henüz uygulanmadı" diyordu; o bilgi
+2026-08-19'da geçersiz olmuştu.)*
