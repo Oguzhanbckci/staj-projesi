@@ -87,7 +87,14 @@ export function HeroVariantA({
           yoktu. İncelenen 93 sitede hâkim düzen kenara yaslı kompozisyon. */}
       <Container className="relative z-10 w-full pb-20 pt-32 sm:pb-28">
         <div className="max-w-3xl animate-fade-in-up text-white motion-reduce:animate-none">
-          <h1 className="text-display font-semibold tracking-tight text-balance">{title}</h1>
+          {/* `break-words`: clamp'in alt sınırı 320px'de 40px'te duruyor
+              ve uzun tek bir Türkçe kelime ("Sürdürülebilirlik") 288px'e
+              sığmıyor; boşluk olmadığı için kırılamıyor ve section'daki
+              `overflow-hidden` sayesinde sayfa kaymıyor ama kelimenin
+              sağı KESİLİYOR. */}
+          <h1 className="text-display font-semibold tracking-tight text-balance break-words">
+            {title}
+          </h1>
           {subtitle && (
             <p className="mt-6 max-w-xl text-h6 font-normal text-white/85">{subtitle}</p>
           )}

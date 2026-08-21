@@ -67,7 +67,7 @@ function SummaryCard({
   highlight?: boolean;
 }) {
   return (
-    <Link href={href} className="block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 rounded-lg">
+    <Link href={href} className="block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 ring-offset-surface rounded-lg">
       <Card
         className={`p-6 transition-colors hover:bg-surface ${highlight ? "border border-brand" : ""}`}
       >

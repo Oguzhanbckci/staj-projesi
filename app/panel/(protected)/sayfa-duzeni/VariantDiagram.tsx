@@ -15,14 +15,18 @@ function Box({ children }: { children: ReactNode }) {
 const DIAGRAMS: Record<string, ReactNode> = {
   "hero:a": (
     <Box>
-      <rect x="2" y="2" width="60" height="36" rx="2" className="fill-neutral-200" />
-      <rect x="20" y="16" width="24" height="4" className="fill-neutral-400" />
-      <rect x="24" y="24" width="16" height="3" className="fill-neutral-400" />
+      {/* Çubuklar SOL ALTTA: 2026-08-21'de hero metni ortadan sol-alta
+          alındı ama bu şema ortalanmış kompozisyonu göstermeye devam
+          ediyordu. MUSTERİ-KILAVUZU.md müşteriyi "şemaya bakarak karar
+          verin" diye buraya yönlendiriyor — şema yanlışsa o söz bozulur. */}
+      <rect x="2" y="2" width="60" height="36" rx="2" className="fill-neutral-100" />
+      <rect x="6" y="24" width="28" height="4" className="fill-text-muted" />
+      <rect x="6" y="31" width="16" height="3" className="fill-text-muted" />
     </Box>
   ),
   "hero:b": (
     <Box>
-      <rect x="2" y="2" width="28" height="36" rx="2" className="fill-neutral-100 stroke-neutral-400" />
+      <rect x="2" y="2" width="28" height="36" rx="2" className="fill-neutral-100 stroke-text-muted" />
       <rect x="34" y="2" width="28" height="36" rx="2" className="fill-neutral-300" />
     </Box>
   ),
@@ -30,8 +34,8 @@ const DIAGRAMS: Record<string, ReactNode> = {
     <Box>
       {[2, 24, 46].map((x) => (
         <g key={x}>
-          <rect x={x} y="2" width="16" height="16" rx="2" className="fill-neutral-100 stroke-neutral-400" />
-          <circle cx={x + 8} cy="10" r="3" className="fill-neutral-400" />
+          <rect x={x} y="2" width="16" height="16" rx="2" className="fill-neutral-100 stroke-text-muted" />
+          <circle cx={x + 8} cy="10" r="3" className="fill-text-muted" />
         </g>
       ))}
     </Box>
@@ -40,8 +44,8 @@ const DIAGRAMS: Record<string, ReactNode> = {
     <Box>
       {[2, 24, 46].map((x) => (
         <g key={x}>
-          <rect x={x} y="2" width="16" height="10" className="fill-neutral-400" />
-          <rect x={x} y="14" width="16" height="4" className="fill-neutral-200" />
+          <rect x={x} y="2" width="16" height="10" className="fill-text-muted" />
+          <rect x={x} y="14" width="16" height="4" className="fill-neutral-100" />
         </g>
       ))}
     </Box>
@@ -62,29 +66,29 @@ const DIAGRAMS: Record<string, ReactNode> = {
   ),
   "projects:mosaic": (
     <Box>
-      <rect x="2" y="2" width="34" height="36" className="fill-neutral-400" />
-      <rect x="40" y="2" width="22" height="16" className="fill-neutral-200" />
-      <rect x="40" y="22" width="22" height="16" className="fill-neutral-200" />
+      <rect x="2" y="2" width="34" height="36" className="fill-text-muted" />
+      <rect x="40" y="2" width="22" height="16" className="fill-neutral-100" />
+      <rect x="40" y="22" width="22" height="16" className="fill-neutral-100" />
     </Box>
   ),
   "testimonials:grid": (
     <Box>
       {[2, 24, 46].map((x) => (
-        <rect key={x} x={x} y="8" width="16" height="24" rx="2" className="fill-neutral-200 stroke-neutral-400" />
+        <rect key={x} x={x} y="8" width="16" height="24" rx="2" className="fill-neutral-100 stroke-text-muted" />
       ))}
     </Box>
   ),
   "testimonials:featured": (
     <Box>
       <rect x="14" y="6" width="36" height="28" rx="2" className="fill-neutral-300" />
-      <path d="M4 20 l6 -5 v10 z" className="fill-neutral-400" />
-      <path d="M60 20 l-6 -5 v10 z" className="fill-neutral-400" />
+      <path d="M4 20 l6 -5 v10 z" className="fill-text-muted" />
+      <path d="M60 20 l-6 -5 v10 z" className="fill-text-muted" />
     </Box>
   ),
   "faq:single": (
     <Box>
       {[4, 14, 24, 34].map((y) => (
-        <rect key={y} x="4" y={y} width="56" height="6" rx="1" className="fill-neutral-200" />
+        <rect key={y} x="4" y={y} width="56" height="6" rx="1" className="fill-neutral-100" />
       ))}
     </Box>
   ),
@@ -92,8 +96,8 @@ const DIAGRAMS: Record<string, ReactNode> = {
     <Box>
       {[4, 14, 24, 34].map((y) => (
         <g key={y}>
-          <rect x="4" y={y} width="26" height="6" rx="1" className="fill-neutral-200" />
-          <rect x="34" y={y} width="26" height="6" rx="1" className="fill-neutral-200" />
+          <rect x="4" y={y} width="26" height="6" rx="1" className="fill-neutral-100" />
+          <rect x="34" y={y} width="26" height="6" rx="1" className="fill-neutral-100" />
         </g>
       ))}
     </Box>

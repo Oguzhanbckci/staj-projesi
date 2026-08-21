@@ -20,7 +20,14 @@ export async function StatsSection() {
     // bölümleri nötr zeminde, ayrımı ince çizgiyle yapılıyor. Marka bandı
     // artık yalnızca CtaSection'da — yani sayfada TEK bir renk çapası var
     // ve o da gerçekten eylem çağrısı olan yer.
-    <section id="istatistikler" className="border-y border-neutral-300 bg-surface py-16 sm:py-20">
+    // `border-y` KALDIRILDI (2026-08-21 denetimi): tam genişlik (100vw)
+    // bir kenarlıktı, oysa diğer tüm bölümlerin ayracı `Container` içinde
+    // (max-w-6xl) duruyor. 1152px'den geniş ekranlarda ikisi arka arkaya
+    // gelince 64-96px arayla biri geniş biri dar iki paralel çizgi
+    // oluşuyordu — kullanıcı İstatistikler'i panelden Hero'nun hemen altına
+    // taşıdığı için bu canlıda gerçekleşen bir durumdu. Artık bu bölüm de
+    // aşağıdaki tek ayraç diline bağlı.
+    <section id="istatistikler" className="bg-surface py-16 sm:py-20">
       <Container>
         {/* Sabit `grid-cols-4` DEĞİL — kayıt sayısı değişken (Akme'de 3) ve
             sabit sütun sayısı, sayı sütuna tam bölünmediğinde grubu sola
@@ -36,6 +43,12 @@ export async function StatsSection() {
             aşağıdaki kademeli punto ikisini birden çözüyor. `grid-cols-2`
             tabanı da 320px'de tek sütuna düşüp "ölçek karşıtlığı"
             tasarımının tamamen kaybolmasını engelliyor. */}
+        {/* SectionHeader'ın `rule` çizgisiyle BİREBİR aynı değerler —
+            bu bölümün başlığı yok, o yüzden çizgi elle konuyor.
+            `data-section-rule`: sayfanın İLK bölümü olduğunda çizgi
+            gizlenir (bkz. app/globals.css), çünkü ayıracağı bir üst
+            bölüm yoktur. */}
+        <div aria-hidden="true" data-section-rule className="mb-10 h-px w-full bg-neutral-300" />
         <dl className="grid grid-cols-2 gap-x-8 gap-y-10 sm:grid-cols-[repeat(auto-fit,minmax(12rem,1fr))]">
           {stats.map((stat) => (
             // Eskiden düz <p> çiftleriydi; artık gerçek bir tanım listesi:

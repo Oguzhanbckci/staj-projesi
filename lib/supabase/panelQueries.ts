@@ -720,6 +720,7 @@ export async function getContactMessageById(id: string): Promise<ContactMessageR
 
 export interface ThemeSettingsData {
   companyName: string;
+  themeMode: "light" | "dark";
   themePreset: ThemePresetKey;
   slogan: string | null;
   primaryColor: string | null;
@@ -756,7 +757,7 @@ export async function getThemeSettings(): Promise<ThemeSettingsData | null> {
     const { data, error } = await supabase
       .from("tenants")
       .select(
-        "name, site_settings(theme_preset, primary_color, secondary_color, border_radius_scale, font_family_key, slogan, logo_path, favicon_path, facebook_url, instagram_url, linkedin_url), contact_sections(address, phone, email, working_hours, weekday_opens, weekday_closes, weekend_opens, weekend_closes, service_areas)"
+        "name, theme_mode, site_settings(theme_preset, primary_color, secondary_color, border_radius_scale, font_family_key, slogan, logo_path, favicon_path, facebook_url, instagram_url, linkedin_url), contact_sections(address, phone, email, working_hours, weekday_opens, weekday_closes, weekend_opens, weekend_closes, service_areas)"
       )
       .eq("id", tenantId)
       .maybeSingle();
@@ -772,6 +773,7 @@ export async function getThemeSettings(): Promise<ThemeSettingsData | null> {
 
     return {
       companyName: String(data.name),
+      themeMode: data.theme_mode === "dark" ? "dark" : "light",
       themePreset: THEME_PRESET_KEYS.includes(settings?.theme_preset as ThemePresetKey)
         ? (settings!.theme_preset as ThemePresetKey)
         : DEFAULT_THEME_PRESET,
@@ -924,7 +926,6 @@ export async function getSeoSettings(): Promise<SeoSettingsData | null> {
 }
 
 export interface HeroSettingsData {
-  variant: "a" | "b";
   title: string;
   subtitle: string | null;
   ctaText: string | null;
@@ -951,7 +952,7 @@ export async function getHeroSettings(): Promise<HeroSettingsData | null> {
     const { data, error } = await supabase
       .from("hero_sections")
       .select(
-        "variant, title, subtitle, cta_text, cta_link, secondary_cta_text, secondary_cta_link, background_image_path"
+        "title, subtitle, cta_text, cta_link, secondary_cta_text, secondary_cta_link, background_image_path"
       )
       .eq("tenant_id", tenantId)
       .maybeSingle();
@@ -962,7 +963,7 @@ export async function getHeroSettings(): Promise<HeroSettingsData | null> {
     if (!data) return null;
 
     return {
-      variant: data.variant === "b" ? "b" : "a",
+
       title: String(data.title),
       subtitle: typeof data.subtitle === "string" ? data.subtitle : null,
       ctaText: typeof data.cta_text === "string" ? data.cta_text : null,

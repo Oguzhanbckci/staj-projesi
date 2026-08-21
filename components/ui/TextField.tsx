@@ -42,7 +42,7 @@ export function TextField({
           id={fieldId}
           aria-invalid={!!error}
           aria-describedby={[helpId, errorId].filter(Boolean).join(" ") || undefined}
-          className={`w-full rounded-md border bg-surface-raised py-2 text-base text-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand ${leadingIcon ? "pl-10 pr-3" : "px-3"} ${error ? "border-error" : "border-neutral-300"} ${className}`}
+          className={`w-full rounded-md border bg-surface-raised py-2 text-base text-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand ${leadingIcon ? "pl-10 pr-3" : "px-3"} ${error ? "border-error" : "border-control"} ${className}`}
           {...rest}
         />
       </div>

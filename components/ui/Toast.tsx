@@ -21,7 +21,7 @@ export interface ToastProps extends ToastData {
 // Genel amaçlı bildirim kartı — `components/ui/` altında çünkü herhangi
 // bir panel/site bağlamında tekrar kullanılabilir (bkz. Button/Card ile
 // aynı paylaşım ilkesi, kullanıcı isteği: "tasarımı ortak olsun"). Sadece
-// tasarım token'ları (bg-surface-raised, text-text, border-neutral-300
+// tasarım token'ları (bg-surface-raised, text-text, border-control
 // vb.) kullanıyor — hardcoded renk yok, bu yüzden açık/koyu tema
 // switch'iyle otomatik uyum sağlıyor, ayrı bir "koyu mod" stili yazmaya
 // gerek yok (bkz. docs/TASARIM-SISTEMI.md).
@@ -41,7 +41,7 @@ export function Toast({ id, title, description, href, onDismiss, duration = 7000
   return (
     <div
       role="status"
-      className="pointer-events-auto flex w-80 max-w-[calc(100vw-2rem)] items-start gap-3 rounded-lg border border-neutral-300 bg-surface-raised p-4 shadow-lg"
+      className="pointer-events-auto flex w-80 max-w-[calc(100vw-2rem)] items-start gap-3 rounded-lg border border-control bg-surface-raised p-4 shadow-lg"
     >
       <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-brand" aria-hidden="true" />
       <div className="flex-1">

@@ -25,7 +25,7 @@ export function ImagePlaceholder({ icon, className = "" }: ImagePlaceholderProps
   return (
     <div
       aria-hidden="true"
-      className={`relative flex h-full w-full items-center justify-center overflow-hidden bg-surface ${className}`}
+      className={`relative flex h-full w-full items-center justify-center overflow-hidden border border-control bg-surface ${className}`}
     >
       {/* Yumuşak marka rengi parıltısı — kutuyu "boş" olmaktan çıkarır. */}
       <div

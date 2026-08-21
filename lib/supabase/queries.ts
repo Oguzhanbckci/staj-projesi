@@ -528,10 +528,26 @@ export interface ContactSectionData {
 
 /**
  * contact_sections — sadece statik gösterim bilgisi (bkz.
- * docs/VERİ-MODELİ.md, "form verisi burada değil"). Kayıt yoksa/yayında
- * değilse null döner, ContactSection/Footer bunu "gösterecek bir şey yok"
- * olarak ele alır. `working_hours` için tip artık var (migration uygulandı
+ * docs/VERİ-MODELİ.md, "form verisi burada değil"). Kayıt yoksa null
+ * döner, ContactSection/Footer bunu "gösterecek bir şey yok" olarak ele
+ * alır. `working_hours` için tip artık var (migration uygulandı
  * + `npm run types:generate` çalıştırıldı, 2026-08-11).
+ *
+ * 2026-08-21: Burada `.eq("is_published", true)` filtresi vardı ve GERÇEK
+ * bir görünmezlik hatasına yol açıyordu. `contact_sections.is_published`
+ * kolonu `not null default false` ve uygulamanın HİÇBİR yerinde
+ * yazılmıyordu — panelin Tema ekranı satırı upsert ile oluşturduğunda
+ * kolon varsayılanda (false) kalıyordu. Sonuç: panel "kaydedildi" diyor,
+ * form değerleri yenilemede duruyor (o sorgu filtre uygulamıyor), ama
+ * Footer'daki ve /iletisim'deki iletişim bloğunun TAMAMI hiç render
+ * edilmiyor — ve paneli kullanarak düzeltmenin yolu yok, çünkü
+ * "taslak iletişim bölümü" diye bir kavram üründe yok (bölüm
+ * görünürlüğü page_sections.is_visible ile yönetiliyor).
+ *
+ * Filtre kaldırıldı: hero_sections ve about_sections sorguları da
+ * is_published'a bakmıyor, üç tekil bölüm artık aynı davranışta. Yazma
+ * tarafı da düzeltildi (tema/actions.ts artık `is_published: true`
+ * yazıyor), yani kolon hem doğru dolduruluyor hem okumada kapı olmuyor.
  */
 export const getContactSection = cache(async (): Promise<ContactSectionData | null> => {
   try {
@@ -544,7 +560,6 @@ export const getContactSection = cache(async (): Promise<ContactSectionData | nu
       .from("contact_sections")
       .select("address, phone, email, working_hours")
       .eq("tenant_id", tenantId)
-      .eq("is_published", true)
       .maybeSingle();
 
     if (error || !data) return null;

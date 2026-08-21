@@ -24,7 +24,7 @@ export function Tooltip({ label, children, side = "top" }: TooltipProps) {
       {children}
       <span
         role="tooltip"
-        className={`pointer-events-none absolute z-20 whitespace-nowrap rounded-md bg-neutral-900 px-2.5 py-1.5 text-caption font-medium text-neutral-50 opacity-0 shadow-md transition-opacity duration-150 group-hover:opacity-100 group-focus-within:opacity-100 motion-reduce:transition-none ${SIDE_CLASSES[side]}`}
+        className={`pointer-events-none absolute z-20 whitespace-nowrap rounded-md border border-control bg-neutral-900 px-2.5 py-1.5 text-caption font-medium text-neutral-50 opacity-0 shadow-md transition-opacity duration-150 group-hover:opacity-100 group-focus-within:opacity-100 motion-reduce:transition-none ${SIDE_CLASSES[side]}`}
       >
         {label}
       </span>

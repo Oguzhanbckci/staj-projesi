@@ -43,7 +43,7 @@ export function ColorPickerField({
           aria-label={`${label} — renk seçici`}
           value={swatchValue}
           onChange={(event) => onChange(event.target.value)}
-          className="h-9 w-12 shrink-0 cursor-pointer rounded-md border border-neutral-300 bg-surface-raised p-0.5"
+          className="h-9 w-12 shrink-0 cursor-pointer rounded-md border border-control bg-surface-raised p-0.5"
         />
         <input
           id={fieldId}
@@ -54,7 +54,7 @@ export function ColorPickerField({
           placeholder="#2561c1"
           aria-invalid={!!error}
           aria-describedby={[helpId, errorId].filter(Boolean).join(" ") || undefined}
-          className={`w-full rounded-md border bg-surface-raised px-3 py-2 text-base text-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand ${error ? "border-error" : "border-neutral-300"}`}
+          className={`w-full rounded-md border bg-surface-raised px-3 py-2 text-base text-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand ${error ? "border-error" : "border-control"}`}
         />
         {value && (
           <button

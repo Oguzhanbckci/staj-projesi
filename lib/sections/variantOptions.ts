@@ -32,7 +32,7 @@ export const SECTION_VARIANT_OPTIONS: Partial<Record<SectionKey, SectionVariantO
     {
       key: "a" satisfies HeroVariant,
       label: "Tam Ekran Görsel",
-      description: "Arka planda tam genişlik görsel, ortalanmış başlık.",
+      description: "Arka planda tam genişlik görsel, sol alta yaslı başlık ve eylem çağrısı.",
     },
     {
       key: "b" satisfies HeroVariant,

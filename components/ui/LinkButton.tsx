@@ -11,7 +11,7 @@ export interface LinkButtonProps extends AnchorHTMLAttributes<HTMLAnchorElement>
 const VARIANT_CLASSES: Record<LinkButtonVariant, string> = {
   primary: "bg-brand text-brand-on hover:opacity-90",
   secondary:
-    "bg-surface-raised text-text border border-neutral-300 hover:bg-neutral-100",
+    "bg-surface-raised text-text border border-control hover:bg-neutral-100",
   // Button.tsx'teki "accent" varyantıyla aynı gerekçe/token.
   accent: "bg-accent text-accent-on hover:opacity-90",
   ghost: "bg-transparent text-brand hover:bg-neutral-100",
@@ -36,7 +36,7 @@ export function LinkButton({
 }: LinkButtonProps) {
   return (
     <a
-      className={`inline-flex items-center justify-center font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 ${VARIANT_CLASSES[variant]} ${SIZE_CLASSES[size]} ${className}`}
+      className={`inline-flex items-center justify-center font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 ring-offset-surface ${VARIANT_CLASSES[variant]} ${SIZE_CLASSES[size]} ${className}`}
       {...rest}
     >
       {children}

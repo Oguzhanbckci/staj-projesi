@@ -31,7 +31,7 @@ export function TextareaField({
         rows={rows}
         aria-invalid={!!error}
         aria-describedby={[helpId, errorId].filter(Boolean).join(" ") || undefined}
-        className={`w-full rounded-md border bg-surface-raised px-3 py-2 text-base text-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand ${error ? "border-error" : "border-neutral-300"} ${className}`}
+        className={`w-full rounded-md border bg-surface-raised px-3 py-2 text-base text-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand ${error ? "border-error" : "border-control"} ${className}`}
         {...rest}
       />
       {helpText && !error && (

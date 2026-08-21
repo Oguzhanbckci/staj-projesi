@@ -12,8 +12,11 @@ export async function CtaSection() {
 
   return (
     <section id="cta" className="relative overflow-hidden bg-brand py-16 text-brand-on sm:py-24">
-      {/* İstatistikler bölümüyle AYNI dekoratif katman — ikisi de marka
-          rengi bandı, aynı görünmeleri bilinçli (bkz. StatsSection). */}
+      {/* Dekoratif doku katmanı. NOT (2026-08-21): burada eskiden
+          "İstatistikler bölümüyle aynı, ikisi de marka rengi bandı"
+          yazıyordu — o artık DOĞRU DEĞİL. İstatistikler 2026-08-21'de
+          marka bandından çıkarıldı; sayfadaki TEK marka rengi çapası
+          bu bölüm ve bu bilinçli (bkz. StatsSection'daki gerekçe). */}
       <div
         aria-hidden="true"
         className="absolute inset-0 opacity-[0.07]"

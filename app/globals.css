@@ -75,6 +75,24 @@
      güncellendi. */
   --color-neutral-300: #e2e6eb;
 
+  /* YENİ (2026-08-21 denetimi) — KONTROL KENARLIĞI, dekoratif
+     kenarlıktan AYRI bir rol. Yukarıdaki --color-neutral-300 ince ayraç
+     çizgileri/kart kenarları için bilinçli olarak çok düşük kontrastlı
+     (1.18-1.25:1) ve öyle KALMALI — bölüm ayraçları o yüzden sessiz.
+     Ama WCAG 2.2 SC 1.4.11 form alanı ve buton kenarları için 3:1 şart
+     koşuyor ve aynı token her ikisinde de kullanıldığı için hiçbir form
+     alanının kenarı bu eşiği geçmiyordu (koyu temada en iyi ihtimalle
+     1.46:1 — bir metin kutusunun kenarı sayfadan neredeyse hiç
+     ayrışmıyordu). Ölçülen değerler (WCAG bağıl parlaklık):
+       açık #828d9e : surface-raised 3.36:1, surface 3.16:1
+       koyu #6b7688 : surface-raised 3.14:1, surface 3.76:1
+     Bu token YALNIZCA etkileşimli/veri giren öğelerde kullanılır
+     (TextField, TextareaField, SelectField, PasswordField,
+     ColorPickerField, ikincil Button/LinkButton, ThemeToggle) ve bir de
+     zeminden ayrışması şart olan yüzen katmanlarda (Toast, Tooltip,
+     ImagePlaceholder). Dekoratif ayraçlar neutral-300 ile kalır. */
+  --color-control: #828d9e;
+
   --background: var(--color-surface);
   --foreground: var(--color-text);
 
@@ -120,6 +138,9 @@
   --color-hero: #183b6b;
 
   --color-neutral-300: #303844;
+
+  /* Kontrol kenarlığının koyu karşılığı — bkz. :root'taki gerekçe. */
+  --color-control: #6b7688;
 
   /*
    * 2026-08-20 mentör denetimi (bulgu 15): --color-neutral-100 bu blokta
@@ -167,6 +188,7 @@
   --color-neutral-50: var(--color-neutral-50);
   --color-neutral-100: var(--color-neutral-100);
   --color-neutral-300: var(--color-neutral-300);
+  --color-control: var(--color-control);
   --color-neutral-500: var(--color-neutral-500);
   --color-neutral-700: var(--color-neutral-700);
   --color-neutral-800: var(--color-neutral-800);
@@ -330,4 +352,22 @@ body {
 
 .animate-slide-in-right {
   animation: slide-in-right 0.25s ease-out both;
+}
+
+/* Bölüm ayraç çizgisi — KONUM farkındalığı.
+
+   `SectionHeader`in `rule` prop'u ve AboutSection/StatsSection'daki elle
+   konulan çizgi, bölümün başlığının ÜSTÜNE ince bir ayraç koyar. Bu çizgi
+   bilinçli olarak SIRADAN bağımsızdır (bölüm sırası panelden değişebiliyor,
+   bkz. docs/DURUM.md) — ama KONUMDAN da bağımsızdı: bir bölüm 1. sıraya
+   geldiğinde ayıracağı bir üst bölüm olmadığı hâlde çizgi yine çiziliyor ve
+   navbar'ın hemen altında sahipsiz bir yatay çizgi kalıyordu.
+
+   Çözüm neden CSS: bilgi zaten konumsal ("ilk misin?") ve seçici de
+   konumsal. Alternatif, `renderSection`e `isFirst` parametresi ekleyip 10
+   bölüm bileşenine threadlemekti — aynı sonuç için çok daha geniş bir
+   yüzey. Ziyaretçi sayfalarında bölümler `<main>`in doğrudan çocuğu (bkz.
+   app/(site)/layout.tsx). */
+main > section:first-of-type [data-section-rule] {
+  display: none;
 }

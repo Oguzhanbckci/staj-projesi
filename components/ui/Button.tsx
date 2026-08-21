@@ -12,7 +12,7 @@ export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 const VARIANT_CLASSES: Record<ButtonVariant, string> = {
   primary: "bg-brand text-brand-on hover:opacity-90",
   secondary:
-    "bg-surface-raised text-text border border-neutral-300 hover:bg-neutral-100",
+    "bg-surface-raised text-text border border-control hover:bg-neutral-100",
   // Tenant'ın ikincil (accent) rengi — site_settings.secondary_color boşken
   // "secondary" varyantıyla GÖRSEL OLARAK aynı (bkz. app/globals.css
   // --color-accent varsayılanı), tenant renk girince otomatik ayrışır.
@@ -49,7 +49,7 @@ export function Button({
       type={type}
       disabled={disabled || isLoading}
       aria-busy={isLoading}
-      className={`inline-flex items-center justify-center font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 ${VARIANT_CLASSES[variant]} ${SIZE_CLASSES[size]} ${className}`}
+      className={`inline-flex items-center justify-center font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 ring-offset-surface ${VARIANT_CLASSES[variant]} ${SIZE_CLASSES[size]} ${className}`}
       {...rest}
     >
       {isLoading && (

@@ -34,7 +34,7 @@ export function PasswordField({ label, error, id, className = "", ...rest }: Pas
           type={visible ? "text" : "password"}
           aria-invalid={!!error}
           aria-describedby={errorId}
-          className={`w-full rounded-md border bg-surface-raised py-2 pl-10 pr-11 text-base text-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand ${error ? "border-error" : "border-neutral-300"} ${className}`}
+          className={`w-full rounded-md border bg-surface-raised py-2 pl-10 pr-11 text-base text-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand ${error ? "border-error" : "border-control"} ${className}`}
           {...rest}
         />
         <button

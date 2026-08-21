@@ -107,6 +107,28 @@ export default async function PanelGirisPage({
           "--color-text-muted": "rgba(255,255,255,0.72)",
           "--color-surface-raised": "rgba(255,255,255,0.18)",
           "--color-neutral-300": "rgba(255,255,255,0.28)",
+          // 2026-08-21 denetimi: bu listede --color-brand YOKTU ve sayfa
+          // ona İKİ yerden bağlıydı. (1) Gönder butonu `text-brand!` ile
+          // beyaz zemin üzerine tema marka rengini basıyordu: koyu tema +
+          // "modern-koyu" ön ayarında #2bd1c9 / beyaz = 1.90:1, yani
+          // pratikte okunamaz; kurumsal-mavi + koyuda 4.06:1 ile AA altı.
+          // Yalnızca açık + kurumsal-mavi (6.12:1) geçiyordu — muhtemelen
+          // test edilen tek kombinasyon. Buton artık `text-hero!`
+          // kullanıyor (aşağıda), marka rengine hiç bağlı değil.
+          // (2) TextField/PasswordField'ın `focus-visible:ring-brand`
+          // odak halkası bg-hero üzerinde 2.76:1 (koyu) / 1.63:1 (açık)
+          // veriyordu — WCAG 2.4.11/1.4.11 eşiği 3:1. Marka rengi burada
+          // beyaza sabitlenince halka iki temada da 9.97:1 / 11.19:1.
+          "--color-brand": "#ffffff",
+          // Form alanı kenarı: --color-control 2026-08-21'de eklendi ve
+          // globaldeki değeri (gri #828d9e/#6b7688) bu camsı yüzeyde
+          // yabancı durur. Beyaz-saydam karşılığı 0.28'den 0.45'e
+          // çıkarıldı: hero zeminine karşı 3.35:1 (açık) / 3.57:1 (koyu),
+          // yani kenar artık sayfadan ayrışıyor. Camsı dolgunun kendisine
+          // karşı 2.0:1'de kalıyor — tasarım bilinçli olarak yarı saydam,
+          // kontrolü çevreleyen sınır baskın komşusu olan zemine karşı
+          // eşiği geçiyor.
+          "--color-control": "rgba(255,255,255,0.45)",
         } as CSSProperties
       }
     >
@@ -196,8 +218,13 @@ export default async function PanelGirisPage({
                 — Button'un primary varyantı (bg-brand/text-brand-on) ile bu
                 sayfaya özel tersine çevrilmiş (beyaz zemin/mavi metin, camsı
                 kartta öne çıksın diye) renk aynı CSS özelliğini hedeflediği
-                için normal className sırası kazananı garanti etmiyordu. */}
-            <Button type="submit" className="w-full bg-white! text-brand!">
+                için normal className sırası kazananı garanti etmiyordu.
+                `text-brand!` DEĞİL `text-hero!`: marka rengi panelden
+                değiştirilebiliyor ve bazı ön ayarlarda beyaz üzerinde
+                okunmuyordu (yukarıdaki token bloğundaki ölçümler).
+                --color-hero bu sayfanın kendi zemini, beyaz üzerinde
+                9.97:1 / 11.19:1. */}
+            <Button type="submit" className="w-full bg-white! text-hero!">
               Giriş Yap
             </Button>
           </form>

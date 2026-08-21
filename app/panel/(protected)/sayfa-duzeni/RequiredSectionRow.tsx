@@ -21,7 +21,7 @@ export function RequiredSectionRow({ label, reason }: { label: string; reason: s
           </button>
         </div>
         <span className="flex-1 font-semibold text-text">{label}</span>
-        <span className="rounded-full border border-neutral-400 px-2 py-0.5 text-caption font-semibold text-text-muted">
+        <span className="rounded-full border border-control px-2 py-0.5 text-caption font-semibold text-text-muted">
           Zorunlu
         </span>
         <button

@@ -93,7 +93,7 @@ export function ThemeToggle({ settings, forceInitialMode }: ThemeToggleProps) {
       role="switch"
       aria-checked={isDark}
       aria-label={isDark ? "Açık temaya geç" : "Koyu temaya geç"}
-      className="relative inline-flex h-8 w-14 shrink-0 items-center rounded-full border border-neutral-300 bg-surface-raised transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand"
+      className="relative inline-flex h-8 w-14 shrink-0 items-center rounded-full border border-control bg-surface-raised transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand"
     >
       <Sun aria-hidden="true" className="pointer-events-none absolute left-1.5 h-4 w-4 text-warning" />
       <Moon aria-hidden="true" className="pointer-events-none absolute right-1.5 h-4 w-4 text-text-muted" />

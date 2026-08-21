@@ -53,7 +53,7 @@ export function SectionHeader({
 
   return (
     <div className={className}>
-      {rule && <div aria-hidden="true" className="mb-10 h-px w-full bg-neutral-300" />}
+      {rule && <div aria-hidden="true" data-section-rule className="mb-10 h-px w-full bg-neutral-300" />}
       <div className="space-y-3">
         {eyebrow && (
           // `text-brand` DEĞİL `text-text-muted` (2026-08-20): incelenen

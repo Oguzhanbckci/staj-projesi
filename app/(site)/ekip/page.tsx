@@ -34,10 +34,17 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 // Breadcrumb şeridi TeamSection'ın KENDİ Container'ıyla aynı genişlikte
-// (bkz. Breadcrumbs kullanımı, 2026-08-18 dokuzuncu oturum) ama bölümün
-// `bg-surface-raised` zemininin DIŞINDA, sayfanın normal `bg-surface`
-// zemininde — TeamSection'a hiç dokunmadan (o hâlâ page_sections
-// registry'sinden de çağrılabilir bir paylaşılan bölüm bileşeni).
+// (bkz. Breadcrumbs kullanımı, 2026-08-18 dokuzuncu oturum), TeamSection'a
+// hiç dokunmadan (o hâlâ page_sections registry'sinden de çağrılabilir bir
+// paylaşılan bölüm bileşeni).
+//
+// NOT (2026-08-21): burada eskiden "bölümün `bg-surface-raised` zemininin
+// DIŞINDA, sayfanın normal `bg-surface` zemininde" yazıyordu. Bu artık
+// DOĞRU DEĞİL: 2026-08-21'de tüm bölüm zeminleri tek yüzeye indirildi,
+// yani şerit ile bölüm aynı zeminde. Görsel ayrım artık yok; bu sayfada
+// `rule` da çizilmiyor (başlık h1, ayraç yalnızca h2 bölümlerinde).
+// Bilinçli kabul: ayrı sayfada breadcrumb ile başlık arasına çizgi koymak
+// sayfanın üstünü ana sayfadan daha ağır gösteriyordu.
 export default function EkipPage() {
   return (
     <>

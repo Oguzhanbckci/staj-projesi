@@ -92,7 +92,7 @@ export function ProjectDetailModal({
             <button
               type="button"
               onClick={onClose}
-              className="rounded-md bg-brand px-4 py-2 text-brand-on focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2"
+              className="rounded-md bg-brand px-4 py-2 text-brand-on focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 ring-offset-surface"
             >
               Kapat
             </button>

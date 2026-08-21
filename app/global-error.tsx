@@ -34,7 +34,7 @@ export default function GlobalError({
           <button
             type="button"
             onClick={retry}
-            className="mt-8 inline-flex h-10 items-center justify-center rounded-md bg-brand px-4 text-base font-semibold text-brand-on hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2"
+            className="mt-8 inline-flex h-10 items-center justify-center rounded-md bg-brand px-4 text-base font-semibold text-brand-on hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 ring-offset-surface"
           >
             Tekrar dene
           </button>

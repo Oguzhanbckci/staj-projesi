@@ -21,7 +21,7 @@ export async function AboutSection() {
             sütununun içinde duruyor, oradaki bir çizgi sayfanın yarısında
             kesilirdi. Diğer bölümlerle aynı görünsün diye aynı değerler
             (h-px, bg-neutral-300, mb-10). */}
-        <div aria-hidden="true" className="mb-10 h-px w-full bg-neutral-300" />
+        <div aria-hidden="true" data-section-rule className="mb-10 h-px w-full bg-neutral-300" />
         {/* `items-center` DEĞİL `items-start` (2026-08-20, kullanıcı geri
             bildirimi: "yamuk duruyor"). Sol sütun uzun (başlık + iki
             paragraf), görsel ise 3:2 oranında kısa; ortalanınca görsel o

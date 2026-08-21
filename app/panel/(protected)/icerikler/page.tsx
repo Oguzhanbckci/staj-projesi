@@ -22,7 +22,7 @@ export default function IceriklerPage() {
       <h1 className="text-h3 font-bold text-text">İçerikler</h1>
       <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
         {CONTENT_TYPES.map((type) => (
-          <Link key={type.href} href={type.href} className="block rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2">
+          <Link key={type.href} href={type.href} className="block rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 ring-offset-surface">
             <Card className="p-6 transition-colors hover:bg-surface">
               <p className="text-h6 font-bold text-text">{type.label}</p>
               <p className="mt-1 text-base text-text-muted">{type.description}</p>
