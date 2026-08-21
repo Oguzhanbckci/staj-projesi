@@ -1,6 +1,7 @@
 -- YENİ MÜŞTERİ KURULUM ŞABLONU — docs/KURULUM.md'deki adım adım akışın
 -- parçası. Bu dosya ELLE DÜZENLENMEZ — scripts/setup-new-customer.sh
--- aşağıdaki 5 yer tutucuyu (__İKİ_ALT_ÇİZGİ__ ile sarılı) `sed` ile
+-- aşağıdaki 3 yer tutucuyu (__TENANT_NAME__, __TENANT_DOMAIN__,
+-- __CONTACT_EMAIL__) `sed` ile
 -- gerçek müşteri bilgisiyle değiştirip SQL Editor'e yapıştırılacak/psql
 -- ile çalıştırılacak GEÇİCİ bir kopya üretir (asıl dosya bozulmaz).
 --
@@ -49,24 +50,60 @@ begin
   on conflict (tenant_id) do nothing;
 
   -- 3) Hero.
-  insert into public.hero_sections (tenant_id, title, subtitle, is_published)
-  values (v_tenant_id, '__TENANT_NAME__', 'Konut ve ticari yapılarda uçtan uca inşaat hizmeti', true)
+  -- cta_* / secondary_cta_* olmadan HeroVariantA'daki eylem çağrısı
+  -- bloğunun TAMAMI render edilmez (koşul: ctaText || secondaryCtaText),
+  -- yani yeni müşterinin hero'su butonsuz açılırdı. İkincil çağrı
+  -- bilinçli olarak ikinci bir buton değil, alt çizgili metin bağlantısı
+  -- olarak gösterilir (bkz. docs/RAKIP-ANALIZI.md — incelenen sitelerde
+  -- hero'da CTA sayısı 0 veya 1).
+  insert into public.hero_sections (
+    tenant_id, title, subtitle,
+    cta_text, cta_link, secondary_cta_text, secondary_cta_link, is_published
+  )
+  values (
+    v_tenant_id, '__TENANT_NAME__', 'Konut ve ticari yapılarda uçtan uca inşaat hizmeti',
+    'Teklif Al', '/iletisim', 'Projelerimizi İnceleyin', '/#projeler', true
+  )
   on conflict (tenant_id) do nothing;
 
   -- 4) Hakkımızda.
-  insert into public.about_sections (tenant_id, title, description, founded_year, is_published)
+  -- core_values boş kalırsa AboutSection'daki Değerler bloğu hiç
+  -- render edilmez (koşul: coreValues.length > 0). Buradaki maddeler
+  -- aynı zamanda BİÇİM ÖRNEĞİDİR: "Başlık — tek cümle açıklama".
+  -- Panel bu ayracı ("—", "–" veya "-") kalın başlık / soluk açıklama
+  -- olarak ayrıştırır, müşteri kalıbı önünde görerek düzenler.
+  -- Metinler sıfat değil FİİL kuruyor (bkz. docs/RAKIP-ANALIZI.md).
+  insert into public.about_sections (
+    tenant_id, title, description, core_values, founded_year, is_published
+  )
   values (
     v_tenant_id, 'Hakkımızda',
     'Bu metni panelden düzenleyip firmanızın gerçek hikayesini yazın — kuruluş yılı, uzmanlık alanı ve farkınızı anlatan 2-3 cümle yeterli.',
+    array[
+      'Zamanında Teslim — Sözleşmede yazan teslim tarihini taahhüt sayarız.',
+      'Şeffaf Bütçe — İş kalemlerini ve maliyet değişikliklerini önceden paylaşırız.',
+      'Sahada Denetim — Uygulamayı kendi mühendisimiz yerinde denetler.',
+      'İş Güvenliği — Şantiye güvenlik kurallarını istisnasız uygularız.'
+    ],
     2010, true
   )
   on conflict (tenant_id) do nothing;
 
   -- 5) İletişim.
-  insert into public.contact_sections (tenant_id, address, phone, email, working_hours, is_published)
+  -- working_hours ziyaretçiye gösterilen SERBEST METİN; weekday_opens/
+  -- weekday_closes ise arama motoruna giden YAPISAL veri
+  -- (LocalBusiness JSON-LD openingHoursSpecification, bkz.
+  -- lib/seo/localBusiness.ts). İkincisi boş kalırsa blok hiç üretilmez
+  -- ve Google sonuçlarında "Açık/Kapalı" bilgisi çıkmaz — TESLIM-PAKETI.md'nin
+  -- "teknik SEO baştan hazır" vaadinin en görünür parçası budur.
+  -- İki alan TUTARLI kalmalı: aynı saatleri söylüyorlar.
+  insert into public.contact_sections (
+    tenant_id, address, phone, email, working_hours,
+    weekday_opens, weekday_closes, is_published
+  )
   values (
     v_tenant_id, '[Adres — panelden güncelleyin]', '[Telefon]', '__CONTACT_EMAIL__',
-    'Hafta içi 08:00 - 18:00', true
+    'Hafta içi 08:00 - 18:00', '08:00', '18:00', true
   )
   on conflict (tenant_id) do nothing;
 
