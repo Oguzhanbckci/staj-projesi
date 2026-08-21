@@ -10,8 +10,8 @@ import {
   SEO_FIELD_LABELS,
   SEO_TITLE_RECOMMENDED_MAX,
   SEO_DESCRIPTION_RECOMMENDED_MAX,
-  type SeoSettingsFormValues,
-} from "@/lib/validation/seo";
+} from "@/lib/validation/seoFields";
+import type { SeoSettingsFormValues } from "@/lib/validation/seo";
 import type { ActionResult } from "@/lib/panel/actionResult";
 import type { SeoSettingsData } from "@/lib/supabase/panelQueries";
 import { updateSeoSettingsAction } from "./actions";

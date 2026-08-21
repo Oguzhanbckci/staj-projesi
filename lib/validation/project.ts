@@ -56,13 +56,4 @@ export const projectFormSchema = z.object({
 });
 
 export type ProjectFormValues = z.infer<typeof projectFormSchema>;
-
-export const PROJECT_FIELD_LABELS: Record<keyof ProjectFormValues, string> = {
-  title: "Başlık",
-  description: "Açıklama",
-  category: "Kategori",
-  location: "Konum",
-  year: "Yıl",
-  liveUrl: "Canlı Bağlantı",
-  isPublished: "Yayın Durumu",
-};
+

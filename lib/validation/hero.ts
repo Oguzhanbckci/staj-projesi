@@ -14,11 +14,16 @@ const linkField = z
   .optional()
   .or(z.literal(""));
 
-export const HERO_VARIANTS = ["a", "b"] as const;
-
+// 2026-08-21: `variant` alanı bu şemadan ÇIKARILDI. Hero görünümü iki
+// ayrı kolonda tutuluyordu (`hero_sections.variant` ve
+// `page_sections.variant`) ve render tarafında page_sections KOŞULSUZ
+// kazanıyordu (bkz. components/site/hero/HeroSection.tsx). Hem Akme
+// migration'ı hem yeni müşteri şablonu hero satırını variant dolu
+// seed'lediği için hero_sections.variant HİÇBİR ZAMAN devreye girmiyordu:
+// panel bir değer alıyor, DB'ye yazıyor, "kaydedildi" diyor ve değerin
+// sonuca sıfır etkisi oluyordu. Varyant seçimi artık tek yerde — Sayfa
+// Düzeni ekranında, 5 bölümün hepsi için aynı şemalı arayüzle.
 export const heroFormSchema = z.object({
-  variant: z.enum(HERO_VARIANTS, { error: "Lütfen bir görünüm seçin." }),
-
   title: z
     .string({ error: "Başlık zorunludur." })
     .trim()
@@ -50,13 +55,4 @@ export const heroFormSchema = z.object({
 });
 
 export type HeroFormValues = z.infer<typeof heroFormSchema>;
-
-export const HERO_FIELD_LABELS: Record<keyof HeroFormValues, string> = {
-  variant: "Görünüm",
-  title: "Başlık",
-  subtitle: "Alt Başlık",
-  ctaText: "Buton Metni",
-  ctaLink: "Buton Bağlantısı",
-  secondaryCtaText: "İkinci Buton Metni",
-  secondaryCtaLink: "İkinci Buton Bağlantısı",
-};
+

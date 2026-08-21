@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { ReadStatusBadge } from "@/components/panel/ReadStatusBadge";
 import { DeleteButton } from "@/components/panel/DeleteButton";
-import { getContactSubjectLabel } from "@/lib/validation/contact";
+import { getContactSubjectLabel } from "@/lib/validation/contactFields";
 import type { ContactMessageRow } from "@/lib/supabase/panelQueries";
 import { deleteMessageAction } from "./actions";
 

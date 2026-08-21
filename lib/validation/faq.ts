@@ -18,9 +18,4 @@ export const faqFormSchema = z.object({
 });
 
 export type FaqFormValues = z.infer<typeof faqFormSchema>;
-
-export const FAQ_FIELD_LABELS: Record<keyof FaqFormValues, string> = {
-  question: "Soru",
-  answer: "Cevap",
-  isPublished: "Yayın Durumu",
-};
+

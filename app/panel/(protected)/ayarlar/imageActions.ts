@@ -76,10 +76,27 @@ export async function uploadOgImageAction(
     };
   }
 
+  // `.update()` DEĞİL `.upsert()` — 2026-08-20 denetimindeki bulgu 08'in
+  // aynısı, o düzeltme bu üç görsel yükleme eylemine (logo/favicon/OG)
+  // taşınmamıştı: düz update eşleşen satır yoksa HATA VERMEZ, sıfır satır
+  // yazar ve eylem yine `{ success: true }` döner — panel "yüklendi" der,
+  // dosya Storage'a gerçekten yazılmıştır ama sitede hiç görünmez ve her
+  // yeni deneme bir yetim dosya daha bırakır.
+  //
+  // Yukarıdaki `if (!current)` bekçisi bunu YAKALAMAZ: getThemeSettings/
+  // getSeoSettings sorguyu `tenants` üzerinden nested embed ile yapıyor,
+  // yani site_settings satırı hiç yokken bile null değil bir nesne döner
+  // (firma adı/domain tenants'tan gelir). hero/hakkımızda'daki aynı
+  // dosyalarda `.update()` BİLEREK tercih edilmişti ve orada geçerli,
+  // çünkü o bekçiler kendi tablolarını doğrudan sorguluyor.
+  //
+  // site_settings_tenant_id_key UNIQUE kısıtı onConflict'i güvenli kılıyor.
   const { error: updateError } = await supabase
     .from("site_settings")
-    .update({ og_image_path: path })
-    .eq("tenant_id", tenantId);
+    .upsert(
+      { tenant_id: tenantId, og_image_path: path },
+      { onConflict: "tenant_id" }
+    );
 
   if (updateError) {
     console.error("uploadOgImageAction DB güncelleme hatası:", updateError);

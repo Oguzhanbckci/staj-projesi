@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import { getContactMessageById } from "@/lib/supabase/panelQueries";
-import { getContactSubjectLabel } from "@/lib/validation/contact";
+import { getContactSubjectLabel } from "@/lib/validation/contactFields";
 import { LinkButton } from "@/components/ui/LinkButton";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { MarkMessageReadOnView } from "../MarkMessageReadOnView";

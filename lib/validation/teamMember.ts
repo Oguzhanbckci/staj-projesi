@@ -25,10 +25,4 @@ export const teamMemberFormSchema = z.object({
 });
 
 export type TeamMemberFormValues = z.infer<typeof teamMemberFormSchema>;
-
-export const TEAM_MEMBER_FIELD_LABELS: Record<keyof TeamMemberFormValues, string> = {
-  fullName: "Ad Soyad",
-  role: "Unvan",
-  bio: "Kısa Biyografi",
-  isPublished: "Yayın Durumu",
-};
+

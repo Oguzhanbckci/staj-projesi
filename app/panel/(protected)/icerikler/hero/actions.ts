@@ -24,7 +24,6 @@ export async function updateHeroSectionAction(
   }
 
   const raw = {
-    variant: String(formData.get("variant") ?? "a"),
     title: String(formData.get("title") ?? ""),
     subtitle: String(formData.get("subtitle") ?? ""),
     ctaText: String(formData.get("ctaText") ?? ""),
@@ -62,7 +61,6 @@ export async function updateHeroSectionAction(
   const current = await getHeroSettings();
   const hasChanges =
     !current ||
-    current.variant !== data.variant ||
     current.title !== data.title ||
     current.subtitle !== nextSubtitle ||
     current.ctaText !== nextCtaText ||
@@ -80,7 +78,6 @@ export async function updateHeroSectionAction(
     .upsert(
       {
         tenant_id: tenantId,
-        variant: data.variant,
         title: data.title,
         subtitle: nextSubtitle,
         cta_text: nextCtaText,

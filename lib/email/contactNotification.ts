@@ -1,4 +1,4 @@
-import { getContactSubjectLabel } from "@/lib/validation/contact";
+import { getContactSubjectLabel } from "@/lib/validation/contactFields";
 
 // Saf modül — Resend'e/ağa bağımlı değil, sadece girdi verisinden e-posta
 // içeriği üretir (bkz. lib/seo/localBusiness.ts'teki AYNI "ham veri çekme

@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { CONTACT_SUBJECTS, PHONE_MIN_DIGITS, PHONE_MAX_DIGITS } from "./contactFields";
 
 // Saf bir modül — React'e, Next.js'e ya da herhangi bir istemci/sunucu
 // API'sine bağımlı değil. `components/site/contact/ContactForm.tsx`
@@ -7,46 +8,6 @@ import { z } from "zod";
 // kural iki yerde ayrı ayrı yazılıp birbirinden sapmaz (bkz. KISITLAR).
 // İleride app/api/contact/ (veya bu Server Action'ın kendisi)
 // contact_messages'a yazarken de aynı şema kullanılmalı.
-
-export const CONTACT_SUBJECTS = [
-  "genel-bilgi",
-  "proje-teklifi",
-  "is-birligi",
-  "sikayet-oneri",
-  "diger",
-] as const;
-
-export type ContactSubject = (typeof CONTACT_SUBJECTS)[number];
-
-export const CONTACT_SUBJECT_LABELS: Record<ContactSubject, string> = {
-  "genel-bilgi": "Genel Bilgi",
-  "proje-teklifi": "Proje Teklifi",
-  "is-birligi": "İş Birliği",
-  "sikayet-oneri": "Şikayet / Öneri",
-  diger: "Diğer",
-};
-
-// DB'den gelen `subject` sütunu serbest `text` (bilerek CHECK constraint
-// yok, bkz. supabase/migrations/20260814130000_...) — panelde gösterirken
-// bilinmeyen/eski bir değer sayfayı çökertmesin diye güvenli bir
-// eşleme. `components/panel/mesajlar/` ekranlarında kullanılır.
-export function getContactSubjectLabel(subject: string | null): string {
-  if (!subject) return "—";
-  return subject in CONTACT_SUBJECT_LABELS
-    ? CONTACT_SUBJECT_LABELS[subject as ContactSubject]
-    : subject;
-}
-
-// 2026-08-18: Serbest metin telefon alanı SADECE RAKAM kabul edecek
-// şekilde sıkılaştırıldı (kullanıcı bulgusu — eski serbest alan hem harf
-// girişine hem sınırsız rakam girişine izin veriyordu, ör. 50-60 haneli
-// anlamsız bir dizi kabul ediliyordu). Ayrıca WhatsApp tarzı bir ülke
-// kodu `<select>`'i denendi ama kaldırıldı — native `<select>` kapalıyken
-// her zaman seçili seçeneğin TAM metnini gösteriyor, "sadece bayrak"
-// görünümü özel bir açılır menü gerektirirdi; kullanıcı bunu orantısız
-// bulup sadece rakam/uzunluk doğrulamasını istedi (bkz. KARAR-GUNLUGU.md).
-export const PHONE_MIN_DIGITS = 4;
-export const PHONE_MAX_DIGITS = 12;
 
 // Telefon numarası opsiyonel — boş string geçerli (alan boş bırakılabilir),
 // ama bir şey girildiyse SADECE rakam ve gerçekçi bir uzunlukta olmalı.
@@ -93,14 +54,4 @@ export const contactFormSchema = z.object({
 });
 
 export type ContactFormValues = z.infer<typeof contactFormSchema>;
-
-// Form alanı adı -> ekranda gösterilecek Türkçe etiket. Hata özetinde
-// ("Formda şu hatalar var: Ad Soyad: ...") ve <label>'larla tutarlı
-// kalması için tek yerde tutuluyor.
-export const CONTACT_FIELD_LABELS: Record<keyof ContactFormValues, string> = {
-  fullName: "Ad Soyad",
-  email: "E-posta",
-  phoneNumber: "Telefon",
-  subject: "Konu",
-  message: "Mesaj",
-};
+

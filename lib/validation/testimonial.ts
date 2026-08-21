@@ -110,11 +110,3 @@ export const testimonialFormSchema = z.object({
 });
 
 export type TestimonialFormValues = z.infer<typeof testimonialFormSchema>;
-
-export const TESTIMONIAL_FIELD_LABELS: Record<keyof TestimonialFormValues, string> = {
-  authorName: "Ad Soyad",
-  authorTitle: "Unvan / Firma",
-  quote: "Yorum",
-  rating: "Puan",
-  isPublished: "Yayın Durumu",
-};

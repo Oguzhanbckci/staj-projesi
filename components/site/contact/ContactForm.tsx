@@ -11,7 +11,7 @@ import {
   CONTACT_SUBJECTS,
   CONTACT_SUBJECT_LABELS,
   PHONE_MAX_DIGITS,
-} from "@/lib/validation/contact";
+} from "@/lib/validation/contactFields";
 import { submitContactForm, type ContactFormState } from "./actions";
 import { HONEYPOT_FIELD_NAME } from "@/lib/security/contactHoneypot";
 

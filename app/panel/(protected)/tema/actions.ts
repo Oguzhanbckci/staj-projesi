@@ -29,6 +29,7 @@ export async function updateThemeSettingsAction(
   }
 
   const raw = {
+    themeMode: String(formData.get("themeMode") ?? "light"),
     companyName: String(formData.get("companyName") ?? ""),
     slogan: String(formData.get("slogan") ?? ""),
     primaryColor: String(formData.get("primaryColor") ?? ""),
@@ -92,7 +93,9 @@ export async function updateThemeSettingsAction(
   const nextWeekendCloses = data.weekendCloses || null;
   const nextServiceAreas = data.serviceAreas || null;
 
-  const tenantChanged = current.companyName !== data.companyName;
+  // Firma adı ve varsayılan tema aynı tabloda (tenants) — tek update.
+  const tenantChanged =
+    current.companyName !== data.companyName || current.themeMode !== data.themeMode;
   const settingsChanged =
     current.slogan !== nextSlogan ||
     current.primaryColor !== nextPrimaryColor ||
@@ -122,14 +125,14 @@ export async function updateThemeSettingsAction(
   if (tenantChanged) {
     const { error } = await supabase
       .from("tenants")
-      .update({ name: data.companyName })
+      .update({ name: data.companyName, theme_mode: data.themeMode })
       .eq("id", tenantId);
     if (error) {
       console.error("updateThemeSettingsAction tenants güncelleme hatası:", error);
       return {
         success: false,
         fieldErrors: {},
-        formError: "Firma adı kaydedilirken bir sorun oluştu. Lütfen tekrar deneyin.",
+        formError: "Firma adı ve tema tercihi kaydedilirken bir sorun oluştu. Lütfen tekrar deneyin.",
       };
     }
   }
@@ -178,6 +181,13 @@ export async function updateThemeSettingsAction(
       .upsert(
         {
           tenant_id: tenantId,
+          // INSERT dalinda kolon varsayılanı `false` — bu satır olmadan
+          // panelden oluşturulan iletişim kaydı "yayında değil" olarak
+          // doğuyordu. Üründe "taslak iletişim bölümü" kavramı yok;
+          // bölüm görünürlüğü Sayfa Düzeni (page_sections.is_visible)
+          // ile yönetiliyor. Okuma tarafındaki filtre de kaldırıldı,
+          // bkz. lib/supabase/queries.ts getContactSection.
+          is_published: true,
           address: nextAddress,
           phone: nextPhone,
           email: nextEmail,

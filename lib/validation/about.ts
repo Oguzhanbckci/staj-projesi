@@ -42,10 +42,4 @@ export const aboutFormSchema = z.object({
 });
 
 export type AboutFormValues = z.infer<typeof aboutFormSchema>;
-
-export const ABOUT_FIELD_LABELS: Record<keyof AboutFormValues, string> = {
-  title: "Başlık",
-  description: "Açıklama",
-  foundedYear: "Kuruluş Yılı",
-  coreValues: "Değerlerimiz",
-};
+

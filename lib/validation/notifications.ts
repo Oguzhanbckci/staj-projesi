@@ -14,7 +14,4 @@ export const notificationSettingsFormSchema = z.object({
 });
 
 export type NotificationSettingsFormValues = z.infer<typeof notificationSettingsFormSchema>;
-
-export const NOTIFICATION_FIELD_LABELS: Record<keyof NotificationSettingsFormValues, string> = {
-  recipientEmail: "Bildirim E-postası",
-};
+

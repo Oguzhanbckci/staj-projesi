@@ -40,6 +40,18 @@ const timeField = z
 
 export const themeSettingsFormSchema = z
   .object({
+    // Sitenin açık/koyu VARSAYILANI (ziyaretçi kendi tercihini
+    // yapana kadar geçerli olan). `tenants.theme_mode` kolonuna
+    // yazılır. 2026-08-21'e kadar bu kolon hiçbir kod yolundan
+    // yazılmıyordu: değer yalnızca seed'den geliyordu ve panelde
+    // değiştiren bir kontrol yoktu — koyu varsayılan isteyen müşteri
+    // için tek çare Supabase Table Editor'dü. "Modern Koyu" ön ayarı
+    // da adının çağrıştırdığının aksine siteyi koyu YAPMAZ, sadece
+    // marka rengi/köşe yarıçapı/font üçlüsünü değiştirir.
+    themeMode: z.enum(["light", "dark"], {
+      error: "Lütfen açık veya koyu temayı seçin.",
+    }),
+
     companyName: z
       .string({ error: "Firma adı zorunludur." })
       .trim()
@@ -108,24 +120,4 @@ export const themeSettingsFormSchema = z
   });
 
 export type ThemeSettingsFormValues = z.infer<typeof themeSettingsFormSchema>;
-
-export const THEME_FIELD_LABELS: Record<keyof ThemeSettingsFormValues, string> = {
-  companyName: "Firma Adı",
-  slogan: "Slogan",
-  primaryColor: "Marka Rengi",
-  secondaryColor: "İkincil Renk",
-  borderRadiusScale: "Köşe Yarıçapı",
-  fontFamilyKey: "Font Ailesi",
-  address: "Adres",
-  phone: "Telefon",
-  email: "E-posta",
-  workingHours: "Çalışma Saatleri",
-  weekdayOpens: "Hafta İçi Açılış",
-  weekdayCloses: "Hafta İçi Kapanış",
-  weekendOpens: "Hafta Sonu Açılış",
-  weekendCloses: "Hafta Sonu Kapanış",
-  serviceAreas: "Hizmet Verilen İller",
-  facebookUrl: "Facebook",
-  instagramUrl: "Instagram",
-  linkedinUrl: "LinkedIn",
-};
+

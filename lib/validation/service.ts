@@ -34,10 +34,4 @@ export const serviceFormSchema = z.object({
 });
 
 export type ServiceFormValues = z.infer<typeof serviceFormSchema>;
-
-export const SERVICE_FIELD_LABELS: Record<keyof ServiceFormValues, string> = {
-  title: "Başlık",
-  description: "Açıklama",
-  icon: "İkon",
-  isPublished: "Yayın Durumu",
-};
+

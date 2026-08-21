@@ -4,10 +4,8 @@ import { useActionState } from "react";
 import { TextField } from "@/components/ui/TextField";
 import { SubmitButton } from "@/components/ui/SubmitButton";
 import { FormErrorSummary } from "@/components/ui/FormErrorSummary";
-import {
-  NOTIFICATION_FIELD_LABELS,
-  type NotificationSettingsFormValues,
-} from "@/lib/validation/notifications";
+import { NOTIFICATION_FIELD_LABELS } from "@/lib/validation/notificationsFields";
+import type { NotificationSettingsFormValues } from "@/lib/validation/notifications";
 import type { ActionResult } from "@/lib/panel/actionResult";
 import type { NotificationSettingsData } from "@/lib/supabase/panelQueries";
 import { updateNotificationSettingsAction } from "./actions";

@@ -7,7 +7,8 @@ import { SelectField } from "@/components/ui/SelectField";
 import { ColorPickerField } from "@/components/ui/ColorPickerField";
 import { SubmitButton } from "@/components/ui/SubmitButton";
 import { FormErrorSummary } from "@/components/ui/FormErrorSummary";
-import { THEME_FIELD_LABELS, type ThemeSettingsFormValues } from "@/lib/validation/theme";
+import { THEME_FIELD_LABELS } from "@/lib/validation/themeFields";
+import type { ThemeSettingsFormValues } from "@/lib/validation/theme";
 import type { ActionResult } from "@/lib/panel/actionResult";
 import type { ThemeSettingsData } from "@/lib/supabase/panelQueries";
 import { resolveThemeTokens } from "@/lib/theme/resolve";
@@ -33,6 +34,7 @@ const initialState: ActionResult<keyof ThemeSettingsFormValues> = {
 export function ThemeEditor({ initialData }: { initialData: ThemeSettingsData }) {
   const [state, formAction] = useActionState(updateThemeSettingsAction, initialState);
 
+  const [themeMode, setThemeMode] = useState<"light" | "dark">(initialData.themeMode);
   const [primaryColor, setPrimaryColor] = useState(initialData.primaryColor ?? "");
   const [secondaryColor, setSecondaryColor] = useState(initialData.secondaryColor ?? "");
   const [borderRadiusScale, setBorderRadiusScale] = useState(initialData.borderRadiusScale ?? "");
@@ -48,14 +50,19 @@ export function ThemeEditor({ initialData }: { initialData: ThemeSettingsData })
   // düşüyor.
   const styleVars = useMemo(() => {
     return resolveThemeTokens({
-      themeMode: "light",
+      // Sabit "light" DEĞİL: preset'lerin marka rengi moda göre FARKLI
+      // (kurumsal-mavi: açık #2563a8, koyu #3b82c4). Sabitken önizleme,
+      // theme_mode "dark" olan bir sitede yanlış rengi gösteriyordu —
+      // yani panel, sitenin gerçek görünümü hakkında yanlış bilgi
+      // veriyordu.
+      themeMode,
       themePreset: initialData.themePreset,
       primaryColor: primaryColor || null,
       secondaryColor: secondaryColor || null,
       borderRadiusScale: isBorderRadiusScaleKey(borderRadiusScale) ? borderRadiusScale : null,
       fontFamilyKey: isFontFamilyKey(fontFamilyKey) ? fontFamilyKey : null,
     }).styleVars;
-  }, [initialData.themePreset, primaryColor, secondaryColor, borderRadiusScale, fontFamilyKey]);
+  }, [initialData.themePreset, themeMode, primaryColor, secondaryColor, borderRadiusScale, fontFamilyKey]);
 
   const primaryContrast =
     primaryColor && HEX_COLOR_RE.test(primaryColor) ? checkContrastWarning(primaryColor) : null;
@@ -149,6 +156,20 @@ export function ThemeEditor({ initialData }: { initialData: ThemeSettingsData })
                 </p>
               )}
             </div>
+
+            <SelectField
+              label="Sitenin Varsayılan Teması"
+              name="themeMode"
+              value={themeMode}
+              onChange={(event) =>
+                setThemeMode(event.target.value === "dark" ? "dark" : "light")
+              }
+              error={fieldErrors.themeMode}
+              helpText="Ziyaretçi kendi tercihini yapana kadar sitenin açılacağı tema. Yukarıdaki &quot;Modern Koyu&quot; ön ayarı bunu değiştirmez; o sadece renk, köşe ve font seçer."
+            >
+              <option value="light">Açık</option>
+              <option value="dark">Koyu</option>
+            </SelectField>
 
             <SelectField
               label="Köşe Yarıçapı (opsiyonel)"

@@ -3,10 +3,10 @@
 import { useActionState } from "react";
 import { TextField } from "@/components/ui/TextField";
 import { TextareaField } from "@/components/ui/TextareaField";
-import { SelectField } from "@/components/ui/SelectField";
 import { SubmitButton } from "@/components/ui/SubmitButton";
 import { FormErrorSummary } from "@/components/ui/FormErrorSummary";
-import { HERO_FIELD_LABELS, type HeroFormValues } from "@/lib/validation/hero";
+import { HERO_FIELD_LABELS } from "@/lib/validation/heroFields";
+import type { HeroFormValues } from "@/lib/validation/hero";
 import type { ActionResult } from "@/lib/panel/actionResult";
 import type { HeroSettingsData } from "@/lib/supabase/panelQueries";
 import { updateHeroSectionAction } from "./actions";
@@ -19,7 +19,6 @@ const initialState: ActionResult<keyof HeroFormValues> = {
 };
 
 const EMPTY_DEFAULTS: HeroSettingsData = {
-  variant: "a",
   title: "",
   subtitle: null,
   ctaText: null,
@@ -86,17 +85,6 @@ export function HeroEditor({ initialData }: { initialData: HeroSettingsData | nu
           error={fieldErrors.subtitle}
         />
 
-        <SelectField
-          id={`${FIELD_ID_PREFIX}-variant`}
-          label="Varsayılan Görünüm"
-          name="variant"
-          defaultValue={data.variant}
-          error={fieldErrors.variant}
-          helpText='"Sayfa Düzeni" ekranından bu bölüm için ayrı bir görünüm seçilirse, o öncelikli olur.'
-        >
-          <option value="a">Görünüm A</option>
-          <option value="b">Görünüm B</option>
-        </SelectField>
 
         <div className="grid gap-4 sm:grid-cols-2">
           <TextField

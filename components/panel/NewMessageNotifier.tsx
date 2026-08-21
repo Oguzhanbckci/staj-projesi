@@ -4,7 +4,7 @@ import { useEffect, useState, type Dispatch, type SetStateAction } from "react";
 import { useRouter } from "next/navigation";
 import { createBrowserSupabaseClient } from "@/lib/supabase/client";
 import { ToastContainer } from "@/components/ui/ToastContainer";
-import { getContactSubjectLabel } from "@/lib/validation/contact";
+import { getContactSubjectLabel } from "@/lib/validation/contactFields";
 import type { ToastData } from "@/components/ui/Toast";
 
 // Realtime INSERT payload'ı ham DB satırı (snake_case) — panelQueries.ts'teki
