@@ -39,6 +39,10 @@ sürüm dokümanlarına bakılmalı (bkz. `AGENTS.md`).
 **Bu proje üzerinde geliştirme yapacaksanız** (yeni bir müşteri
 kurulumu için değil — o senaryo için `docs/KURULUM.md`'ye bakın):
 
+**Node.js 20.9+ gerekir** (`package.json` → `engines`; CI 22 kullanıyor).
+Alt sürümlerde `npm run types:generate` çalışmaz — Node'un `--env-file`
+desteği 20.6 ile geldi.
+
 ```bash
 npm install
 cp .env.local.example .env.local
@@ -74,6 +78,8 @@ tutulur — yeni bir konuya başlarken önce buraya bakılır:
 | `docs/KURULUM.md` | **Yeni bir müşteri** için sıfırdan kurulum (geliştirici içindir) |
 | `docs/MUSTERİ-KILAVUZU.md` | Panelin günlük kullanımı (**teknik olmayan** okuyucu içindir) |
 | `docs/TESLIM-PAKETI.md` | Satış/teslim özeti — kapsam, fiyatlandırma önerisi (**müşteri/karar verici** içindir) |
+| `docs/RAKIP-ANALIZI.md` | Bir bölüm/tasarım kararının neden böyle olduğunu sektör kanıtıyla görmek için — 8 sitelik bölüm karşılaştırması + 93 sitelik görsel tasarım taraması |
+| `docs/KURUMSAL-SITE-STANDARTLARI.md` | İyi bir kurumsal sitenin sağlaması gereken kriterler (performans, erişilebilirlik, SEO, KVKK) — kalite kontrol listesi |
 
 ## Testleri Çalıştırma
 

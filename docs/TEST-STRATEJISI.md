@@ -6,7 +6,7 @@ işaret eder; test kararı değişirse önce `KARAR-GUNLUGU.md`'ye kayıt düş�
 sonra bu dosya güncellenir. Kod içermez.
 
 **Son güncelleme:** 2026-08-19 — **CI kuruldu** (`.github/workflows/ci.yml`,
-madde 15): her push/PR'da lint + tip kontrolü + 54 birim testi + build
+madde 15): her push/PR'da lint + tip kontrolü + birim testleri + build
 otomatik koşuyor, hiçbir gizli anahtar gerektirmiyor. E2E bilinçli olarak
 CI dışında (üretim veritabanına yazıyor — gerekçe madde 15'te). Madde 12'deki
 "CI kurulmadı" maddesi kapandı.
@@ -376,7 +376,7 @@ her adımda hata konumu net, 60s altı) karşılandı.
   kullanıcı" senaryosunu kapsıyor, "yanlış domain" senaryosunu değil.
 - ~~**CI (sürekli entegrasyon) kurulmadı**~~ — **KURULDU (2026-08-19,
   `.github/workflows/ci.yml`)**, bkz. madde 15. `main`'e her push ve her
-  pull request'te lint + `tsc --noEmit` + 54 birim testi + production build
+  pull request'te lint + `tsc --noEmit` + birim testleri + production build
   otomatik koşuyor. **E2E hâlâ CI'da değil** (bilinçli — gerekçe madde 15'te).
 
 ## 13. Canlıya Karşı Doğrulama (Live Testing) *(2026-08-17 eklendi)*
@@ -440,7 +440,7 @@ insana kalmıştı ve hatırlanmadı. CI bu kontrolü otomatikleştirir.
 | 2 | `npm run lint` |
 | 3 | **`npx next typegen`** (aşağıdaki uyarıya bak — atlanamaz) |
 | 4 | `npx tsc --noEmit` |
-| 5 | `npm run test:unit` (54 test) |
+| 5 | `npm run test:unit` (2026-08-21: 13 dosyada 120 test) |
 | 6 | `npm run build` |
 
 > ⚠️ **`next typegen` adımı zorunlu.** `LayoutProps`/`PageProps`/`RouteContext`

@@ -163,7 +163,7 @@ yapıldı:
 | `background_image_path` | text, nullable | Storage yolu |
 | `cta_text` | text, nullable | |
 | `cta_link` | text, nullable | |
-| `variant` | text, not null, default 'a', check | *(2026-08-08 eklendi)* `a`\|`b` — görsel varyant (a: tam genişlik arka plan, b: iki kolonlu), bkz. `components/site/hero/` |
+| ~~`variant`~~ | text, not null, default 'a', check | *(2026-08-21'de KULLANIM DIŞI)* Hero görünümü iki ayrı kolonda tutuluyordu; render tarafında `page_sections.variant` KOŞULSUZ kazandığı ve hem migration hem kurulum şablonu o kolonu dolu seed'lediği için bu kolon hiçbir zaman devreye girmiyordu — panel değeri alıyor, yazıyor, "kaydedildi" diyordu ve etkisi sıfırdı. Hero ekranındaki seçim kaldırıldı; varyant artık yalnızca Sayfa Düzeni'nden yönetiliyor. Kolon **silinmedi** (okumada son çare yedeği) ama YAZILMIYOR |
 | `secondary_cta_text` | text, nullable | *(2026-08-08 eklendi)* ikinci/opsiyonel eylem butonu metni |
 | `secondary_cta_link` | text, nullable | *(2026-08-08 eklendi)* ikinci/opsiyonel eylem butonu linki |
 
@@ -198,12 +198,14 @@ Platform sahibi bu tabloyu kullanmaz (anonim kalma kuralı, bkz. `PRD.md`).
 |---|---|---|
 | `id`, `created_at`, `order_index`, `is_published` | — | ortak |
 | `tenant_id` | uuid, not null, → tenants.id | |
+| `slug` | text, **not null**, unique(tenant_id, slug) | *(2026-08-21 eklendi)* Detay sayfasının adresi (`/projeler/<slug>`). NOT NULL, çünkü "her projenin bir sayfası vardır" özelliğin tamamı — nullable olsaydı slugsuz bir kayıt sessizce tıklanamaz bir karta dönerdi. Panelde boş bırakılırsa yeni kayıtta başlıktan üretilir, düzenlemede MEVCUT adres korunur (paylaşılmış bağlantılar kırılmasın). Üretim kuralı `lib/slug.ts`; migrationdaki geri doldurma aynı kuralın SQL karşılığıdır |
 | `title` | text, not null | |
 | `image_path` | text, nullable | Storage yolu — *(2026-08-14)* `"projects"` bucket'ında, panelden gerçekten yükleniyor (bkz. `GUVENLIK.md` madde 11-12); değer her zaman sunucu tarafında üretilen `${tenant_id}/${uuid}.${uzantı}` biçiminde, elle/panelden serbest metin girilmez |
 | `location` | text, nullable | tenant kullanımı |
 | `year` | integer, nullable, check (1800-2100) | tenant kullanımı |
 | `live_url` | text, nullable | platform sahibi kullanımı — gerçek URL, Storage path değil |
 | `category` | text, nullable | *(2026-08-08 eklendi)* serbest metin kategori (ör. "Konut", "Ticari", "Altyapı") — check constraint yok, filtre listesi kodda sabit yazılmıyor, veriden türetiliyor |
+| `status` | text, nullable, check | *(2026-08-21 eklendi)* `devam` \| `tamamlandi` \| `planlanan` — proje durumu. NULL = belirtilmemiş, rozet basılmaz. Anahtar İngilizce, Türkçe etiketler `lib/validation/projectFields.ts`'te (etiket değişince veriye dokunmak gerekmesin diye). Gerekçe: `RAKIP-ANALIZI.md` bu ekseni sektörün en evrensel bilgisi olarak kaydetmişti; kategoriden daha güçlü satış sinyali — devam eden proje canlılık, tamamlanan güven gösterir |
 | `description` | text, nullable | *(2026-08-08 eklendi)* proje detay penceresinde gösterilen açıklama |
 
 ### `contact_sections` — İletişim (Tekil, Statik Bilgi)
@@ -222,6 +224,18 @@ Platform sahibi bu tabloyu kullanmaz (anonim kalma kuralı, bkz. `PRD.md`).
 
 **Not — form verisi burada değil:** Bu tablo sadece *statik gösterim*
 bilgisini tutar. Ziyaretçinin doldurduğu form `contact_messages`'ta.
+
+**Not — `is_published` bu tabloda okuma kapısı DEĞİL (2026-08-21):**
+Ziyaretçi sorgusu (`getContactSection`) eskiden `is_published = true`
+filtreliyordu, ama kolon `not null default false` ve uygulamanın hiçbir
+yerinde yazılmıyordu — panelin Tema ekranı satırı upsert ile
+oluşturduğunda kolon varsayılanda kalıyor, iletişim bilgileri Footer ve
+`/iletisim` sayfasında **sessizce hiç görünmüyordu**; üstelik paneli
+kullanarak düzeltmenin yolu yoktu ("taslak iletişim bölümü" diye bir
+kavram üründe yok — bölüm görünürlüğü `page_sections.is_visible` ile
+yönetilir). Artık sorgu filtre uygulamıyor (`hero_sections` ve
+`about_sections` sorguları gibi) ve panel eylemi `is_published: true`
+yazıyor. **Bu filtre geri eklenmemeli.**
 
 ### `contact_messages` — İletişim Formu Mesajları
 
@@ -384,9 +398,40 @@ Yirmi migration dosyası var, sırayla:
     (`tenant_id, sender_ip, created_at`) — sunucu tarafı iletişim formu
     hız sınırı için, bkz. `GUVENLIK.md` madde 14.
 
-Migration 1-20 gerçek Supabase projesine uygulandı (20 —
-`sender_ip` — 2026-08-17'de uygulandı). Şu an uygulanmayı bekleyen
-migration yok.
+21. `20260818120000_create_remaining_storage_buckets.sql` — kalan 5
+    Storage bucket'ı (services/hero/about/testimonials/team) + RLS
+    politikaları → 6 bucket, 8 panel ekranında görsel yükleme.
+22. `20260818130000_enable_realtime_contact_messages.sql` —
+    `contact_messages` için realtime publication (panelde anlık yeni
+    mesaj bildirimi).
+23. `20260818140000_create_login_attempts_table.sql` — yeni
+    `login_attempts` tablosu, panel girişi IP hız sınırı için
+    (bkz. `GUVENLIK.md` madde 19) → toplam **14 tablo**.
+24. `20260818150000_add_atomic_rate_limit_functions.sql` — 3 adet
+    `security definer` fonksiyon (advisory lock ile ATOMİK hız sınırı;
+    öncesi TOCTOU ile atlatılabiliyordu).
+25. `20260819120000_allow_fractional_testimonial_rating.sql` —
+    `testimonials.rating` integer → `numeric(2,1)` (yarım yıldız).
+26. `20260820120000_revoke_rpc_execute_from_anon.sql` — 24'teki üç
+    fonksiyondan `anon`/`authenticated`/`public` EXECUTE yetkisini geri
+    alır (denetim bulgusu: PostgreSQL yeni fonksiyonlarda EXECUTE'u
+    varsayılan olarak PUBLIC'e verir).
+27. `20260821120000_add_project_status.sql` — `projects.status`
+    (`devam`/`tamamlandi`/`planlanan`, nullable + check). Bkz. yukarıdaki
+    `projects` tablosu.
+28. `20260821130000_add_project_slug.sql` — `projects.slug` (not null +
+    tenant başına unique) + mevcut kayıtlar için geri doldurma. Proje
+    detay sayfasının (`/projeler/<slug>`) temeli.
+
+Migration 1-27 gerçek Supabase projesine uygulandı. **28 uygulanmayı
+bekliyor** — uygulandıktan sonra `npm run types:generate` çalıştırılmalı,
+yoksa yeni kolona dokunan kod "does not exist in type" hatasıyla
+derlenmez (bkz. `KURULUM.md`, "Sık Yapılan Hatalar").
+
+*(Not: 21-26 arası bu listeye 2026-08-21'de toplu eklendi — liste
+2026-08-17'den beri güncellenmemişti ve "uygulanmayı bekleyen migration
+yok" derken aslında 6 migration hiç kaydedilmemişti. Aşağıdaki kural
+tam da bunun için var.)*
 Her migration'da `create table`/`alter table`, `check`/`unique`
 kısıtlamaları, `default` değerleri, `comment on table`/`comment on
 column` ve (ilgili olanlarda) `enable row level security` + politikalar

@@ -63,6 +63,13 @@ bir kurumsal web sitesi hizmeti — "tek müşteri = tek kurulum" iş modelinde.
   sayfalı akışın karmaşık hissettirdiğini belirtti (bkz. `KARAR-GUNLUGU.md`).
   Diğer tüm bölümler (Hero, Hakkımızda, Hizmetler, Projeler, Referanslar,
   İstatistikler, SSS, Eylem Çağrısı) hâlâ tek bir ana sayfada, sırayla.
+- **Projeler 2026-08-21'de ikiye ayrıldı:** ana sayfadaki bölüm artık
+  yalnızca ilk 6 projeyi gösteriyor ("Tüm projeleri gör" bağlantısıyla),
+  tam katalog `/projeler` sayfasında (filtreler orada) ve her
+  yayınlanmış projenin kendi statik detay sayfası var
+  (`/projeler/<slug>`). Öncesinde detay bir modaldı: adresi yoktu,
+  paylaşılamıyor ve indekslenemiyordu — `sitemap.xml` sitenin tamamı
+  için 3 URL bildiriyordu (bkz. `KARAR-GUNLUGU.md`, 2026-08-21).
 - **Footer** her tenant sitesinde sabit: iletişim bilgileri, görünür
   bölümlere bağlantılar, sosyal medya, telif satırı. Bölüm kütüphanesinin
   parçası değil (sıralanamaz/gizlenemez) — sayfa düzeninin sabit bir
@@ -87,7 +94,7 @@ aç/kapat) ve bölüm `sıra`sı (bölümler arası sürükle-bırak sıralama).
 | Hero | Tekil | başlık, alt başlık, arka plan görseli, CTA metni, CTA linki |
 | Hakkımızda | Tekil | başlık, açıklama, görsel (opsiyonel), kuruluş/deneyim yılı (opsiyonel) |
 | Hizmetler | Liste | başlık, açıklama, ikon, sıra |
-| Projeler | Liste | başlık, görsel, konum, yıl, sıra |
+| Projeler | Liste | başlık, **adres parçası (slug)**, görsel, kategori, **durum** (devam/tamamlandı/planlanan, 2026-08-21), konum, yıl, açıklama, canlı bağlantı, sıra |
 | İletişim | Tekil | adres, telefon, e-posta, çalışma saatleri (statik gösterim) + form (ad-soyad, e-posta, telefon [opsiyonel], konu, mesaj — bkz. `lib/validation/contact.ts`, 2026-08-11) — form gönderiminde **o tenant'a** e-posta gider (alıcı adresi tenant ayarlarında tutulur, içerik verisi değil; `contact_messages`'a gerçek kayıt henüz yok, bkz. `DURUM.md`) |
 | Referanslar | Liste | referans veren kişi/firma adı, unvanı, yorum metni, puan (opsiyonel), sıra |
 | SSS | Liste | soru, cevap, sıra |

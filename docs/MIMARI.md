@@ -242,6 +242,14 @@ scaffold'ı (`create-next-app`, 2026-08-06) kurulduktan sonra oluşturuldu.
     artık ana sayfanın `page_sections`'a bağlı bölümleri değil, bu iki
     gerçek alt rota (bkz. `KARAR-GUNLUGU.md`); `layout.tsx`'i (Navbar/
     Footer) diğer `(site)` sayfalarıyla aynen paylaşırlar.
+    *(2026-08-21)* `projeler/` ve `projeler/[slug]/` eklendi: proje
+    kataloğu ve her yayınlanmış projenin kendi STATİK detay sayfası
+    (`generateStaticParams`). Öncesinde proje detayı yalnızca bir
+    modaldı — adresi yoktu, indekslenemiyordu. `dynamicParams`
+    varsayılanı (true) bilinçli korunuyor: build'den sonra panelden
+    eklenen bir proje ilk istekte üretilir, 404 dönmez. Ziyaretçi
+    rotalarının tamamı artık: `/`, `/projeler`, `/projeler/[slug]`,
+    `/ekip`, `/iletisim`.
   - **`app/panel/`** — tek yönetim paneli (madde 4, 7). *(2026-08-10)*
     Auth kuruldu: `giris/page.tsx` (herkese açık giriş sayfası, "next"
     parametresiyle geri dönüş) + `(protected)/` route group'u
@@ -467,10 +475,15 @@ sadece dosya yerleşimi/mimari:
   `ConfirmDeleteDialog`'u (bkz. madde 9) HİÇ DEĞİŞTİRMEDEN yeniden
   kullanıyor — `id` prop'una bir DB satırı yerine Storage path'i
   veriliyor, bileşenler generic olduğu için farkı bilmiyor.
-- **Kapsam:** Sadece `"projects"` bucket'ı kuruldu. `services`/`hero`/
-  `about`/`testimonials`/`team` için görüntüleme kodu zaten bucket adı
-  bekliyor (bkz. `GUVENLIK.md` madde 11) ama bucket'ların kendisi henüz
-  yok — aynı desen ileride tekrarlanabilir.
+- **Kapsam *(güncellendi: 2026-08-21)*:** Bu paragraf 2026-08-14'te
+  yazıldı ve o gün doğruydu — ama 2026-08-18'de kalan 5 bucket
+  (`services`/`hero`/`about`/`testimonials`/`team`) migration'la kuruldu
+  ve yükleme akışı 8 panel ekranına yayıldı. Yani **6 bucket'ın hepsi
+  kurulu**; bu maddedeki desen artık "ileride tekrarlanabilir" değil,
+  fiilen tekrarlanmış durumda. Aynı tekrar 2026-08-20 denetiminde mimari
+  borç olarak da kaydedildi (9 kopyalı `imageActions`, bkz. `DURUM.md`
+  "Sıradaki adım" madde 15) — desen çalışıyor ama tek bir fabrikaya
+  indirilmeyi bekliyor.
 
 ## 12. Mesajlar: CRUD-Dışı Bir Varlık İçin Uyarlanmış Desen *(2026-08-14 eklendi)*
 

@@ -21,7 +21,8 @@ yerine geçmez.*
 > | Varyantı olan bölümler | `lib/sections/variantOptions.ts` → `SECTION_VARIANT_OPTIONS` (şu an 5 bölüm, her birinde 2) |
 > | Panel içerik ekranları | `app/panel/(protected)/icerikler/page.tsx` (şu an 7 kart) |
 > | Görsel yükleme ekranları | `imageActions.ts` dosyalarının sayısı (şu an 8) |
-> | Birim test sayısı | `npm run test:unit` çıktısındaki son satır (şu an 95) |
+> | Birim test sayısı | `npm run test:unit` çıktısındaki son satır (şu an 120) |
+> | Lighthouse skorları | canlı adrese karşı YENİ bir ölçüm — ziyaretçi sitesinin kodu değiştiyse eski tablo geçersizdir |
 
 ---
 
@@ -127,7 +128,7 @@ konusu olarak konuşulabilir:
    yükleme 8 ekranda mevcut: Ana Görsel, Hakkımızda, Hizmetler,
    Projeler, Referanslar, Ekip, Tema (logo/favicon) ve Ayarlar (sosyal
    medya paylaşım görseli).
-4. **Otomatik testler** — 95 birim test + 3 uçtan uca senaryo testi
+4. **Otomatik testler** — 120 birim test + 3 uçtan uca senaryo testi
    (ziyaretçi akışı, yönetici akışı, yetkisiz erişim engeli) — her yeni
    değişiklikte tekrar çalıştırılıp ürünün bozulmadığından emin
    olunabilir. Bu 3 senaryo, ürünün gerçek bir canlı adrese karşı da
@@ -154,6 +155,13 @@ konusu olarak konuşulabilir:
    sayıda görsel eklenirse) sayılar bir miktar değişebilir, ama mimari
    (statik üretim, resim optimizasyonu, erişilebilirlik altyapısı)
    zaten bu skorları destekleyecek şekilde kuruldu.
+
+   ⚠️ **Ölçümün tarihi önemli:** 2026-08-21'de ziyaretçi sitesinin
+   görsel katmanı baştan değiştirildi (tam ekran hero + degrade,
+   `--text-display` clamp token'ı, 7 bölümün zemini, İstatistikler'in
+   yeniden yapılandırılması, 5 fotoğraf kabının 3:2'ye alınması).
+   Yukarıdaki tablo bu değişikliklerden ÖNCEKİ ölçümdür ve sonrasında
+   yeniden ölçülmedi. Teslimden önce canlı adrese karşı tekrarlanmalı.
 7. **Kurulum betiği ve kılavuzu** — yeni bir müşteri için veritabanı +
    içerik altyapısını tek bir komutla kuran bir betik + adım adım
    yazılı kılavuz (`docs/KURULUM.md`).
@@ -235,8 +243,9 @@ gelire geçişin standart yoludur.
 
 ## Ürünün Rakiplerden Farkı (3 Madde)
 
-Gerçek bir rakip analizine dayanıyor (8 inşaat/mimarlık firma sitesi
-incelendi, bkz. `docs/rakip-analizi.md`):
+Gerçek bir rakip analizine dayanıyor — 8 inşaat/mimarlık sitesinin
+bölüm yapısı tek tek çıkarıldı, ayrıca görsel tasarım için 93 siteye
+erişilen ikinci bir tarama yapıldı (bkz. `docs/RAKIP-ANALIZI.md`):
 
 1. **Kendi kendine yönetilebilir** — Küçük/orta ölçekli firma
    sitelerinin çoğu statiktir; her içerik değişikliği için bir

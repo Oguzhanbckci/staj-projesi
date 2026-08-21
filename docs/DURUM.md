@@ -15,7 +15,272 @@ geçmişi) oku. Yeni bir müşteri kurulumu yapılacaksa `KURULUM.md`'ye
 (sıfırdan kurulum, geliştirici için), panelin günlük kullanımı için
 `MUSTERİ-KILAVUZU.md`'ye (teknik olmayan okuyucu için) bakılır.
 
-**Son güncelleme:** 2026-08-20 (on birinci oturum) — **Baştan aşağı mentör
+**Son güncelleme:** 2026-08-21 (on ikinci oturum) — **İkinci kapsamlı
+denetim koşuldu ve çıkan 10 iş paketinin tamamı bitirildi.**
+
+**Denetim:** 8 boyutta paralel tarama (regresyon, mobil, koyu tema,
+performans, ürün boşluğu, teslim hazırlığı, veri bütünlüğü, açık madde
+doğrulama) + her bulgu, varsayılanı "bu bulgu yanlış" olan şüpheci bir
+ajandan geçti. **77 bulgu üretildi, 62'si sağ çıktı, 15'i çürütüldü.**
+Workflow `.claude/workflows/kapsamli-proje-denetimi-2.js` olarak kayıtlı
+(bir önceki oturumda başlatılmış ama terminal kapandığı için sıfır sonuç
+üretmişti; bu oturumda baştan koşuldu).
+
+**Denetimin iki önemli özelliği:** (a) mobil ve koyu tema bugüne kadar
+HİÇ denetlenmemişti — mobil bulguları tahminle değil, projenin kendi
+derlenmiş CSS'i ve gerçek Geist fontuyla Chromium'da 320-1280px arası
+ölçülerek üretildi; (b) denetimin bir önerisi YANLIŞ çıktı ve kontrol
+edilerek yakalandı (aşağıda, madde 7).
+
+**Bitirilen 10 iş paketi:**
+
+1. **Kurulum artık gerçekten çalışıyor.** `supabase db push` boş bir
+   Supabase projesinde foreign key hatasıyla düşüyordu: üç migration'daki
+   dört demo-veri insert'i sabit tenant UUID'lerine FK'liydi ve o
+   satırları yaratan tek yer `seed.sql`, `db push` ise onu çalıştırmıyor.
+   Bugüne kadar görünmemesinin sebebi, 2026-08-19'daki "sıfırdan
+   kurulum"un yeni bir MAKİNE kurulumu olması — yeni bir veritabanı değil.
+   Bloklar `where exists (select 1 from public.tenants ...)` ile tenant
+   varlığına bağlandı; yeni kurulumda sessizce atlanıyorlar (demo veri
+   zaten yeni müşteride istenmiyor).
+2. **`next.config.ts` görsel host'u env'den türetiliyor.** Eski
+   müşterinin Supabase ref'i sabit yazılıydı; yeni müşteride panelden ilk
+   logo yüklendiği an `next/image` "hostname is not configured" fırlatıyordu
+   ve logo Navbar'da olduğu için etki TÜM sayfalardı. Aynı env varsayımı
+   2026-08-19'da CSP satırında düzeltilmiş, bu satır o düzeltmenin dışında
+   kalmıştı — projenin tekrar eden kalıbı.
+3. **Kurulum belgesi ve şablon paketi (9 düzeltme).** `KURULUM.md`'de
+   `page_sections` sayısı 10 → 8, Adım 8.2'ye `RESEND_API_KEY` +
+   `CONTACT_NOTIFICATION_FROM_EMAIL`, doğrulama listesine e-posta ve görsel
+   yükleme kontrolleri, "görsel yükleme desteklenmiyor" satırı tersine
+   çevrildi (`GUVENLIK.md` madde 11'deki aynı eskimiş bilgiyle birlikte).
+   `setup-new-customer.sh` firma adındaki kesme işareti ve ampersandı
+   kaçırıyor — öncesinde "Kaya & Ortakları" adı veritabanına
+   "Kaya __TENANT_NAME__ Ortakları" olarak SESSİZCE yazılıyordu; kaçırma
+   gerçek girdilerle test edildi. `types:generate` sabit proje ref'inden
+   kurtarıldı: yeni `scripts/generate-types.mjs` ref'i
+   `NEXT_PUBLIC_SUPABASE_URL`'den türetiyor ve çıktıyı yalnızca komut
+   BAŞARILIYSA yazıyor (eski `>` yönlendirmesi, CLI hata verdiğinde geriye
+   boş bir tip dosyası bırakıyordu).
+4. **Sessiz veri kaybının beş yolu kapatıldı.**
+   `contact_sections.is_published` hiçbir kod yolundan yazılmıyordu ama
+   ziyaretçi sorgusu ona bakıyordu — panelden oluşturulan bir iletişim
+   kaydı Footer'da ve /iletisim'de HİÇ görünmüyor, panelden de
+   düzeltilemiyordu. Logo/favicon/OG yüklemeleri hâlâ `.update()`
+   kullanıyordu (2026-08-20'deki upsert düzeltmesi bu üçüne taşınmamıştı;
+   üstelik onları koruduğu sanılan `if (!current)` bekçisi, sorgu nested
+   embed yaptığı için hiç işlemiyordu). Hero varyant seçimi ölüydü
+   (`page_sections.variant` her zaman kazanıyor) — seçim kaldırıldı, tek
+   doğruluk kaynağı Sayfa Düzeni oldu. `tenants.theme_mode` panelden
+   yazılamıyordu — Tema ekranına "Sitenin Varsayılan Teması" kontrolü
+   eklendi ve önizleme sabit "light" yerine gerçek değeri kullanıyor.
+   Hakkımızda değerlerindeki ayraç normalizasyonu yazılan metni
+   değiştiriyordu ("2010 - 2024" → "2010 — 2024"); artık yalnızca İLK
+   ayraçta bölünüyor.
+5. **Mobil paketi (9 düzeltme).** En ağırı: `PanelShell`'in içerik
+   sütununda `min-w-0` olmadığı için üç tablonun `overflow-x-auto`
+   sarmalayıcısı HİÇ devreye girmiyordu — 320px'de sütun 628.7px'e çıkıp
+   sayfayı 309px yatay kaydırıyordu. Ayrıca sabit başlık ölçekleri
+   kademelendi (SectionHeader/CtaSection/HeroVariantB), İstatistikler'in
+   sütun tabanı 12rem'e çıktı (gerçek "1.200+" değeri komşu sütunla
+   çakışıyordu), mozaik satır yüksekliği dar ekranda büyütüldü (fotoğraf
+   55px'lik bir şeride iniyordu), proje modalı `vh` yerine `svh`,
+   Navbar'da uzun firma adı için `truncate`, proje filtre şeridi mobilde
+   kaydırmalı hâle geldi.
+6. **Zod ziyaretçinin tarayıcısından çıkarıldı.** Ana sayfa JS'inin
+   %35,5'i (283.405 bayt ham / 63.885 gzip) saf zoddu ve tarayıcıda tek
+   bir şema çalışmıyordu — doğrulama modülleri zod şemasıyla düz etiket
+   sabitlerini aynı dosyada tutuyor, istemci bileşenleri yalnızca
+   sabitleri alıyor ama zod da beraberinde geliyordu. 11 modül `<ad>.ts`
+   (şema) ve `<ad>Fields.ts` (zod'suz sabitler) olarak ayrıldı.
+   **Doğrulandı:** `.next/static` altındaki HİÇBİR istemci parçasında
+   artık zod yok.
+7. **Koyu tema kontrastı.** Kök sorun tek token'ın iki iş yapmasıydı:
+   `--color-neutral-300` hem ince bölüm ayraçlarını (bilinçli olarak
+   sessiz) hem form/buton kenarlarını (WCAG 1.4.11: 3:1 şart) çiziyordu.
+   Rol ikiye ayrıldı; yeni `--color-control` (açık `#828d9e`, koyu
+   `#6b7688`) iki temada da her iki yüzeye karşı 3:1'i geçiyor. Sayfa
+   Düzeni şemalarındaki `neutral-200/400` ise TANIMSIZ tonlardı ve
+   Tailwind'in sabit gri skalasına düşüp temadan bağımsız kalıyordu;
+   giriş sayfasının token override listesinde `--color-brand` eksikti
+   (buton "modern-koyu" ön ayarında 1.90:1 ile okunmuyordu).
+   **Denetimin yanlış önerisi burada çıktı:** odak halkası offseti için
+   "`:root`'a `--tw-ring-offset-color` yaz" deniyordu; build çıktısındaki
+   `@property` tanımı `inherits: false` olduğu için bu hiçbir öğeye
+   ulaşmazdı. Doğru çözüm `ring-offset-surface` yardımcı sınıfı.
+8. **Regresyon cilası.** Panelin hero varyant açıklaması ve şeması hâlâ
+   "ortalanmış başlık" diyordu (site 2026-08-21'de sol-alta alınmıştı);
+   İstatistikler'in tam genişlik `border-y`si ile Container içindeki
+   ayraç çizgisi arka arkaya iki farklı genişlikte çizgi üretiyordu;
+   ayraç çizgisi bölümün KONUMUNU bilmiyordu (ilk sıraya gelince navbar
+   altında sahipsiz bir çizgi kalıyordu) — `data-section-rule` + tek CSS
+   kuralıyla çözüldü, 10 bileşene prop threadlemeye gerek kalmadı.
+   HeroVariantB bu tasarım turunun hiçbir iyileştirmesini almamıştı.
+9. **Proje durum ekseni.** `projects.status`
+   (`devam`/`tamamlandi`/`planlanan`, nullable + check) — rakip
+   analizinin "sektörün en evrensel bilgisi" dediği ama hiç iş maddesine
+   dönüşmemiş eksen. Kart rozeti, filtre şeridi, panel alanı ve detay
+   künyesi birlikte eklendi.
+10. **Proje detay sayfası + katalog.** `projects.slug` (not null, tenant
+    başına unique; mevcut kayıtlar migration'da geri dolduruldu) ve
+    `/projeler/<slug>` statik detay sayfası. Modal SİLİNDİ, kartlar gerçek
+    `<Link>` oldu. Ana sayfa artık ilk 6 projeyi gösteriyor + "Tüm
+    projeleri gör" bağlantısı; filtreler `/projeler` katalog sayfasında —
+    yan kazanç olarak ana sayfa bu bölüm için hiç istemci JS'i indirmiyor.
+    `sitemap.xml` 3 URL'den 4 + proje sayısı kadar URL'ye çıktı. Ayrıca
+    panele **kurulum kontrol listesi** eklendi: Özet ekranı artık şablondan
+    gelen yer tutucuların hangilerinin HÂLÂ yayında olduğunu söylüyor
+    (kurallar `lib/panel/setupChecklist.ts`'te saf fonksiyon, testli).
+
+**Slug üretimi iki yerde, aynı kuralla:** `lib/slug.ts` (panel) ve
+migration'daki SQL (geri doldurma). İkisinde de Türkçe büyük harfler
+DOĞRUDAN küçük ASCII'ye eşleniyor, `lower()`/`toLowerCase()`'e
+bırakılmıyor — Türkçe yerelde `lower('I')` = `'ı'` olduğu için sonuç
+aksi hâlde yerele bağlı olurdu.
+
+**Ayrıca:** `priority` prop'u Next.js 16.0.0'da kullanımdan kaldırılmış
+(belge sürüm tablosundan doğrulandı) — hero ve proje detay görseli
+`preload`'a, kart ızgaraları ise `loading="eager"`e çevrildi. İkinci
+ayrım denetim bulgusuydu: kartlar `<head>`'e preload bağlantısı koyup
+sayfanın gerçek LCP öğesiyle yarışıyordu.
+
+**Kural değişikliği:** Kullanıcı isteğiyle commit granülerliği değişti —
+iş commit'leri artık alt-değişiklik başına değil **iş paketi başına** tek
+commit. `AI-KURALLARI.md` madde 8.2 güncellendi, gerekçe
+`KARAR-GUNLUGU.md`'de (2026-08-21).
+
+**Yeni testler:** `lib/theme/globalsTokens.test.ts` (token kontrast
+değişmezleri — ayracın 3:1'in ALTINDA kalmasını da şart koşuyor, biri
+"kontrastı düzeltiyorum" diye sessiz ayraç tasarımını bozmasın),
+`lib/panel/setupChecklist.test.ts`, `lib/slug.test.ts`. Birim test 95 →
+**120**, test dosyası 10 → 13.
+
+**Doğrulama:** Her iş paketinden sonra `npm run lint`, `npx tsc --noEmit`,
+`npm run build` ve `npm test` kullanıcı tarafından çalıştırıldı, hepsi
+temiz geçti. İki migration (`20260821120000_add_project_status`,
+`20260821130000_add_project_slug`) Supabase'e uygulandı ve
+`npm run types:generate` ile tipler yenilendi.
+
+**BİR SONRAKİ OTURUM İÇİN:** Denetimden çıkan iş listesi bitti. Açık
+duranlar aşağıdaki "Sıradaki adım" madde 11-21'de — özellikle **madde 11**
+(panel giriş hız sınırının Supabase Auth üzerinden atlatılabilmesi +
+`requireAdminUser`'ın admin doğrulamaması), **madde 13** (KVKK paketi),
+**madde 14** (İstatistikler/Eylem Çağrısı panelden düzenlenemiyor, Medya
+Kütüphanesi 6 bucket'tan 1'ini listeliyor), **madde 15** (mimari borç:
+~2.600 satır kopya kod) ve **madde 20** (Vercel'de `RESEND_API_KEY` ve
+`ACTIVE_TENANT_DOMAIN` hâlâ tanımlı değil — kullanıcı eylemi).
+
+**Önceki güncelleme:** 2026-08-20/21 (on birinci oturum, ikinci yarı) — **Ziyaretçi
+sitesi tasarımı, 93 gerçek site incelenerek yeniden kuruldu.** Kullanıcı "ana
+sayfa çok basit ve sade kalmış" dedi ve gerçek inşaat sitelerinin gezilmesini
+istedi. **8 commit atıldı ve `origin/main`'e push'landı.**
+
+**Araştırma:** 7 ayrı kategoride paralel tarama — Türkiye'den büyük taahhüt
+firmaları (9), konut geliştiricileri ve yerel müteahhitler (11), mimarlık
+ofisleri (13), uluslararası orta ölçekli müteahhitler (13), ödüllü siteler
+(16), artı hero ve galeri için ayrı derinlemesine taramalar. **93 siteye
+gerçekten erişildi.** Tam bulgu listesi `RAKIP-ANALIZI.md`'ye "Görsel Tasarım
+Analizi" başlığıyla eklendi (o dosya önceden yalnızca "hangi bölümler var"
+tablosuydu).
+
+**ARAŞTIRMANIN TERSİNE ÇEVİRDİĞİ VARSAYIM — bu oturumun en önemli çıktısı:**
+Gerçek inşaat siteleri bizimkinden **daha sade**, daha süslü değil. Ödüllü 16
+sitenin hiçbirinin HTML'inde açık bir vurgu rengi yok; hero'da CTA sayısı 0
+veya 1; mimarlık ofislerinin hiçbirinde dönüşümlü zemin yok; sayı bloklarında
+ikon yok. Yani "basit kalmış" şikayetinin cevabı görsel öğe eklemek DEĞİLDİ.
+Gerçek teşhis: **onların hiç kullanmadığı şablon işaretlerini kullanıyorduk
+(dekoratif dalga, iki eşit hero butonu, iki özdeş marka bandı, ortalanmış
+kompozisyon), hepsinin kullandığı kanıt araçlarını kullanmıyorduk.**
+
+**Uygulanan 8 değişiklik (hepsi migration'sız ve `use client`'sız):**
+1. **Hero yeniden kompoze edildi** — metin ortadan sol-alta (`Container`
+   içinde, yani sol kenarı diğer TÜM bölümlerle hizalı), `min-h-[80vh]` →
+   `85svh`, düz `bg-black/40` → alta doğru koyulaşan degrade, ikinci CTA
+   butondan alt çizgili metin bağlantısına indirildi, **dekoratif SVG dalga
+   silindi.** Dalga aynı zamanda gizli bir hataydı: `text-surface-raised` ile
+   boyanıp "sonraki bölüm mutlaka surface-raised" varsayıyordu, oysa bölüm
+   sırası panelden değiştirilebiliyor.
+2. **Zemin sistemi tek yüzeye indi** — 7 bölümde `bg-surface-raised` →
+   `bg-surface`. Bunun görünürden önemli sonucu: `Card` da `bg-surface-raised`
+   kullanıyordu, yani **kartlar bölüm zeminiyle birebir aynı renkti ve nesne
+   olarak okunmuyordu.** Dönüşümlü zemin ayrıca zaten tutarsızdı (Projeler ve
+   Referanslar arka arkaya aynı zeminde) ve sıra değişince tamamen bozuluyordu.
+   Yerine `SectionHeader`'a `rule` prop'u ile ince ayraç çizgisi geldi —
+   **sıradan bağımsız.**
+3. **`SectionHeader` tipografisi** — eyebrow `text-brand` → `text-text-muted` +
+   geniş harf aralığı; başlık `font-bold` → `font-semibold` + `tracking-tight`.
+4. **İstatistikler marka bandından çıktı** — `bg-brand` tam genişlik bant →
+   nötr zemin + üst/alt ince çizgi, rakamlar 49→61px, `<p>` çiftleri gerçek
+   `<dl>/<dt>/<dd>` oldu. Sayfada artık TEK marka bandı var (Eylem Çağrısı).
+5. **Fotoğraf oranları 3:2'ye eşitlendi** (5 kap). Kullanıcı "resimler aşırı
+   büyütülmüş" dedi; sebep `object-cover`'ın kabı doldurmak için görseli
+   büyütüp kırpmasıydı — yüklenen fotoğraflar 3:2 (1264×848), kaplar 4:3 ve
+   16:9'du. Karar `TASARIM-SISTEMI.md` madde 5.1'e yazıldı.
+6. **Hakkımızda yeniden yapılandırıldı** — değerler listesi iki sütunlu
+   ızgaranın DIŞINA, tam genişliğe alındı (içerideyken sol sütun ~675px,
+   görsel ~350px oluyordu: "yamuk duruyor" geri bildirimi), `items-center` →
+   `items-start`, `line-clamp-6` ve `line-clamp-1` kaldırıldı, değerler
+   "başlık kalın / açıklama soluk / her maddeye üst çizgi" biçimine geçti.
+7. **Ekip kartı unvanı** — `text-brand` 13px metinde koyu temada 3.56:1
+   veriyordu (AA eşiği 4.5:1). Marka rengi artık yalnızca etkileşimli
+   öğelerde ve WCAG "büyük metin" (3:1) eşiğine giren 61px rakamlarda.
+8. **CI/panel düzeltmeleri** — aşağıdaki veri kaybı hatası.
+
+**BU OTURUMDA BULUNAN GERÇEK VERİ KAYBI HATASI:** Panel → Tema → Çalışma
+Saatleri alanı tek satırlık bir `<input>`'tu. `working_hours` migration'da
+satır sonlarıyla dolduruluyor (`chr(10)`) ve İletişim sayfası
+`whitespace-pre-line` ile 3 satır basıyor — ama **HTML'de bir input satır sonu
+taşıyamaz.** Tema ekranı bir kez kaydedildiği anda, bu alana hiç dokunulmasa
+bile satır sonları siliniyor ve değer "…18:00Cumartesi: 09:00 - 13:00Pazar:
+Kapalı" gibi yapışık tek satıra dönüşüyordu. Canlıda gerçekten olmuştu, ekran
+görüntüsünde görüldü. `TextareaField`'a çevrildi. **Kesirli referans puanı
+hatasıyla aynı sınıf: panel gidiş-dönüşü veriyi sessizce bozuyor** — bu
+desene karşı uyanık olunmalı.
+
+**Hakkımızda metni yazıldı.** İkinci bir araştırma turuyla (38 gerçek
+"Hakkımızda" sayfası: yerel/orta ölçekli 12, büyük 9, konut geliştirici 8,
+uluslararası 9) sektörün metin kalıbı çıkarıldı ve Akme'nin GERÇEK verilerine
+sadık bir metin + 5 maddelik değerler listesi önerildi, kullanıcı panele
+girdi. Kalıbın özü: **sıfat iddiadır, fiil taahhüttür**; her iddia bir çapaya
+(yıl, şehir adı, sayı) bağlanır; şehir saymak sayı saymaktan ikna edicidir;
+ENKA'nın metni 110 kelimedir. Kaçınılan klişelerin tam listesi
+`RAKIP-ANALIZI.md`'de — incelenen 10 büyük firmanın hiçbiri "müşteri
+memnuniyeti odaklı", "kaliteden ödün vermeden", "sektörün öncüsü" veya
+"hayallerinizi gerçekleştiriyoruz" kullanmıyor.
+
+**Kullanıcının kendi yaptıkları (panelden, kod değil):** Hero'ya fotoğraf ve
+buton, Hakkımızda'ya fotoğraf + metin + değerler, İstatistikler'i Hero'nun
+hemen altına taşıma (araştırmanın "hero çok boş hissini kıran en yaygın
+hamle" dediği şey), Hizmetler'i "İkonlu Kart" varyantına alma.
+
+**Hizmetler varyantı neden değişti:** Kullanıcı hizmetlere görsel yükledi ama
+yüklenenler 20-37 KB'lık **çizgi ikon PNG'leriydi**, fotoğraf değil.
+`object-cover` şeffaf zeminli bir ikonu kabı doldurmak için ~300px'e
+büyütüyordu. Kod doğru çalışıyordu; yanlış olan fotoğraf yuvasına ikon
+konmasıydı. Çözüm olarak bölüm "İkonlu Kart" varyantına alındı — o varyant
+görsel kullanmaz, her hizmetin kendi `icon` alanını gösterir.
+
+**Doğrulama:** `npm run lint`, `npm run build` (10/10 sayfa), `npm test`
+(95 birim + 3 e2e) — hepsi temiz. Tasarım her adımda kullanıcının gerçek
+tarayıcı ekran görüntüleriyle doğrulandı (bu ortamda `localhost`'a
+erişilemiyor, bilinen sınırlama — 11 ekran görüntüsü tek tek incelendi).
+
+**BİR SONRAKİ OTURUM İÇİN:** Tasarım tarafında planlanan iş kalmadı. Açık
+duran işler: (a) denetimden kalan 42 madde, `DURUM.md` madde 11-19; (b)
+`MUSTERİ-KILAVUZU.md` bu oturumda değişen üç panel akışını (değerler
+biçimi, çalışma saatleri textarea'sı, hizmet varyantı) henüz anlatmıyor —
+teslim öncesi güncellenmeli; (c) Vercel'de `RESEND_API_KEY` ve
+`ACTIVE_TENANT_DOMAIN` tanımlı değil (bkz. madde 20-21).
+
+**Bu oturumda ERTELENEN, tekrar gündeme getirilebilecek fikirler:** Bölüm
+varyantı kütüphanesini genişletmek (about/stats/cta/team'e ikinci varyant) —
+üç tasarım yönünden biriydi, **bilinçli olarak elendi**: varyantlar hiçbir
+TEK siteyi güzelleştirmez, yalnızca siteleri birbirinden farklı kılar; ayrıca
+500+ kombinasyon WCAG doğrulamasını imkânsızlaştırırdı. Proje detayının
+modal yerine gerçek sayfa olması (incelenen 93 sitenin hiçbiri modal
+kullanmıyor, ayrıca her proje ayrı indekslenebilir sayfa demek — SEO kazancı).
+
+**Önceki güncelleme:** 2026-08-20 (on birinci oturum) — **Baştan aşağı mentör
 denetimi.** Kullanıcının isteğiyle depo sekiz boyutta (güvenlik, Next.js 16
 uyumu, mantık doğruluğu, erişilebilirlik, test, mimari/kod tekrarı,
 doküman-kod tutarlılığı, SEO/performans/KVKK) paralel tarandı ve **her bulgu,
@@ -2057,6 +2322,16 @@ işaretliyor, daha kesin bir ikinci katman. Detay: `SEO-PERFORMANS.md`.
     kimliğini kodda doğrula.
 
 12. **(YENİ — 2026-08-20 denetimi.)** Erişilebilirlikte otomatik denetimin
+    **(2026-08-21 güncellemesi — TEŞHİS DEĞİŞTİ.)** Bu maddedeki
+    "`text-brand` 13px'te 3.56:1" örneği artık geçersiz (o kullanımlar
+    2026-08-21'de düzeltilmişti). Yeni denetim AA ihlalini iki BAŞKA
+    yerde buldu: `ContactSection`'daki üç iletişim bağlantısı 16px'te
+    4.26:1 ve proje filtre butonunun hover hâli 13px'te 3.10:1. Ayrıca
+    form/buton KENARLARI (WCAG 1.4.11, eşik 3:1) bu oturumda ayrı bir
+    `--color-control` token'ıyla çözüldü. **Yedi erişilebilirlik alt
+    maddesi (h1 garantisi, odak dönüşü, odak tuzağı seçicisi, 5 formda
+    eksik ref, SSS akordiyonu, main landmark, Toast aria-live) AYNEN
+    duruyor.**
     (Lighthouse 100) göremediği açık maddeler: ana sayfada `<h1>` garantisi
     yok (tek `<h1>` Hero'dan geliyor ve Hero, Sayfa Düzeni'nde
     **gizlenebilir** bir satır — Navbar/Footer gibi "Zorunlu" değil; en
@@ -2090,6 +2365,15 @@ işaretliyor, daha kesin bir ikinci katman. Detay: `SEO-PERFORMANS.md`.
     bildirimi ekle" maddesi bu bulguya atıfla güncellenmeli.
 
 14. **(YENİ — 2026-08-20 denetimi.)** Ürün boşluğu, PRD madde 3.4'te sözü
+    **(2026-08-21: KISMEN KAPANDI.)** Panele **kurulum kontrol listesi**
+    eklendi: Özet ekranı artık şablondan gelen yer tutucuların
+    hangilerinin HÂLÂ yayında olduğunu, hangi varlıkların (logo/favicon/
+    OG/SEO açıklaması) eksik kaldığını söylüyor ve her maddeyi ilgili
+    ekrana bağlıyor. **Kalanlar aynen duruyor:** İstatistikler ve Eylem
+    Çağrısı panelden hâlâ düzenlenemiyor (yalnızca SQL ile), Medya
+    Kütüphanesi 6 bucket'tan 1'ini listeliyor ve ekran metni hâlâ yanlış
+    bilgi veriyor, silme eylemleri Storage'a dokunmadığı için yetim dosya
+    bırakıyor.
     verilmiş ama panelde yok: **İstatistikler** ve **Eylem Çağrısı**
     içerikleri hiçbir ekrandan düzenlenemiyor. Sonuç: müşterinin canlı
     sitesinde kendi firması hakkında şablondan gelen uydurma rakamlar kalıcı
@@ -2127,6 +2411,15 @@ işaretliyor, daha kesin bir ikinci katman. Detay: `SEO-PERFORMANS.md`.
     bloklarında `console.error` bile yok.
 
 17. **(YENİ — 2026-08-20 denetimi.)** Doküman-kod sapması, 9 nokta. Öncelik
+    **(2026-08-21: BÜYÜK ÖLÇÜDE KAPANDI.)** `MUSTERİ-KILAVUZU.md` ve
+    `TESLIM-PAKETI.md` zaten `1ec0744`'te düzeltilmişti. Bu oturumda:
+    `KURULUM.md` (6 nokta), `GUVENLIK.md` madde 11, `TASARIM-SISTEMI.md`
+    5.1 ("istisnası yok" iddiası yazıldığı anda yanlıştı),
+    `VERİ-MODELİ.md` (migration listesi 20'de kalmıştı, 21-28 eklendi;
+    `contact_sections.is_published` ve `hero_sections.variant` notları),
+    `SEO-PERFORMANS.md` (sitemap içeriği), `README.md` (2 eksik doküman +
+    Node sürümü). **Kalan:** `TEMA-MIMARISI.md` hâlâ artık var olmayan
+    FOUC mekanizmasını anlatıyor; `MIMARI.md` madde 11 "Kapsam" paragrafı.
     sırası: **`MUSTERİ-KILAVUZU.md`** (4 noktada uyuşmuyor, birinde ürünün
     yaptığının TERSİNİ söylüyor — müşteriye verilen belge) ve
     **`TESLIM-PAKETI.md`** (4 somut sayı/iddia gerçeğin dışında — aynı
@@ -2145,6 +2438,15 @@ işaretliyor, daha kesin bir ikinci katman. Detay: `SEO-PERFORMANS.md`.
     `AboutSection` ve `HeroVariantB`'de duruyor).
 
 18. **(YENİ — 2026-08-20 denetimi.)** Kalan SEO/performans maddeleri:
+    **(2026-08-21: KISMEN KAPANDI.)** `priority` prop'u kaldırıldı — hero
+    ve proje detay görseli `preload`, kart ızgaraları `loading="eager"`
+    (kartların `<head>`'e preload koyup gerçek LCP ile yarışması bulgusu).
+    Sitemap artık proje sayfalarını da bildiriyor. **Kalanlar:** `/api/og`
+    önbelleksiz, `latin-ext` preload yok, OG alanları eksik
+    (`og:type`/`og:locale`/`og:site_name`/`og:url` — proje detay sayfası
+    hariç), proxy matcher tüm trafikte `getUser()`, panelde `loading.tsx`
+    yok, `localBusiness.ts` köşeli parantezli yer tutucuları elemiyor
+    (ama panel Özet ekranı artık bunları KULLANICIYA bildiriyor).
     `/api/og` sitedeki tek dinamik public rota ve hiç önbelleklenmiyor (her
     istekte 2 Supabase sorgusu + PNG üretimi — kimlik doğrulamasız kaynak
     tüketim kapısı); `priority` prop'u Next.js 16'da kullanımdan kalktı ve
@@ -2159,6 +2461,13 @@ işaretliyor, daha kesin bir ikinci katman. Detay: `SEO-PERFORMANS.md`.
     hiç `loading.tsx` yok.
 
 19. **(YENİ — 2026-08-20 denetimi.)** Kalan test maddeleri, risk sıralı:
+    **(2026-08-21: KISMEN KAPANDI.)** Üç yeni test dosyası eklendi —
+    `lib/theme/globalsTokens.test.ts` (b maddesinin ruhu: token kontrast
+    değişmezleri, `globals.css`'i kaynaktan okuyup eşikleri doğruluyor),
+    `lib/panel/setupChecklist.test.ts`, `lib/slug.test.ts`. Birim test 95 →
+    120. **Kalanlar:** (a) `requireAdminUser` taraması, (c) iletişim formu
+    e2e'sinin DB doğrulaması, (d) admin e2e'sinin `is_published: false`
+    yazması, (e) bileşen render testleri.
     (a) 19 dosyadaki 40+ sunucu eyleminde `requireAdminUser()` çağrısını
     doğrulayan hiçbir test yok — bunu bir test değil bir **tarama** ile
     çözmek daha ucuz: `app/panel/**/*actions.ts` dosyalarını okuyup her
@@ -2174,6 +2483,42 @@ işaretliyor, daha kesin bir ikinci katman. Detay: `SEO-PERFORMANS.md`.
     (e) jsdom + Testing Library kurulu ama sıfır bileşen testi var —
     `useDialogBehavior` ve `FormErrorSummary`'den başlanmalı, ikisi de bu
     denetimde hata çıkardı.
+
+20. **(YENİ — 2026-08-20, Vercel ortam değişkenleri doğrulandı.)**
+    `npx vercel env ls` ile canlı ortam tarandı. `NEXT_PUBLIC_SITE_URL`,
+    `NEXT_PUBLIC_SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` ve
+    `NEXT_PUBLIC_SUPABASE_ANON_KEY` tanımlı (Production + Preview). **İki
+    değişken EKSİK:**
+
+    - **`RESEND_API_KEY` yok** → iletişim formu e-posta bildirimi canlıda
+      HİÇ ÇALIŞMIYOR. `GUVENLIK.md` madde 10'da bu "henüz canlı
+      doğrulanmadı" diye duruyordu; artık doğrulandı, gerçekten devre dışı.
+      Veri kaybı YOK — mesaj `contact_messages`'a kaydediliyor, panelde
+      anlık bildirimle görünüyor; yalnızca e-posta kanalı kapalı.
+      **Karar gerekiyor:** ya anahtar eklenip özellik açılmalı, ya da
+      "panel yeterli, e-posta kullanılmıyor" diye `GUVENLIK.md`'ye bilinçli
+      karar olarak yazılmalı. Şu anki ara durum (kod var, doküman "açık
+      madde" diyor, canlıda kapalı) en kötüsü.
+    - **`ACTIVE_TENANT_DOMAIN` yok** → site çalışıyor ama
+      `lib/supabase/queries.ts`'teki `|| "akmeinsaat.com.tr"` yedeğine, yani
+      **kaynak koda gömülü demo değerine** dayanarak. `KURULUM.md` madde 8.2
+      bu değişkeni eklemeyi açıkça söylüyor ve sorun giderme tablosu yanlış
+      olursa "site tamamen boş açılır" diyor. Değişkenin tüm amacı,
+      yorumunda yazdığı gibi, her müşterinin kendi Vercel projesinde kendi
+      alan adını ayarlayıp kaynak kodda satır değiştirmemesi.
+
+    ⚠️ `NEXT_PUBLIC_*` değişkenleri build sırasında HTML'e gömülür —
+    değiştirdikten sonra **Redeploy** şart (Deployments → "..." → Redeploy).
+
+21. **(YENİ — 2026-08-20.)** Canonical adres yalnızca `getKnownSiteUrl()`
+    dolu olduğunda üretiliyor. İlk uygulamada `metadataBase`'e bağlıydı ve
+    yerelde `tenants.domain`'e düşüp var olmayan bir adrese işaret ediyordu;
+    **yanlış canonical, eksik canonical'dan zararlıdır** (arama motoruna
+    "bu sayfa kopya, aslı şu adreste" der ve hedef gerçek değilse sayfa
+    dizinden düşer). Bu yüzden yerel build'de ve CI'da canonical HİÇ
+    çıkmaz — beklenen davranış, hata değil. Canlıda
+    `NEXT_PUBLIC_SITE_URL` dolu olduğu için çıkıyor. Sonraki oturum
+    "canonical kaybolmuş" diye paniğe kapılmasın.
 
 ## Açık sorular
 

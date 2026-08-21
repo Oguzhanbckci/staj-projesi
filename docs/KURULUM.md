@@ -193,8 +193,11 @@ için doğru domain'i bulup betiği o değerle TEKRAR çalıştırmanız yeterli
 **✅ Doğru yaptığını nasıl anlarsın:** Terminalde "✅ Kurulum
 tamamlandı" mesajını görürsünüz. Ek doğrulama: Dashboard → **Table
 Editor**'de `tenants` tablosuna bakın, müşterinizin satırını görmelisiniz;
-`page_sections` tablosunda o tenant için **10 satır** olmalı (bu, en
+`page_sections` tablosunda o tenant için **8 satır** olmalı (bu, en
 kolay unutulan/atlanan tablo — 0 satırsa ana sayfa boş görünür).
+Neden 8: Ekip ve İletişim ana sayfa bölümü değil, ayrı sayfa —
+`page_sections`'a hiç eklenmezler (bkz. `supabase/setup/seed-template.sql`
+sonundaki not). Kesin sayı için o dosyadaki `page_sections` listesine bakın.
 
 ### 5. Admin (panel) hesabını oluşturun *(~2 dk)*
 
@@ -222,12 +225,15 @@ verification" DEĞİL).
    bir Personal Access Token oluşturun (yoksa/elinizde değilse).
 2. Terminalde: `$env:SUPABASE_ACCESS_TOKEN = "sbp_..."` (PowerShell)
    veya `export SUPABASE_ACCESS_TOKEN="sbp_..."` (bash).
-3. `package.json`'daki `types:generate` script'i **hâlâ eski proje
-   ID'sine sabit** (`--project-id vchodvviufmdwomkjrjb`) — yeni müşteri
-   için bunu YENİ projenin ID'siyle değiştirip çalıştırmanız, sonra
-   isterseniz eski haline geri almanız gerekir. Alternatif (dosyayı
-   değiştirmeden): `npx supabase gen types typescript --project-id
-   <yeni-proje-id> --schema public > types/database.types.ts`.
+3. `npm run types:generate` çalıştırın. Komut, Supabase proje ref'ini
+   `.env.local`'deki `NEXT_PUBLIC_SUPABASE_URL`'den kendisi türetir
+   (`scripts/generate-types.mjs`) — **`package.json`'da elle ID
+   değiştirmeniz GEREKMEZ.** Adım 3'te `.env.local`'i yeni projenin
+   değerleriyle doldurduysanız doğru veritabanına bakar.
+
+   *(2026-08-21'e kadar bu script eski müşterinin proje ID'sine sabitti
+   ve kılavuz "dosyayı değiştir, sonra geri al" diyordu — her kurulumda
+   tekrarlanan, kaza ile commit'lenmeye açık bir adımdı.)*
 
 **✅ Doğru yaptığını nasıl anlarsın:** `types/database.types.ts`
 dosyası yeniden yazıldı (dosyanın değişiklik zamanı güncellendi),
@@ -260,6 +266,14 @@ yapabildiğinizi de kontrol edin.
    `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `ACTIVE_TENANT_DOMAIN`'i tek tek
    ekleyin — **`E2E_ADMIN_EMAIL`/`E2E_ADMIN_PASSWORD`'ü EKLEMEYİN**,
    bunlar sadece yerel test için.
+
+   **Müşteriden bir Resend anahtarı alındıysa `RESEND_API_KEY` ve
+   `CONTACT_NOTIFICATION_FROM_EMAIL`'i de buraya ekleyin.** Bunlar
+   olmadan site ve panel sorunsuz çalışır, iletişim formu mesajı
+   veritabanına yazılır ve panelde görünür — yalnızca **e-posta
+   bildirimi kanalı sessizce kapalı kalır.** 2026-08-20'de canlı
+   ortamda tam olarak bu oldu: kod hazırdı, anahtar hiç girilmemişti
+   ve bunu yakalayan bir adım yoktu (bkz. `docs/DURUM.md` madde 20).
 3. **`NEXT_PUBLIC_SITE_URL`'i de MUTLAKA ekleyin** (bkz.
    `.env.local.example`, `lib/seo/getSiteUrl.ts`) — sitemap/robots.txt/
    paylaşım görseli/arama motoru yapısal verisinin (JSON-LD) DOĞRU
@@ -328,7 +342,13 @@ karşı sırayla:
       tekrar "Yayınla" yapıp geri geldiği doğrulanıyor.
 - [ ] `/iletisim` sayfasındaki form dolduruluyor, gönderiliyor,
       teşekkür mesajı görünüyor; panelin **Mesajlar** ekranında bu
-      mesaj görünüyor.
+      mesaj görünüyor. **`RESEND_API_KEY` girildiyse:** bildirim
+      adresine e-posta da ulaştı (ulaşmadıysa anahtar/gönderen adres
+      hatalıdır — mesajın kendisi kaybolmaz).
+- [ ] Panelden bir görsel (ör. Tema → Logo) yükleniyor ve canlı sitede
+      görünüyor. **Bu kontrolü atlamayın:** görsel host'u ortam
+      değişkeninden türetiliyor; yanlışsa hata ancak ilk görsel
+      yüklendiğinde ortaya çıkar, kurulum ve build temiz geçer.
 - [ ] Panelde **Tema** ekranından marka rengi değiştirilip sitede
       anında (kaydettikten sonra) yansıdığı görülüyor.
 - [ ] `curl.exe -I <canlı-adres>` ile güvenlik başlıklarının
@@ -347,7 +367,7 @@ hatalar ve çözümleri:
 | Hata | Belirti | Çözüm |
 |---|---|---|
 | **`ACTIVE_TENANT_DOMAIN` ≠ seed'deki alan adı** | Site tamamen boş açılır, hiçbir bölüm/veri görünmez, konsol hatası da vermez | `tenants` tablosundaki `domain` sütununu Table Editor'den kontrol edin, Vercel/`.env.local`'deki `ACTIVE_TENANT_DOMAIN` ile BİREBİR aynı olmalı (büyük/küçük harf dahil) |
-| **`page_sections` boş bırakıldı** | Ana sayfa boş — `tenants`/`services` gibi tablolarda veri VAR ama hiçbir bölüm render edilmiyor | Adım 4'teki kurulum betiğinin "Adım 3/3" (demo içerik) kısmının tamamlandığından emin olun; Table Editor'de `page_sections`'ta o tenant için 10 satır olmalı |
+| **`page_sections` boş bırakıldı** | Ana sayfa boş — `tenants`/`services` gibi tablolarda veri VAR ama hiçbir bölüm render edilmiyor | Adım 4'teki kurulum betiğinin "Adım 3/3" (demo içerik) kısmının tamamlandığından emin olun; Table Editor'de `page_sections`'ta o tenant için 8 satır olmalı (Ekip/İletişim ayrı sayfa olduğu için listede yoktur) |
 | **`npm run build` "does not exist in type" hatası veriyor** | Şemaya yeni bir kolon eklendi ama tipler yenilenmedi | Adım 6'yı (`types:generate`) atlamayın — bu proje geçmişinde defalarca yaşanmış, bilinen bir sıra: migration → tip yenileme → kod derlenir |
 | **Yanlış Supabase projesine bağlı çalıştırma** | `supabase db push` BAŞKA bir müşterinin (veya eski demo) veritabanını değiştirir | Her zaman `supabase projects list` ile hangi projeye bağlı olduğunuzu Adım 4'ten ÖNCE kontrol edin |
 | **SQL Editor'e yapıştırırken metin kesiliyor** | "syntax error" — genelde bir kelimenin ortasında biter (ör. "val" — "values" kesilmiş) | Sohbet penceresinden elle seçip kopyalamak yerine dosyayı yerel bir editörde açıp Ctrl+A / Ctrl+C ile TAMAMINI kopyalayın |
@@ -355,7 +375,7 @@ hatalar ve çözümleri:
 | **PowerShell'de `curl -I` çalışmıyor** | "Cannot find drive" gibi anlamsız bir hata | `curl.exe -I <adres>` yazın (sondaki `.exe` PowerShell'in kendi takma adını atlar) |
 | **`types:generate` "Unauthorized" hatası verir** | Token eksik/süresi dolmuş | Adım 6.1'deki adımı tekrarlayıp YENİ bir token oluşturun, aynı terminal penceresinde 6.2'yi tekrar çalıştırın |
 | **Ekip/İletişim sayfaları menüde eksik görünüyor** | `/ekip`/`/iletisim` boş/404 | Bu proje mimarisinde Ekip ve İletişim ana sayfa bölümü DEĞİL, ayrı sayfadır (`page_sections`'a hiç eklenmez) — bu normal, `Navbar`'da otomatik görünür |
-| **Servis/hero/hakkımızda/referans/ekip görseli yüklenemiyor** | Panelden görsel yüklemeye çalışınca hata | Şu an sadece `projects` ve `branding` Storage bucket'ları kurulu (bkz. `GUVENLIK.md` madde 11, bilinen bir açık madde) — diğer 5 içerik türü için görsel yükleme henüz desteklenmiyor, sadece metin girilebilir |
+| **Servis/hero/hakkımızda/referans/ekip görseli yüklenemiyor** | Panelden görsel yüklemeye çalışınca hata | 6 Storage bucket'ının hepsi migration'larla kuruluyor ve görsel yükleme **8 panel ekranında mevcut** (2026-08-18'den beri). Hata alıyorsanız `supabase db push`'un `20260818120000_create_remaining_storage_buckets.sql` dosyasını uyguladığını doğrulayın; kullanım için bkz. `MUSTERİ-KILAVUZU.md`, "Görsel Ekleme" |
 
 ---
 

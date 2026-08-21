@@ -482,10 +482,14 @@ ekliyor:
 Referanslar, Ekip — `ProjectImageUploader.tsx`/`imageActions.ts` ile
 BİREBİR aynı desende (aynı doğrulama/temizlik/yetkilendirme kuralları),
 bkz. `app/panel/(protected)/icerikler/{hizmetler,referanslar,ekip}/`.
-**Hero ve Hakkımızda hâlâ kapsam dışı** — bu ikisi için panelde hiçbir
-içerik düzenleme ekranı yok (sadece Sayfa Düzeni görünürlük/sıra
-yönetiyor), bucket kurulsa da bağlanacak bir form yok; bu, ayrı ve daha
-büyük bir görev (bkz. `docs/DURUM.md`, "Sıradaki adım" madde 1).
+**Hero ve Hakkımızda da 2026-08-18'de kapsama alındı** (dokuzuncu
+oturum) — ikisinin de kendi içerik düzenleme ekranı var
+(`/panel/icerikler/hero`, `/panel/icerikler/hakkimizda`) ve
+`BrandImageUploader` sabit "branding" bucket'ından çıkarılıp bir
+`bucket` prop'u alarak `hero`/`about` bucket'larına da bağlandı.
+Böylece **6 bucket'ın hepsi ve 8 panel ekranı** görsel yükleme akışına
+dahil — aynı doğrulama/temizlik/yetkilendirme kurallarıyla
+(bkz. `docs/KARAR-GUNLUGU.md`, "dokuzuncu oturum").
 
 **Migration Supabase'e uygulandı, kullanıcı 3 akışı (Hizmetler/
 Referanslar/Ekip) gerçek tarayıcıda uçtan uca doğruladı (2026-08-18) —

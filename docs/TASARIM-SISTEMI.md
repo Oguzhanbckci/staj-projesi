@@ -47,7 +47,8 @@ gereği "nötr griler marka rengine hafif eğilim taşısın" isteğini karşıl
 | --------------------- | --------- | ---------------------------------------------------------------- |
 | `--color-neutral-50`  | `#f0f2f4` | Dekoratif/panel amaçlı ham skala basamağı (bkz. not aşağıda)     |
 | `--color-neutral-100` | `#e2e5e9` | Dekoratif/panel amaçlı ham skala basamağı                        |
-| `--color-neutral-300` | `#e2e6eb` (açık) / `#303844` (koyu) *(2026-08-18)* | Kenarlık (`border-neutral-300`, ~40 dosyada) — **artık temaya göre DEĞİŞİR**, eskiden sabitti (bkz. madde 1.3 altındaki not) |
+| `--color-neutral-300` | `#e2e6eb` (açık) / `#303844` (koyu) *(2026-08-18)* | **DEKORATİF ayraç/kenar** — bölüm ayraç çizgileri, kart çerçeveleri, panel yapısal ayrımları. Kontrastı bilinçli olarak DÜŞÜK (1.18-1.46:1): sessiz kalması 2026-08-21 tasarım kararı. **Etkileşimli öğelerde kullanılmaz**, onun için `--color-control` var |
+| `--color-control` | `#828d9e` (açık) / `#6b7688` (koyu) *(2026-08-21)* | **KONTROL kenarlığı** — form alanları (TextField/TextareaField/SelectField/PasswordField/ColorPickerField), ikincil Button/LinkButton, ThemeToggle, ve zeminden ayrışması şart olan yüzen katmanlar (Toast, Tooltip, ImagePlaceholder). WCAG 2.2 SC 1.4.11 form kontrolü sınırı için 3:1 istiyor; ölçülen: açık 3.36:1 (surface-raised) / 3.16:1 (surface), koyu 3.14:1 / 3.76:1. `lib/theme/globalsTokens.test.ts` bu eşiği testle sabitliyor |
 | `--color-neutral-500` | `#5e6a7d` | Dekoratif/panel amaçlı ham skala basamağı                        |
 | `--color-neutral-700` | `#373e49` | Dekoratif/panel amaçlı ham skala basamağı                        |
 | `--color-neutral-800` | `#21252c` | Dekoratif/panel amaçlı ham skala basamağı                        |
@@ -226,7 +227,13 @@ override edilmedi.
 ## 5.1 Fotoğraf En-Boy Oranı *(2026-08-20 eklendi)*
 
 **Kural: ziyaretçi sitesinde fotoğraf gösteren her kap `aspect-[3/2]`
-kullanır.** İstisnası yok.
+kullanır** — aşağıdaki ÜÇ bilinçli istisna dışında.
+
+*(Düzeltme, 2026-08-21: burada "İstisnası yok" yazıyordu ve yazıldığı anda
+yanlıştı — kuralın kapsamadığı iki kap daha vardı ve listede yoktu. Mutlak
+ifade, sonraki oturumun o iki yeri "zaten uyumlu" sanıp atlaması riskini
+taşıyordu; oysa kullanıcının asıl şikayeti — "resimler aşırı büyütülmüş" —
+tam olarak bu kırpma sınıfıydı.)*
 
 | Bileşen | Önce | Sonra |
 |---|---|---|
@@ -236,8 +243,13 @@ kullanır.** İstisnası yok.
 | `ProjectDetailModal` | `aspect-video` (16:9) | `aspect-[3/2]` |
 | `ServiceCardImage` | `aspect-video` (16:9) | `aspect-[3/2]` |
 
-*(`HeroVariantA` bu kuralın dışında — orada fotoğraf bir kap içinde değil,
-tüm bölümü kaplayan bir arka plan.)*
+**Bilinçli istisnalar:**
+
+| Bileşen | Oran | Neden |
+|---|---|---|
+| `HeroVariantA` | — | Fotoğraf bir kap içinde değil, tüm bölümü kaplayan arka plan |
+| `TeamMemberCard` | 1:1 (`h-24 w-24 rounded-full`) | Kişi fotoğrafı; portrede 3:2 yanlış olur. Yüklenen 3:2 bir görsel yanlardan kırpılır — **panelde Ekip görseli için "kare/portre önerilir, yüz ortada olsun" rehberliği verilmeli** |
+| `ProjectCard` (`fill` modu) | Hücreye göre değişken | Yalnızca Mozaik varyantında; kart ızgara hücresini doldurur, oran hücre yüksekliğinden gelir |
 
 **Neden gerekti (gerçek bir kullanıcı şikayeti):** Kullanıcı panelden
 fotoğraf yükledikten sonra "resimler aşırı büyütülmüş görünüyor" dedi.

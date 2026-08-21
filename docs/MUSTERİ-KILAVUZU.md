@@ -35,12 +35,27 @@ sunar:
   Mesaj**'ınız olduğunu gösterir. "Okunmamış Mesaj" kutusu, okunmamış
   mesajınız varsa mavi bir çerçeveyle öne çıkar. Herhangi bir kutuya
   tıklamak sizi ilgili sayfaya götürür.
+- Ortada **"Kurulum Kontrol Listesi"** kartı: site ilk kurulduğunda
+  içerik alanları örnek/yer tutucu metinlerle dolu gelir ("[Telefon]",
+  "Örnek Konut Projesi" gibi). Bu kart, bunlardan hangilerinin HÂLÂ
+  ziyaretçilere göründüğünü listeler ve her maddenin yanındaki
+  **"Düzelt →"** bağlantısı sizi doğrudan ilgili ekrana götürür.
+  - **Sarı üçgen** işaretli maddeler acildir: ziyaretçi o metni ŞU AN
+    sitede görüyor.
+  - **Gri daire** işaretli maddeler eksikliktir: site çalışır ama bir
+    şey doldurulmamıştır (ör. logo yüklenmemiş).
+  - Hepsi tamamlandığında kart yeşil bir onay mesajına döner.
 - Altta **"Hızlı Erişim"** başlığıyla, sık kullanılan sayfalara
   (Mesajlar, İçerikler, Tema Ayarları) doğrudan giden bağlantılar
   vardır.
 
 Bu ekranda hiçbir şey düzenlenmez, sadece genel durumu görüp hızlıca
 ilgili sayfaya geçmek içindir.
+
+> **Neden böyle bir liste var?** Örnek içerikle yayında kalan bir site,
+> ziyaretçiye "bu site bakımsız" izlenimi verir — bu, ürünün kaçınmak
+> için tasarlandığı şeyin ta kendisi. Liste, hiçbir şeyi kendiliğinden
+> silmez veya değiştirmez; yalnızca hatırlatır.
 
 ## İçerik Ekleme
 
@@ -62,6 +77,21 @@ ilgili sayfaya geçmek içindir.
    dışıdır).
 5. Başarılı olursa yeşil bir onay mesajı görürsünüz ve yeni kayıt
    yukarıdaki listede belirir.
+
+## Proje Adresi (Adres Parçası)
+
+Her projenin sitede kendi sayfası vardır: `siteniz.com/projeler/vadi-konutlari`
+gibi. Adresin son parçası, proje formundaki **"Adres Parçası"** alanından
+gelir.
+
+- **Yeni proje eklerken** bu alanı boş bırakabilirsiniz — başlıktan
+  otomatik üretilir ("Vadi Konutları" → `vadi-konutlari`).
+- **Mevcut bir projeyi düzenlerken** boş bırakırsanız adres **aynen
+  korunur.** Başlığı değiştirmeniz adresi değiştirmez; bu bilinçlidir.
+- Adresi elle değiştirirseniz **eski adres çalışmayı bırakır.** Daha önce
+  WhatsApp'ta paylaştığınız veya bir yerde bağlantı verdiğiniz sayfa
+  açılmaz olur. Bu yüzden yayınlanmış bir projenin adresini yalnızca
+  gerçekten gerekiyorsa değiştirin.
 
 ## İçerik Düzenleme
 
@@ -247,11 +277,24 @@ Formdaki bölümler:
   ya da hex kodunu elle yazın — kutunun altında seçtiğiniz rengin
   yeterince okunaklı olup olmadığını gösteren bir kontrast bilgisi
   belirir), Köşe Yarıçapı ve Font Ailesi (açılır listeden seçim).
+- **Sitenin Varsayılan Teması** *(2026-08-21 eklendi)*: Açık veya Koyu.
+  Ziyaretçi kendi tercihini yapana kadar sitenizin açılacağı tema budur.
+  **Dikkat:** Yukarıdaki "Modern Koyu" ön ayarı, adının çağrıştırdığının
+  aksine siteyi koyu YAPMAZ — o yalnızca renk, köşe ve font seçer.
+  Sitenin koyu açılmasını istiyorsanız bu kontrolü kullanın.
 - **Site Kimliği:** Firma Adı ve Slogan (slogan, sitenizin alt
   bilgisinde firma adının hemen altında gösterilir).
 - **İletişim Bilgileri:** Adres, Telefon, E-posta, Çalışma Saatleri (bu,
   İletişim sayfanızda görünen serbest metindir — ör. "Hafta içi 08:00 -
-  18:00"). Altında ayrıca **Açılış-Kapanış Saatleri** başlığıyla 4 ayrı
+  18:00"). **Çalışma Saatleri çok satırlı yazılabilir:** her gün grubunu
+  ayrı satıra yazarsanız sitede de ayrı satırlarda görünür, örneğin:
+
+  ```
+  Pazartesi - Cuma: 09:00 - 18:00
+  Cumartesi: 09:00 - 13:00
+  Pazar: Kapalı
+  ```
+ Altında ayrıca **Açılış-Kapanış Saatleri** başlığıyla 4 ayrı
   saat kutusu vardır (Hafta İçi Açılış/Kapanış, Hafta Sonu Açılış/
   Kapanış — hafta sonu için Cumartesi ve Pazar aynı saatleri kullanır).
   Bunları doldurursanız Google arama sonuçlarında işletmenizin o an açık
@@ -414,10 +457,10 @@ Formdaki alanlar içerik türüne göre değişir, aşağıda özetlendi
 
 | Bölüm | Tür | Alanlar |
 |---|---|---|
-| Ana Görsel (Hero) | Tekil | Başlık*, Alt Başlık, Varsayılan Görünüm, Buton Metni, Buton Bağlantısı, İkinci Buton Metni, İkinci Buton Bağlantısı, **Arka Plan Görseli** |
+| Ana Görsel (Hero) | Tekil | Başlık*, Alt Başlık, Buton Metni, Buton Bağlantısı, İkinci Buton Metni, İkinci Buton Bağlantısı, **Arka Plan Görseli** *(2026-08-21: "Varsayılan Görünüm" alanı kaldırıldı — hero görünümü artık yalnızca **Sayfa Düzeni** ekranından seçiliyor; iki yerde iki ayrı seçim olması kafa karıştırıcıydı ve buradaki seçimin sonuca etkisi yoktu)* |
 | Hakkımızda | Tekil | Başlık*, Açıklama, Kuruluş Yılı (1800-2100), Değerlerimiz (her satıra bir madde), **Görsel** |
 | Hizmetler | Liste | Başlık*, Açıklama, İkon, **Görsel** |
-| Projeler | Liste | Başlık*, Açıklama, Kategori, Konum, Yıl (1800-2100), Canlı Bağlantı, **Görsel** |
+| Projeler | Liste | Başlık*, **Adres Parçası**, Açıklama, Kategori, **Durum** (Devam Ediyor / Tamamlandı / Planlanan), Konum, Yıl (1800-2100), Canlı Bağlantı, **Görsel** |
 | Referanslar | Liste | Ad Soyad*, Unvan/Firma, Yorum*, Puan (1-5, yarım puan verilebilir: 4,5), **Logo** |
 | SSS | Liste | Soru*, Cevap* |
 | Ekip | Liste | Ad Soyad*, Unvan*, Kısa Biyografi, **Fotoğraf** |

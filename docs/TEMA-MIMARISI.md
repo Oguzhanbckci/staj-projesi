@@ -253,6 +253,18 @@ mevcut).
 
 ## 9. Açık Sorular / Bilinen Sınırlar
 
+- **Varsayılan tema (`tenants.theme_mode`) artık panelden seçiliyor**
+  *(2026-08-21)*. Öncesinde bu kolon hiçbir kod yolundan yazılmıyordu:
+  değer yalnızca seed'den geliyordu ve koyu varsayılan isteyen müşteri
+  için tek çare Supabase Table Editor'dü. Tema ekranındaki "Sitenin
+  Varsayılan Teması" kontrolü bu kolona yazıyor. Aynı düzeltmede Tema
+  önizlemesi de sabit `themeMode: "light"` yerine gerçek değeri
+  kullanır hale geldi — preset'lerin marka rengi moda göre FARKLI
+  olduğu için (kurumsal-mavi: açık `#2563a8`, koyu `#3b82c4`) önizleme,
+  koyu temadaki bir sitede yanlış rengi gösteriyordu.
+  **Not:** "Modern Koyu" ön ayarı adına rağmen siteyi koyu YAPMAZ;
+  yalnızca marka rengi/köşe yarıçapı/font üçlüsünü değiştirir. İki
+  kavram ayrı ve bu bilinçli.
 - **Tenant çözümlemesi henüz yok.** `getSiteThemeSettings()` şu an sabit
   olarak platform sahibinin kendi kaydını okuyor; Host başlığına göre
   gerçek tenant çözümleyen middleware yazılınca bu fonksiyon bir tenant id
@@ -281,5 +293,10 @@ mevcut).
   derlemek; **prod'da** bu sorunun kalıcı çözümü zaten mimaride var:
   panelden bir kayıt yapıldığında `revalidatePath`/`revalidateTag` ile
   ilgili sayfanın yeniden üretilmesi (bkz. `MIMARI.md` madde 6,
-  "Render Stratejisi") — panel henüz kodlanmadığı için bu tetikleyici de
-  henüz yok, ama mimari karar zaten bu senaryoyu öngörmüştü.
+  "Render Stratejisi"). *(Güncelleme 2026-08-21: bu paragrafın sonu
+  "panel henüz kodlanmadığı için bu tetikleyici de henüz yok" diyordu —
+  artık DOĞRU DEĞİL. Panel tamamen kodlandı ve içerik/tema kaydeden her
+  sunucu eylemi `revalidatePath` çağırıyor; projeler için üç yüzeyi
+  birden tazeleyen bir yardımcı bile var, bkz.
+  `app/panel/(protected)/icerikler/projeler/actions.ts`
+  → `revalidateProjectPaths`.)*

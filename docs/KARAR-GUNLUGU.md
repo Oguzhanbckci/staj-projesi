@@ -5844,3 +5844,135 @@ işiyle birlikte yapılacak. (2) `scripts/test-rls.mjs` yalnızca `services` ve
 `contact_messages` tablolarını sınıyor, RPC yüzeyini hiç test etmiyor —
 anon istemcisiyle bu üç fonksiyonu çağırma testi eklenmeli, böylece aynı
 sınıf açık bir daha sessizce geri gelemez.
+
+---
+
+## 2026-08-21 — Commit granülerliği değişti: iş paketi başına tek commit
+
+**Karar:** İş commit'leri artık alt-değişiklik başına değil, **iş paketi
+başına** atılır. `AI-KURALLARI.md` madde 8.2 buna göre güncellendi.
+
+**Gerekçe:** Kullanıcının doğrudan geri bildirimi: "şu commitleri aşırı
+parçalamasan olur mu, tonla commit atıyorum gereksiz şişiyor." Somut
+tetikleyici: denetimden çıkan 4. iş paketi (panelden geçen verinin
+sessizce bozulduğu beş yol) için üç ayrı commit önerilmişti ve bunlardan
+ikisi zaten "tek mantıksal değişiklik" kuralını tam karşılamıyordu —
+`panelQueries.ts` ve `tema/actions.ts` ikişer alt-değişiklik taşıdığı
+için tam ayrım `git add -p` gerektiriyordu. Yani eski kural, pratikte
+hem daha çok komut hem daha çok istisna üretiyordu.
+
+**Değişmeyenler:** Doküman commit'lerinin gün sonunda toplanması
+(madde 8.6), mesajın emir kipli ve Türkçe karaktersiz olması (madde 8.5),
+migration ile onu kullanan kodun aynı commit'te gitmesi (madde 8.3),
+commit/push komutlarını kullanıcının çalıştırması (madde 8.7) ve push
+öncesi `npm run build` + `npm test` şartı (madde 8.4).
+
+---
+
+## 2026-08-21 (on ikinci oturum) — İkinci kapsamlı denetim: 8 boyut, 77 bulgu, 10 iş paketi
+
+**Bağlam:** Bir önceki oturumda başlatılan denetim workflow'u terminal
+kapandığı için sıfır sonuç üretmişti (16 ajanın hiçbiri tamamlanmamıştı;
+`journal.jsonl`'da tek bir `completed` kaydı yoktu). Bu oturumda baştan
+koşuldu: **77 bulgu, 62 geçerli, 15 çürütüldü.**
+
+### Karar: rol ayrımı — dekoratif kenar ile kontrol kenarı ayrı token
+
+`--color-neutral-300` iki işi birden yapıyordu: ince bölüm ayraçları
+(2026-08-21 tasarım kararı gereği bilinçli olarak SESSİZ, 1.18-1.46:1) ve
+form alanı/buton kenarları (WCAG 2.2 SC 1.4.11 gereği en az 3:1). İkisi
+aynı anda doğru olamaz. Token'ı yükseltmek ayraç tasarımını bozardı,
+bırakmak erişilebilirlik ihlalini sürdürürdü.
+
+**Karar:** Rol ikiye ayrıldı. `--color-neutral-300` dekoratif kaldı; yeni
+`--color-control` (açık `#828d9e`, koyu `#6b7688`) yalnızca etkileşimli
+öğelerde ve zeminden ayrışması şart olan yüzen katmanlarda kullanılıyor.
+Değerler hesaplanarak seçildi, tahminle değil.
+
+`lib/theme/globalsTokens.test.ts` bu ayrımı testle sabitliyor — ve
+testlerden biri bilinçli olarak ayracın 3:1'in ALTINDA kalmasını şart
+koşuyor. Sebebi: biri iyi niyetle "kontrastı düzeltiyorum" diye o token'ı
+yükseltirse bölüm ayraçları tasarımın istediğinden baskın hale gelir;
+doğru hamle `--color-control` kullanmaktır.
+
+### Karar: proje detayı modal DEĞİL, gerçek sayfa
+
+`RAKIP-ANALIZI.md`'deki 93 sitelik tarama, hiçbirinin proje detayı için
+modal kullanmadığını kaydetmişti ama bulgu iş maddesine dönüşmemişti.
+Modalın somut maliyeti: adresi yok — paylaşılamıyor, yer imine
+eklenemiyor, indekslenemiyor. `sitemap.xml` sitenin TAMAMI için 3 URL
+bildiriyordu.
+
+**Karar:** `projects.slug` (not null, tenant başına unique) + statik
+`/projeler/<slug>` sayfası + `/projeler` katalog sayfası. Modal SİLİNDİ,
+kartlar `<Link>` oldu. Ana sayfa ilk 6 projeyi gösteriyor.
+
+**Neden `not null`:** "Her projenin bir sayfası vardır" özelliğin tamamı.
+Nullable olsaydı slug'sız bir kayıt sessizce tıklanamaz bir karta
+dönerdi — bu projede tekrar eden "sessizce farklı davranış" hata sınıfı.
+Üç insert yolunun üçü de (panel eylemi, `seed.sql`, `seed-template.sql`)
+slug yazacak şekilde güncellendi ve migration mevcut kayıtları geri
+doldurdu.
+
+**Neden slug düzenlemede korunuyor:** Başlık değişince adresin sessizce
+değişmesi, paylaşılmış her bağlantıyı kırardı. Alan boş bırakılırsa
+mevcut adres aynen kalır; kullanıcı bilerek değiştirirse uyarı metni
+sonucu açıkça söylüyor.
+
+**Türkçe slug ve yerel tuzağı:** Slug üretimi iki yerde var (panel için
+`lib/slug.ts`, geri doldurma için migration SQL'i) ve ikisi AYNI sonucu
+vermek zorunda. İkisinde de Türkçe büyük harfler DOĞRUDAN küçük ASCII'ye
+eşleniyor, `lower()`/`toLowerCase()`'e bırakılmıyor: Türkçe yerelde
+`lower('I')` = `'ı'`, İngilizce yerelde `'i'`. Eşlemeyi önce yapmak
+sonucu yerelden bağımsız kılıyor. Testle sabitlendi
+("Ilgın Toplu Konut" → `ilgin-toplu-konut`).
+
+### Karar: filtreler katalog sayfasına, ana sayfa 6 projeyle sınırlı
+
+Ana sayfa tüm projeleri basıyordu; 25 projesi olan bir müşteride bu hem
+devasa bir sayfa hem "seçilmiş işler" hissinin kaybı demekti. Filtre
+şeridi `/projeler`'e taşındı — 6 kayıt arasında filtrelemek anlamsız, 25
+kayıt arasında şart. Yan kazanç: `ProjectsExplorer` bir Client
+Component'ti; ana sayfa artık bu bölüm için hiç istemci JS'i indirmiyor.
+e2e testindeki filtre adımı da `/projeler`'e taşındı, böylece yeni
+sayfanın açıldığı da test kapsamına girdi.
+
+### Denetimin YANLIŞ çıkan bir önerisi (ve nasıl yakalandı)
+
+Koyu temada odak halkasının beyaz offset'i için denetim şunu önerdi:
+"`globals.css`'in `:root`'una `--tw-ring-offset-color` yaz". Uygulamadan
+önce build çıktısındaki tanım okundu:
+`@property --tw-ring-offset-color{syntax:"*";inherits:false;initial-value:#fff}`.
+`inherits: false` olduğu için `:root`'a yazmak hiçbir alt öğeye ulaşmaz —
+öneri uygulansaydı sorun "düzeltildi" sanılıp aynen sürecekti. Doğru
+çözüm 7 yere `ring-offset-surface` yardımcı sınıfı eklemek.
+
+**Ders:** Adversarial doğrulamadan geçmiş bir bulgu bile, ÖNERDİĞİ ÇÖZÜM
+açısından doğrulanmamış olabilir. Bulgunun gerçekliği ile çözümün
+işlerliği ayrı iki sorudur.
+
+### Kural değişikliği: commit granülerliği
+
+Bkz. aynı tarihli ayrı kayıt ("Commit granülerliği değişti"). Kısaca: iş
+commit'leri artık iş paketi başına tek commit.
+
+### Diğer kayda değer bulgular
+
+- **`supabase db push` boş bir projede düşüyordu** (FK ihlali). Bugüne
+  kadar görünmemesinin sebebi, 2026-08-19'daki "sıfırdan kurulum"un yeni
+  bir MAKİNE kurulumu olmasıydı — yeni bir veritabanı değil. Aynı ayrım
+  gelecekte de yanıltabilir: "sıfırdan kurulum" iki farklı şey demek.
+- **Zod tarayıcıya iniyordu** (ana sayfa JS'inin %35,5'i) çünkü doğrulama
+  modülleri şemayla düz sabitleri aynı dosyada tutuyordu. Modüller
+  `<ad>.ts` / `<ad>Fields.ts` olarak ayrıldı; Fields dosyalarının başına
+  "buraya zod import EDİLMEZ" kuralı yazıldı, yoksa sızıntı sessizce geri
+  gelir.
+- **`priority` prop'u Next.js 16.0.0'da kullanımdan kaldırılmış**
+  (`next/dist/docs`, image.md sürüm tablosundan doğrulandı). Hero ve proje
+  detay görseli `preload`'a, kart ızgaraları `loading="eager"`e çevrildi —
+  ikinci ayrım denetim bulgusuydu: kartlar `<head>`'e preload bağlantısı
+  koyup sayfanın gerçek LCP öğesiyle yarışıyordu.
+- **Panel kurulum kontrol listesi** eklendi. Gerekçe ürünün kendi satış
+  argümanı: `RAKIP-ANALIZI.md` yerel firma sitelerinin "bakımsızlık izini"
+  (temizlenmemiş dummy içerik) bizim farkımız olarak yazmıştı — ama ürün
+  o izi kendi kurulum akışında üretiyor ve hiçbir yerde yakalamıyordu.

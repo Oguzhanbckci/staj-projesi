@@ -142,7 +142,15 @@ tutulur.
 
 1. Commit mesajı `tip: kısa açıklama` formatındadır (`feat`, `fix`, `docs`, `chore`,
    `refactor`, `test`).
-2. Her commit tek bir mantıksal değişikliği içerir.
+2. **Commit'ler iş paketi başına atılır, alt-değişiklik başına DEĞİL.**
+   Bir iş paketi (ör. "denetimden çıkan sessiz veri kaybı maddeleri")
+   kaç dosyaya ve kaç alt-düzeltmeye yayılırsa yayılsın tek commit'te
+   gider; mesaj paketin bütününü anlatır. *(2026-08-21'de değişti —
+   eski hâli "her commit tek bir mantıksal değişikliği içerir" idi.
+   Gerekçe: alt-değişiklik başına commit önermek kullanıcıya arka arkaya
+   çalıştırılacak komut yığını çıkarıyor ve geçmişi gürültülendiriyordu;
+   ayrıca aynı dosya iki alt-değişiklik taşıdığında ayırmak `git add -p`
+   gerektiriyordu. Bkz. `KARAR-GUNLUGU.md`, 2026-08-21.)*
 3. Migration dosyası ile onu kullanan kod değişikliği aynı commit'te birlikte
    gönderilir.
 4. `main`'e push'lamadan önce `npm run build` ve `npm test` hatasız

@@ -62,13 +62,23 @@ içerir (ör. "Akme İnşaat — İstanbul İnşaat ve Yapı Firması").
 group'unun içinde değil (Next.js'in dosya kuralı böyle gerektiriyor,
 `(site)/sitemap.ts` yazılsa sessizce hiç çalışmaz).
 
-- **`sitemap.xml`:** Sadece **gerçek sayfalar** — `/`, `/ekip`,
-  `/iletisim`. Bölüm çapaları (`/#hizmetler` gibi) sitemap'e BİLEREK
-  girmez — bunlar ayrı bir sayfa değil, aynı ana sayfanın bir parçası;
-  sitemap'te tekrar tekrar listelemek arama motoruna yanlış/şişirilmiş
-  bir sinyal verirdi. Ana sayfa `priority=1`/`monthly`, diğer ikisi
-  `priority=0.6` (Ekip `monthly`, İletişim `yearly` — iletişim bilgisi
-  değişim sıklığı daha düşük varsayıldı).
+- **`sitemap.xml`:** Sadece **gerçek sayfalar** — `/`, `/projeler`,
+  `/ekip`, `/iletisim` ve **yayınlanmış her projenin kendi sayfası**
+  (`/projeler/<slug>`). Bölüm çapaları (`/#hizmetler` gibi) sitemap'e
+  BİLEREK girmez — bunlar ayrı bir sayfa değil, aynı ana sayfanın bir
+  parçası; sitemap'te tekrar tekrar listelemek arama motoruna
+  yanlış/şişirilmiş bir sinyal verirdi. Ana sayfa `priority=1`/`monthly`,
+  proje kataloğu `0.9`, proje detayları `0.8`, Ekip/İletişim `0.6`
+  (Ekip `monthly`, İletişim `yearly` — iletişim bilgisi değişim sıklığı
+  daha düşük varsayıldı).
+
+  *(2026-08-21 öncesi burada YALNIZCA 3 URL vardı ve bu, denetimde
+  ürünün en büyük SEO boşluğu olarak çıktı: proje detayı bir modaldı,
+  adresi yoktu. 25 projesi olan bir müşteride bile aranabilir sayfa
+  sayısı 3'te kalıyordu — oysa bir inşaat firmasında arama trafiğinin
+  ana kapısı proje adlarıdır. Artık proje sayısı kadar indekslenebilir
+  sayfa var ve panelden proje değiştiğinde sitemap de tazeleniyor,
+  bkz. `revalidateProjectPaths`.)*
 - **`robots.txt`:** `Allow: /`, **`Disallow: /panel`** (panelin tüm alt
   ağacı — giriş sayfası dahil), `Sitemap: https://[domain]/sitemap.xml`.
   **Önemli:** Bu bir güvenlik sınırı DEĞİL, sadece uyumlu botları
