@@ -66,7 +66,17 @@ update public.testimonials set logo_path = 'testimonials/kaya-holding.png'
 
 -- Platform sahibi için örnek istatistikler (diğer bölümlerdeki gibi
 -- test edilebilsin diye).
-insert into public.stats (tenant_id, label, value, suffix, order_index, is_published) values
-  ('33333333-3333-3333-3333-333333333333', 'Tamamlanan Proje', 50, '+', 10, true),
+-- Not: bu blok eskiden koşulsuz `insert ... values` idi ve boş bir
+-- veritabanında (yeni müşteri kurulumu, `supabase db push`) tenants satırı
+-- henüz var olmadığı için foreign key hatasıyla kurulumu ilk adımda
+-- durduruyordu. `where exists` ile blok yalnızca ilgili tenant zaten varsa
+-- çalışır; yeni kurulumda sessizce atlanır — demo veri zaten yeni müşteride
+-- istenmiyor, o içerik supabase/setup/seed-template.sql'den gelir.
+insert into public.stats (tenant_id, label, value, suffix, order_index, is_published)
+select v.tenant_id, v.label, v.value, v.suffix, v.order_index, v.is_published
+from (values
+  ('33333333-3333-3333-3333-333333333333'::uuid, 'Tamamlanan Proje', 50, '+'::text, 10, true),
   ('33333333-3333-3333-3333-333333333333', 'Yıllık Deneyim', 12, '+', 20, true),
-  ('33333333-3333-3333-3333-333333333333', 'Mutlu Müşteri', 1200, '+', 30, true);
+  ('33333333-3333-3333-3333-333333333333', 'Mutlu Müşteri', 1200, '+', 30, true)
+) as v (tenant_id, label, value, suffix, order_index, is_published)
+where exists (select 1 from public.tenants where id = v.tenant_id);

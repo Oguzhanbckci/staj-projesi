@@ -100,8 +100,16 @@ comment on column public.site_settings.linkedin_url is
 -- İstatistikler -> SSS -> Ekip -> Eylem Çağrısı -> İletişim (bkz.
 -- docs/KARAR-GUNLUGU.md gerekçe).
 -- ============================================================================
-insert into public.page_sections (tenant_id, section_key, order_index, is_visible, variant) values
-  ('11111111-1111-1111-1111-111111111111', 'hero', 10, true, 'a'),
+-- Not: bu blok eskiden koşulsuz `insert ... values` idi ve boş bir
+-- veritabanında (yeni müşteri kurulumu, `supabase db push`) tenants satırı
+-- henüz var olmadığı için foreign key hatasıyla kurulumu ilk adımda
+-- durduruyordu. `where exists` ile blok yalnızca ilgili tenant zaten varsa
+-- çalışır; yeni kurulumda sessizce atlanır — demo veri zaten yeni müşteride
+-- istenmiyor, o içerik supabase/setup/seed-template.sql'den gelir.
+insert into public.page_sections (tenant_id, section_key, order_index, is_visible, variant)
+select v.tenant_id, v.section_key, v.order_index, v.is_visible, v.variant
+from (values
+  ('11111111-1111-1111-1111-111111111111'::uuid, 'hero'::text, 10, true, 'a'::text),
   ('11111111-1111-1111-1111-111111111111', 'about', 20, true, null),
   ('11111111-1111-1111-1111-111111111111', 'services', 30, true, 'icon'),
   ('11111111-1111-1111-1111-111111111111', 'projects', 40, true, 'grid'),
@@ -110,7 +118,9 @@ insert into public.page_sections (tenant_id, section_key, order_index, is_visibl
   ('11111111-1111-1111-1111-111111111111', 'faq', 70, true, 'single'),
   ('11111111-1111-1111-1111-111111111111', 'team', 80, true, null),
   ('11111111-1111-1111-1111-111111111111', 'cta', 90, true, null),
-  ('11111111-1111-1111-1111-111111111111', 'contact', 100, true, null);
+  ('11111111-1111-1111-1111-111111111111', 'contact', 100, true, null)
+) as v (tenant_id, section_key, order_index, is_visible, variant)
+where exists (select 1 from public.tenants where id = v.tenant_id);
 
 update public.site_settings set
   cta_title = 'Bir Sonraki Projenizi Birlikte İnşa Edelim',
@@ -133,8 +143,12 @@ where tenant_id = '11111111-1111-1111-1111-111111111111';
 -- notu "Storage'da henüz hiç gerçek görsel yok").
 delete from public.team_members where tenant_id = '11111111-1111-1111-1111-111111111111';
 
-insert into public.team_members (tenant_id, full_name, role, bio, photo_path, order_index, is_published) values
-  ('11111111-1111-1111-1111-111111111111', 'Zeynep Aksoy', 'Bilgisayar Mühendisi · Dijital Sistemler', 'Şantiye ilerleme takibini ve iç proje yönetim yazılımını geliştirip ekiplerin sahadan gelen veriyi anlık görebilmesini sağlıyor.', 'team/zeynep-aksoy.jpg', 10, true),
+insert into public.team_members (tenant_id, full_name, role, bio, photo_path, order_index, is_published)
+select v.tenant_id, v.full_name, v.role, v.bio, v.photo_path, v.order_index, v.is_published
+from (values
+  ('11111111-1111-1111-1111-111111111111'::uuid, 'Zeynep Aksoy', 'Bilgisayar Mühendisi · Dijital Sistemler', 'Şantiye ilerleme takibini ve iç proje yönetim yazılımını geliştirip ekiplerin sahadan gelen veriyi anlık görebilmesini sağlıyor.', 'team/zeynep-aksoy.jpg', 10, true),
   ('11111111-1111-1111-1111-111111111111', 'Caner Yıldırım', 'Bilgisayar Mühendisi · Yazılım Geliştirme', 'Müşteri portalı ve iç raporlama sistemlerinin yazılım altyapısını kuruyor, panel ve saha ekipleri arasındaki veri akışını tasarlıyor.', 'team/caner-yildirim.jpg', 20, true),
   ('11111111-1111-1111-1111-111111111111', 'Deniz Koç', 'Bilgisayar Mühendisi · Veri ve Otomasyon', 'Şantiye verilerinin toplanmasını ve raporlanmasını otomatikleştiren araçlar geliştirerek proje yöneticilerinin karar sürecini hızlandırıyor.', 'team/deniz-koc.jpg', 30, true),
-  ('11111111-1111-1111-1111-111111111111', 'Emre Polat', 'Elektrik Mühendisi', 'Projelerin elektrik tesisat tasarımını ve enerji verimliliği planlamasını yürütüyor, uygulamayı sahada denetliyor.', 'team/emre-polat.jpg', 40, true);
+  ('11111111-1111-1111-1111-111111111111', 'Emre Polat', 'Elektrik Mühendisi', 'Projelerin elektrik tesisat tasarımını ve enerji verimliliği planlamasını yürütüyor, uygulamayı sahada denetliyor.', 'team/emre-polat.jpg', 40, true)
+) as v (tenant_id, full_name, role, bio, photo_path, order_index, is_published)
+where exists (select 1 from public.tenants where id = v.tenant_id);
