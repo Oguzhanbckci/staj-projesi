@@ -6,6 +6,7 @@ import {
   type ThemePresetKey,
 } from "@/lib/theme/presets";
 import { coerceStoredRating } from "@/lib/validation/testimonial";
+import { isProjectStatus } from "@/lib/validation/projectFields";
 import type { SiteThemeSettings } from "@/lib/theme/resolve";
 import { isBorderRadiusScaleKey } from "@/lib/theme/radiusScales";
 import { isFontFamilyKey } from "@/lib/theme/fonts";
@@ -331,7 +332,7 @@ export async function getProjects(): Promise<ProjectItem[]> {
 
     const { data, error } = await supabase
       .from("projects")
-      .select("id, title, description, location, year, category, image_path, live_url")
+      .select("id, slug, title, description, location, year, category, status, image_path, live_url")
       .eq("tenant_id", tenantId)
       .eq("is_published", true)
       .order("order_index");
@@ -342,11 +343,15 @@ export async function getProjects(): Promise<ProjectItem[]> {
 
     return data.map((row) => ({
       id: String(row.id),
+      slug: String(row.slug),
       title: String(row.title),
       description: typeof row.description === "string" ? row.description : null,
       city: typeof row.location === "string" ? row.location : null,
       year: typeof row.year === "number" ? row.year : null,
       category: typeof row.category === "string" ? row.category : null,
+      // Bilinmeyen bir değer (elle SQL düzenlemesi) rozeti hiç bastırmaz,
+      // sayfa çökmez — testimonials.rating'deki savunmacı okuma deseni.
+      status: isProjectStatus(row.status) ? row.status : null,
       coverPath: typeof row.image_path === "string" ? row.image_path : null,
       liveUrl: typeof row.live_url === "string" ? row.live_url : null,
     }));
@@ -355,6 +360,79 @@ export async function getProjects(): Promise<ProjectItem[]> {
     return [];
   }
 }
+
+/**
+ * Tek bir projeyi slug ile getirir — /projeler/[slug] detay sayfası için.
+ *
+ * `is_published` filtresi ŞART: taslak bir projenin adresi tahmin
+ * edilebilir (slug başlıktan türüyor) ve filtre olmadan yayınlanmamış
+ * içerik doğrudan adresle okunabilirdi.
+ *
+ * Kayıt yoksa null döner; sayfa bunu `notFound()` ile 404'e çevirir.
+ */
+export const getProjectBySlug = cache(async (slug: string): Promise<ProjectItem | null> => {
+  try {
+    const supabase = createServiceRoleClient();
+    const tenantId = await getActiveTenantId();
+
+    if (!tenantId) return null;
+
+    const { data, error } = await supabase
+      .from("projects")
+      .select(
+        "id, slug, title, description, location, year, category, status, image_path, live_url"
+      )
+      .eq("tenant_id", tenantId)
+      .eq("slug", slug)
+      .eq("is_published", true)
+      .maybeSingle();
+
+    if (error || !data) return null;
+
+    return {
+      id: String(data.id),
+      slug: String(data.slug),
+      title: String(data.title),
+      description: typeof data.description === "string" ? data.description : null,
+      city: typeof data.location === "string" ? data.location : null,
+      year: typeof data.year === "number" ? data.year : null,
+      category: typeof data.category === "string" ? data.category : null,
+      status: isProjectStatus(data.status) ? data.status : null,
+      coverPath: typeof data.image_path === "string" ? data.image_path : null,
+      liveUrl: typeof data.live_url === "string" ? data.live_url : null,
+    };
+  } catch (err) {
+    console.error("getProjectBySlug sorgu hatası:", err);
+    return null;
+  }
+});
+
+/**
+ * Yayınlanmış proje slug'ları — `generateStaticParams` ve `sitemap.ts`
+ * için. Tüm proje verisini çekmemek adına ayrı ve dar bir sorgu.
+ */
+export const getPublishedProjectSlugs = cache(async (): Promise<string[]> => {
+  try {
+    const supabase = createServiceRoleClient();
+    const tenantId = await getActiveTenantId();
+
+    if (!tenantId) return [];
+
+    const { data, error } = await supabase
+      .from("projects")
+      .select("slug")
+      .eq("tenant_id", tenantId)
+      .eq("is_published", true)
+      .order("order_index");
+
+    if (error || !data) return [];
+
+    return data.map((row) => String(row.slug));
+  } catch (err) {
+    console.error("getPublishedProjectSlugs sorgu hatası:", err);
+    return [];
+  }
+});
 
 /**
  * faqs tablosunda yeni kolon yok, tipli client yeterli. getServices()'le

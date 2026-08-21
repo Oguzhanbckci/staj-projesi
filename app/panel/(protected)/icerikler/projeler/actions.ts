@@ -5,8 +5,28 @@ import { projectFormSchema, type ProjectFormValues } from "@/lib/validation/proj
 import { requireAdminUser, type ActionResult } from "@/lib/panel/actionResult";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { getActiveTenantId } from "@/lib/supabase/queries";
-import { getNextOrderIndex, getProjectById, swapOrderIndex } from "@/lib/supabase/panelQueries";
+import {
+  getAllProjects,
+  getNextOrderIndex,
+  getProjectById,
+  swapOrderIndex,
+} from "@/lib/supabase/panelQueries";
+import { ensureUniqueSlug, slugify } from "@/lib/slug";
 
+// Bir proje değiştiğinde tazelenmesi gereken ÜÇ statik yüzey var:
+// (1) ana sayfadaki Projeler bölümü, (2) projenin KENDİ detay sayfası
+// (2026-08-21'de eklendi — /projeler/<slug>, generateStaticParams ile
+// build sırasında üretiliyor), (3) sitemap.xml (yayınlanmış projeleri
+// listeliyor). Üçü de ayrı ayrı unutulabilir olduğu için tek yerde.
+//
+// Dinamik rotada `type: "page"` ZORUNLU — bkz. next/dist/docs,
+// revalidatePath: "If path contains a dynamic segment ... this parameter
+// is required".
+function revalidateProjectPaths() {
+  revalidatePath("/");
+  revalidatePath("/projeler/[slug]", "page");
+  revalidatePath("/sitemap.xml");
+}
 // Hizmetler'deki createServiceAction ile birebir aynı desen (bkz. o
 // dosyadaki yorum) — sadece hedef tablo ve alanlar farklı.
 export async function createProjectAction(
@@ -22,6 +42,8 @@ export async function createProjectAction(
     title: String(formData.get("title") ?? ""),
     description: String(formData.get("description") ?? ""),
     category: String(formData.get("category") ?? ""),
+    status: String(formData.get("status") ?? ""),
+    slug: String(formData.get("slug") ?? ""),
     location: String(formData.get("location") ?? ""),
     year: String(formData.get("year") ?? ""),
     liveUrl: String(formData.get("liveUrl") ?? ""),
@@ -48,13 +70,26 @@ export async function createProjectAction(
   }
 
   const orderIndex = await getNextOrderIndex("projects", tenantId);
+
+  // Adres parçası: kullanıcı girdiyse ondan, girmediyse başlıktan.
+  // Benzersizlik tenant içinde kontrol ediliyor — DB'de de
+  // `projects_tenant_slug_key` var, yani buradaki kontrol atlansa bile
+  // veri bozulmaz, kullanıcı anlaşılmaz bir hata görürdü.
+  const mevcutProjeler = await getAllProjects();
+  const slug = ensureUniqueSlug(
+    slugify(result.data.slug || result.data.title),
+    mevcutProjeler.map((p) => p.slug)
+  );
+
   const supabase = await createServerSupabaseClient();
 
   const { error } = await supabase.from("projects").insert({
     tenant_id: tenantId,
+    slug,
     title: result.data.title,
     description: result.data.description || null,
     category: result.data.category || null,
+    status: result.data.status || null,
     location: result.data.location || null,
     year: result.data.year ? Number(result.data.year) : null,
     live_url: result.data.liveUrl || null,
@@ -73,7 +108,7 @@ export async function createProjectAction(
 
   // Projeler bölümü de sadece ana sayfada ("/") render ediliyor (bkz.
   // createServiceAction'daki aynı gerekçe).
-  revalidatePath("/");
+  revalidateProjectPaths();
 
   return { success: true };
 }
@@ -93,6 +128,8 @@ export async function updateProjectAction(
     title: String(formData.get("title") ?? ""),
     description: String(formData.get("description") ?? ""),
     category: String(formData.get("category") ?? ""),
+    status: String(formData.get("status") ?? ""),
+    slug: String(formData.get("slug") ?? ""),
     location: String(formData.get("location") ?? ""),
     year: String(formData.get("year") ?? ""),
     liveUrl: String(formData.get("liveUrl") ?? ""),
@@ -127,6 +164,19 @@ export async function updateProjectAction(
 
   const nextDescription = result.data.description || null;
   const nextCategory = result.data.category || null;
+  const nextStatus = result.data.status || null;
+
+  // Slug alanı BOŞSA mevcut adres korunur — başlık değişti diye
+  // yayınlanmış bir adresin sessizce kırılması, paylaşılmış her
+  // bağlantıyı bozardı. Kullanıcı bilerek yeni bir adres yazarsa
+  // benzersizlik kontrolünden KENDİ slug'ı çıkarılıyor, yoksa kayıt
+  // kendisiyle çakışıp her kaydedişte "-2" eklerdi.
+  const nextSlug = result.data.slug
+    ? ensureUniqueSlug(
+        slugify(result.data.slug),
+        (await getAllProjects()).filter((p) => p.id !== id).map((p) => p.slug)
+      )
+    : current.slug;
   const nextLocation = result.data.location || null;
   const nextYear = result.data.year ? Number(result.data.year) : null;
   const nextLiveUrl = result.data.liveUrl || null;
@@ -134,6 +184,8 @@ export async function updateProjectAction(
     current.title !== result.data.title ||
     current.description !== nextDescription ||
     current.category !== nextCategory ||
+    current.status !== nextStatus ||
+    current.slug !== nextSlug ||
     current.location !== nextLocation ||
     current.year !== nextYear ||
     current.liveUrl !== nextLiveUrl ||
@@ -147,9 +199,11 @@ export async function updateProjectAction(
   const { error } = await supabase
     .from("projects")
     .update({
+      slug: nextSlug,
       title: result.data.title,
       description: nextDescription,
       category: nextCategory,
+      status: nextStatus,
       location: nextLocation,
       year: nextYear,
       live_url: nextLiveUrl,
@@ -167,7 +221,7 @@ export async function updateProjectAction(
     };
   }
 
-  revalidatePath("/");
+  revalidateProjectPaths();
 
   return { success: true };
 }
@@ -216,7 +270,7 @@ export async function toggleProjectPublishedAction(
     return { success: false, formError: "Yayın durumu değiştirilemedi. Lütfen tekrar deneyin." };
   }
 
-  revalidatePath("/");
+  revalidateProjectPaths();
 
   return { success: true };
 }
@@ -248,7 +302,7 @@ export async function moveProjectOrderAction(
     return { success: false, formError: result.error };
   }
 
-  revalidatePath("/");
+  revalidateProjectPaths();
 
   return { success: true };
 }
@@ -290,7 +344,7 @@ export async function deleteProjectAction(
     return { success: false, formError: "Proje silinirken bir sorun oluştu. Lütfen tekrar deneyin." };
   }
 
-  revalidatePath("/");
+  revalidateProjectPaths();
 
   return { success: true };
 }

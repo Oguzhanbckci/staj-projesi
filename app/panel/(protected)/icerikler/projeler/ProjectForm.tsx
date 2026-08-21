@@ -3,9 +3,14 @@
 import { useActionState, useEffect, useRef } from "react";
 import { TextField } from "@/components/ui/TextField";
 import { TextareaField } from "@/components/ui/TextareaField";
+import { SelectField } from "@/components/ui/SelectField";
 import { SubmitButton } from "@/components/ui/SubmitButton";
 import { FormErrorSummary } from "@/components/ui/FormErrorSummary";
-import { PROJECT_FIELD_LABELS } from "@/lib/validation/projectFields";
+import {
+  PROJECT_FIELD_LABELS,
+  PROJECT_STATUSES,
+  PROJECT_STATUS_LABELS,
+} from "@/lib/validation/projectFields";
 import type { ProjectFormValues } from "@/lib/validation/project";
 import type { ActionResult } from "@/lib/panel/actionResult";
 import type { ProjectDetail } from "@/lib/supabase/panelQueries";
@@ -82,6 +87,18 @@ export function ProjectForm({ project }: { project?: ProjectDetail }) {
         defaultValue={project?.description ?? undefined}
         error={fieldErrors.description}
       />
+      <TextField
+        id={`${FIELD_ID_PREFIX}-slug`}
+        label="Adres Parçası (opsiyonel)"
+        name="slug"
+        defaultValue={project?.slug ?? undefined}
+        error={fieldErrors.slug}
+        helpText={
+          project
+            ? "Projenin sitedeki adresi: /projeler/… — boş bırakırsanız mevcut adres KORUNUR. Değiştirirseniz eski adres çalışmayı bırakır, paylaşılmış bağlantılar kırılır."
+            : "Projenin sitedeki adresi: /projeler/… — boş bırakırsanız başlıktan otomatik üretilir."
+        }
+      />
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <TextField
           id={`${FIELD_ID_PREFIX}-category`}
@@ -91,6 +108,21 @@ export function ProjectForm({ project }: { project?: ProjectDetail }) {
           defaultValue={project?.category ?? undefined}
           error={fieldErrors.category}
         />
+        <SelectField
+          id={`${FIELD_ID_PREFIX}-status`}
+          label="Durum (opsiyonel)"
+          name="status"
+          defaultValue={project?.status ?? ""}
+          error={fieldErrors.status}
+          helpText="Sitede projenin üzerinde rozet olarak görünür. Devam eden bir proje firmanın hâlâ iş yaptığını gösterir; boş bırakılırsa rozet basılmaz."
+        >
+          <option value="">Belirtilmemiş</option>
+          {PROJECT_STATUSES.map((status) => (
+            <option key={status} value={status}>
+              {PROJECT_STATUS_LABELS[status]}
+            </option>
+          ))}
+        </SelectField>
         <TextField
           id={`${FIELD_ID_PREFIX}-location`}
           label="Konum (opsiyonel)"

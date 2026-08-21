@@ -28,7 +28,15 @@ test.describe("Kritik akış: ziyaretçi", () => {
       await expect(page.getByRole("navigation").first()).toBeVisible();
     });
 
-    await test.step("Proje galerisi kategoriye göre filtreleniyor", async () => {
+    await test.step("Proje kataloğu açılıyor ve kategoriye göre filtreleniyor", async () => {
+      // 2026-08-21: Filtre şeridi ana sayfadan /projeler katalog sayfasına
+      // taşındı — ana sayfa artık yalnızca ilk 6 projeyi gösteriyor ve o
+      // bölüm için hiç istemci JS indirmiyor (bkz.
+      // components/site/projects/ProjectsSection.tsx). Test de oraya taşındı;
+      // böylece yeni katalog sayfasının açıldığı da doğrulanmış oluyor.
+      await page.goto("/projeler");
+      await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+
       const filterGroup = page.getByRole("group", { name: "Kategoriye göre filtrele" });
       await expect(filterGroup).toBeVisible();
 

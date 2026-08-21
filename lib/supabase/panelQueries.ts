@@ -162,8 +162,10 @@ export async function getServiceById(id: string): Promise<ServiceDetail | null> 
 
 export interface AdminProjectRow {
   id: string;
+  slug: string;
   title: string;
   location: string | null;
+  imagePath: string | null;
   year: number | null;
   isPublished: boolean;
   orderIndex: number;
@@ -177,7 +179,7 @@ export async function getAllProjects(): Promise<AdminProjectRow[]> {
 
     const { data, error } = await supabase
       .from("projects")
-      .select("id, title, location, year, is_published, order_index")
+      .select("id, slug, title, location, year, image_path, is_published, order_index")
       .eq("tenant_id", tenantId)
       .order("order_index");
 
@@ -187,8 +189,10 @@ export async function getAllProjects(): Promise<AdminProjectRow[]> {
 
     return data.map((row) => ({
       id: String(row.id),
+      slug: String(row.slug),
       title: String(row.title),
       location: typeof row.location === "string" ? row.location : null,
+      imagePath: typeof row.image_path === "string" ? row.image_path : null,
       year: typeof row.year === "number" ? row.year : null,
       isPublished: Boolean(row.is_published),
       orderIndex: Number(row.order_index),
@@ -201,9 +205,11 @@ export async function getAllProjects(): Promise<AdminProjectRow[]> {
 
 export interface ProjectDetail {
   id: string;
+  slug: string;
   title: string;
   description: string | null;
   category: string | null;
+  status: string | null;
   location: string | null;
   year: number | null;
   liveUrl: string | null;
@@ -220,7 +226,7 @@ export async function getProjectById(id: string): Promise<ProjectDetail | null> 
 
     const { data, error } = await supabase
       .from("projects")
-      .select("id, title, description, category, location, year, live_url, is_published, image_path")
+      .select("id, slug, title, description, category, status, location, year, live_url, is_published, image_path")
       .eq("id", id)
       .eq("tenant_id", tenantId)
       .maybeSingle();
@@ -229,9 +235,11 @@ export async function getProjectById(id: string): Promise<ProjectDetail | null> 
 
     return {
       id: String(data.id),
+      slug: String(data.slug),
       title: String(data.title),
       description: typeof data.description === "string" ? data.description : null,
       category: typeof data.category === "string" ? data.category : null,
+      status: typeof data.status === "string" ? data.status : null,
       location: typeof data.location === "string" ? data.location : null,
       year: typeof data.year === "number" ? data.year : null,
       liveUrl: typeof data.live_url === "string" ? data.live_url : null,

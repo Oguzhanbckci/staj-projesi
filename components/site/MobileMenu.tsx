@@ -16,7 +16,7 @@ export interface MobileMenuProps {
 }
 
 // Odak tuzağı/Escape/scroll kilidi artık ortak bir hook'ta (bkz.
-// lib/hooks/useDialogBehavior.ts — ProjectDetailModal'la paylaşılıyor).
+// lib/hooks/useDialogBehavior.ts — panel diyaloglarıyla paylaşılıyor).
 // Kapanınca odak Navbar'daki tetikleyici butona döner (bkz. Navbar.tsx,
 // onClose) — bu, hook'un sorumluluğu değil, çağıranın.
 export function MobileMenu({

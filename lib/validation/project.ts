@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { PROJECT_STATUSES } from "./projectFields";
 
 // Aynı ilke: saf modül, hem panel formunda hem sunucu eyleminde
 // kullanılır (bkz. lib/validation/service.ts).
@@ -22,6 +23,23 @@ export const projectFormSchema = z.object({
     .max(60, { error: "Kategori en fazla 60 karakter olabilir." })
     .optional()
     .or(z.literal("")),
+
+  // Adres parçası. Boş bırakılırsa: yeni kayıtta başlıktan üretilir,
+  // düzenlemede MEVCUT adres korunur (yayınlanmış bir adresin başlık
+  // değişti diye sessizce kırılması, paylaşılmış her bağlantıyı bozardı).
+  // Girilen değer yine de `slugify` ile normalize edilir, yani buradaki
+  // doğrulama yalnızca uzunluk için.
+  slug: z
+    .string()
+    .trim()
+    .max(80, { error: "Adres parçası en fazla 80 karakter olabilir." })
+    .optional()
+    .or(z.literal("")),
+
+  // Boş string = "belirtilmemiş" (DB'de NULL). Kolon nullable, çünkü
+  // her projenin durumunu girmeye zorlamak hızlı yayına alma akışını
+  // bozardı — bkz. migration'daki gerekçe.
+  status: z.enum(PROJECT_STATUSES).optional().or(z.literal("")),
 
   location: z
     .string()

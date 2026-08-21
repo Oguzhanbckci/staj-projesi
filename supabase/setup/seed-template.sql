@@ -125,11 +125,19 @@ begin
       (v_tenant_id, 'Renovasyon ve Tadilat', 'Mevcut yapıların güçlendirme ve modernizasyon ihtiyaçlarını minimum kesintiyle tamamlıyoruz.', 'hammer', 30, true),
       (v_tenant_id, 'Proje Yönetimi ve Danışmanlık', 'Maliyet kontrolü ve saha denetimi konusunda uçtan uca danışmanlık hizmeti veriyoruz.', 'clipboard-check', 40, false);
 
-    insert into public.projects (tenant_id, title, description, location, year, category, order_index, is_published) values
-      (v_tenant_id, 'Örnek Konut Projesi', 'Bu açıklamayı gerçek proje bilgisiyle değiştirin.', '[Şehir, İlçe]', 2023, 'Konut', 10, true),
-      (v_tenant_id, 'Örnek Ticari Proje', 'Bu açıklamayı gerçek proje bilgisiyle değiştirin.', '[Şehir, İlçe]', 2022, 'Ticari', 20, true),
-      (v_tenant_id, 'Örnek Renovasyon Projesi', 'Bu açıklamayı gerçek proje bilgisiyle değiştirin.', '[Şehir, İlçe]', 2021, 'Renovasyon', 30, false),
-      (v_tenant_id, 'Örnek Altyapı Projesi', 'Bu açıklamayı gerçek proje bilgisiyle değiştirin.', '[Şehir, İlçe]', 2020, 'Altyapı', 40, false);
+    -- `status`: devam | tamamlandi | planlanan (bkz. migration
+    -- 20260821120000). Şablonda bilerek KARIŞIK: yeni müşteri hem
+    -- rozetin nasıl göründüğünü hem durum filtresinin ne işe yaradığını
+    -- ilk açılışta görür. Boş bırakılan bir proje rozet göstermez.
+    -- `slug`: projenin detay sayfası adresi (/projeler/<slug>), NOT NULL
+    -- ve tenant içinde benzersiz. Panelden proje eklenince başlıktan
+    -- otomatik üretilir (lib/slug.ts); burada elle veriliyor çünkü şablon
+    -- doğrudan SQL ile yükleniyor.
+    insert into public.projects (tenant_id, slug, title, description, location, year, category, status, order_index, is_published) values
+      (v_tenant_id, 'ornek-konut-projesi', 'Örnek Konut Projesi', 'Bu açıklamayı gerçek proje bilgisiyle değiştirin.', '[Şehir, İlçe]', 2023, 'Konut', 'devam', 10, true),
+      (v_tenant_id, 'ornek-ticari-proje', 'Örnek Ticari Proje', 'Bu açıklamayı gerçek proje bilgisiyle değiştirin.', '[Şehir, İlçe]', 2022, 'Ticari', 'tamamlandi', 20, true),
+      (v_tenant_id, 'ornek-renovasyon-projesi', 'Örnek Renovasyon Projesi', 'Bu açıklamayı gerçek proje bilgisiyle değiştirin.', '[Şehir, İlçe]', 2021, 'Renovasyon', 'tamamlandi', 30, false),
+      (v_tenant_id, 'ornek-altyapi-projesi', 'Örnek Altyapı Projesi', 'Bu açıklamayı gerçek proje bilgisiyle değiştirin.', '[Şehir, İlçe]', 2020, 'Altyapı', 'planlanan', 40, false);
 
     insert into public.testimonials (tenant_id, author_name, author_title, quote, rating, order_index, is_published) values
       (v_tenant_id, 'Örnek Müşteri Adı', 'Proje/Firma', 'Bu alanı gerçek bir müşteri yorumuyla değiştirin — panelden Referanslar bölümünden düzenlenir.', 5, 10, true),

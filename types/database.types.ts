@@ -319,6 +319,8 @@ export type Database = {
           live_url: string | null
           location: string | null
           order_index: number
+          slug: string
+          status: string | null
           tenant_id: string
           title: string
           year: number | null
@@ -333,6 +335,8 @@ export type Database = {
           live_url?: string | null
           location?: string | null
           order_index?: number
+          slug: string
+          status?: string | null
           tenant_id: string
           title: string
           year?: number | null
@@ -347,6 +351,8 @@ export type Database = {
           live_url?: string | null
           location?: string | null
           order_index?: number
+          slug?: string
+          status?: string | null
           tenant_id?: string
           title?: string
           year?: number | null

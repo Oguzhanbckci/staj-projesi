@@ -5,13 +5,7 @@ import type { ProjectItem } from "./types";
 // yerine sabit satır yüksekliği (auto-rows) + her 5 projede bir 2x2
 // span veren, tüm tarayıcılarda çalışan bir grid tekniğiyle "mozaik"
 // hissi veriliyor.
-export function ProjectsMosaicLayout({
-  projects,
-  onSelect,
-}: {
-  projects: ProjectItem[];
-  onSelect: (project: ProjectItem) => void;
-}) {
+export function ProjectsMosaicLayout({ projects }: { projects: ProjectItem[] }) {
   return (
     // Satır yüksekliği dar ekranda DAHA BÜYÜK: kartın metin bloğu
     // (başlık + "şehir · yıl") dar kartta ~105px sabit yer kaplıyor ve
@@ -26,7 +20,6 @@ export function ProjectsMosaicLayout({
           <ProjectCard
             key={project.id}
             project={project}
-            onSelect={onSelect}
             priority={index < 3}
             fill
             className={isFeatured ? "col-span-2 row-span-2" : "col-span-1 row-span-1"}

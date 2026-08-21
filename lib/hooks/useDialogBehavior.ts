@@ -2,7 +2,11 @@
 
 import { useEffect, useRef } from "react";
 
-// MobileMenu ve ProjectDetailModal arasında paylaşılan odak-tuzağı mantığı.
+// Diyalog benzeri katmanlar arasında paylaşılan odak-tuzağı mantığı:
+// MobileMenu, PanelShell (mobil çekmece), UserMenu, ConfirmActionDialog
+// ve ConfirmDeleteDialog. (2026-08-21'e kadar ProjectDetailModal da
+// kullanıyordu; proje detayı gerçek bir sayfaya taşınınca o bileşen
+// silindi.)
 // Form alanlarındaki basit etiket/hata kalıbının aksine (bilerek
 // paylaşılan bir soyutlamaya çıkarılmadı, bkz. TASARIM-SISTEMI.md madde
 // 9.8), burada mantık gerçekten karmaşık ve hataya açık (klavye olayları,

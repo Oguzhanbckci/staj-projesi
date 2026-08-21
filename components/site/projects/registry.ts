@@ -5,7 +5,6 @@ import { ProjectsMosaicLayout } from "./ProjectsMosaicLayout";
 
 interface GalleryProps {
   projects: ProjectItem[];
-  onSelect: (project: ProjectItem) => void;
 }
 
 // Hero/Hizmetler registry'leriyle aynı ilke — galeri düzeni seçimi tek burada.

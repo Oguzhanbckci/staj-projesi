@@ -36,15 +36,18 @@ insert into public.services (tenant_id, title, description, icon, order_index, i
 -- Projeler: 8 satır, order_index 10'ar artıyor, 4'ü yayında 4'ü değil.
 -- image_path: tutarlı isimlendirme (projects/<slug>.jpg) — gerçek dosya
 -- henüz Storage'a yüklenmedi, sadece yer tutucu yol.
-insert into public.projects (tenant_id, title, image_path, location, year, order_index, is_published) values
-  ('11111111-1111-1111-1111-111111111111', 'Vadi Konutları', 'projects/vadi-konutlari.jpg', 'Ankara, Çankaya', 2023, 10, true),
-  ('11111111-1111-1111-1111-111111111111', 'Marina Rezidans', 'projects/marina-rezidans.jpg', 'İzmir, Karşıyaka', 2022, 20, false),
-  ('11111111-1111-1111-1111-111111111111', 'Akme Kule Ofis Binası', 'projects/akme-kule.jpg', 'İstanbul, Ümraniye', 2021, 30, true),
-  ('11111111-1111-1111-1111-111111111111', 'Yeşil Vadi Toplu Konut', 'projects/yesil-vadi-toplu-konut.jpg', 'Bursa, Nilüfer', 2024, 40, false),
-  ('11111111-1111-1111-1111-111111111111', 'Merkez İş Merkezi', 'projects/merkez-is-merkezi.jpg', 'Ankara, Kızılay', 2020, 50, true),
-  ('11111111-1111-1111-1111-111111111111', 'Sahil Konutları', 'projects/sahil-konutlari.jpg', 'Antalya, Konyaaltı', 2023, 60, false),
-  ('11111111-1111-1111-1111-111111111111', 'Endüstri Parkı Depo Kompleksi', 'projects/endustri-parki-depo.jpg', 'Kocaeli, Gebze', 2019, 70, true),
-  ('11111111-1111-1111-1111-111111111111', 'Kültür ve Kongre Merkezi', 'projects/kultur-kongre-merkezi.jpg', 'Konya, Selçuklu', 2022, 80, false);
+-- `slug`: proje detay sayfasının adresi (/projeler/<slug>), NOT NULL ve
+-- tenant içinde benzersiz (bkz. migration 20260821130000). Değerler
+-- lib/slug.ts kurallarıyla üretildi: Türkçe harfler ASCII, boşluklar tire.
+insert into public.projects (tenant_id, slug, title, image_path, location, year, order_index, is_published) values
+  ('11111111-1111-1111-1111-111111111111', 'vadi-konutlari', 'Vadi Konutları', 'projects/vadi-konutlari.jpg', 'Ankara, Çankaya', 2023, 10, true),
+  ('11111111-1111-1111-1111-111111111111', 'marina-rezidans', 'Marina Rezidans', 'projects/marina-rezidans.jpg', 'İzmir, Karşıyaka', 2022, 20, false),
+  ('11111111-1111-1111-1111-111111111111', 'akme-kule-ofis-binasi', 'Akme Kule Ofis Binası', 'projects/akme-kule.jpg', 'İstanbul, Ümraniye', 2021, 30, true),
+  ('11111111-1111-1111-1111-111111111111', 'yesil-vadi-toplu-konut', 'Yeşil Vadi Toplu Konut', 'projects/yesil-vadi-toplu-konut.jpg', 'Bursa, Nilüfer', 2024, 40, false),
+  ('11111111-1111-1111-1111-111111111111', 'merkez-is-merkezi', 'Merkez İş Merkezi', 'projects/merkez-is-merkezi.jpg', 'Ankara, Kızılay', 2020, 50, true),
+  ('11111111-1111-1111-1111-111111111111', 'sahil-konutlari', 'Sahil Konutları', 'projects/sahil-konutlari.jpg', 'Antalya, Konyaaltı', 2023, 60, false),
+  ('11111111-1111-1111-1111-111111111111', 'endustri-parki-depo-kompleksi', 'Endüstri Parkı Depo Kompleksi', 'projects/endustri-parki-depo.jpg', 'Kocaeli, Gebze', 2019, 70, true),
+  ('11111111-1111-1111-1111-111111111111', 'kultur-ve-kongre-merkezi', 'Kültür ve Kongre Merkezi', 'projects/kultur-kongre-merkezi.jpg', 'Konya, Selçuklu', 2022, 80, false);
 
 -- Referanslar: 4 satır, order_index 10'ar artıyor, 2'si yayında 2'si değil.
 insert into public.testimonials (tenant_id, author_name, author_title, quote, rating, order_index, is_published) values

@@ -1,20 +1,45 @@
 import Link from "next/link";
 import { Card } from "@/components/ui/Card";
 import {
+  getAllProjects,
+  getAllTeamMembers,
+  getAllTestimonials,
   getProjectsCount,
+  getSeoSettings,
   getServicesCount,
+  getThemeSettings,
   getUnreadMessagesCount,
 } from "@/lib/supabase/panelQueries";
+import { buildSetupChecklist } from "@/lib/panel/setupChecklist";
+import { SetupChecklistCard } from "./SetupChecklistCard";
 
-// Panel ana sayfası — özet ekranı. Sayılar burada, sayfa render edilirken
-// çekiliyor (bkz. üst layout'taki auth notu — bu satırlara oturumsuz bir
-// istek asla ulaşamaz). `Promise.all` ile üç sayım paralel çalışır.
+// Panel ana sayfası — özet ekranı. Sayılar ve kurulum kontrol listesi
+// burada, sayfa render edilirken çekiliyor (bkz. üst layout'taki auth
+// notu — bu satırlara oturumsuz bir istek asla ulaşamaz).
 export default async function PanelPage() {
-  const [servicesCount, projectsCount, unreadCount] = await Promise.all([
-    getServicesCount(),
-    getProjectsCount(),
-    getUnreadMessagesCount(),
-  ]);
+  // Tek `Promise.all` — kontrol listesi için gereken 5 sorgu da
+  // sayaçlarla PARALEL çalışır, ekranı yavaşlatmaz. Hepsi zaten var olan
+  // sorgular; kontrol listesi yeni tablo/migration gerektirmiyor.
+  const [servicesCount, projectsCount, unreadCount, theme, seo, projects, testimonials, team] =
+    await Promise.all([
+      getServicesCount(),
+      getProjectsCount(),
+      getUnreadMessagesCount(),
+      getThemeSettings(),
+      getSeoSettings(),
+      getAllProjects(),
+      getAllTestimonials(),
+      getAllTeamMembers(),
+    ]);
+
+  const setupIssues = buildSetupChecklist({
+    contact: theme ? { address: theme.address, phone: theme.phone } : null,
+    branding: theme ? { logoPath: theme.logoPath, faviconPath: theme.faviconPath } : null,
+    seo: seo ? { seoDescription: seo.seoDescription, ogImagePath: seo.ogImagePath } : null,
+    projects,
+    testimonials,
+    teamMembers: team,
+  });
 
   return (
     <div>
@@ -30,6 +55,8 @@ export default async function PanelPage() {
           highlight={unreadCount > 0}
         />
       </div>
+
+      <SetupChecklistCard issues={setupIssues} />
 
       <div className="mt-8">
         <h2 className="text-h5 font-semibold text-text">Hızlı Erişim</h2>

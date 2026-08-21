@@ -17,7 +17,7 @@ export interface ConfirmDeleteDialogProps {
 // Silme onayı için özel, erişilebilir bir dialog — native `window.confirm()`
 // DEĞİL: onun OK/Cancel butonları stillenemiyor, ama KISITLAR yıkıcı
 // butonun görsel olarak ayrışmasını istiyor. Odak tuzağı/Escape/scroll
-// kilidi useDialogBehavior'dan (MobileMenu/ProjectDetailModal ile
+// kilidi useDialogBehavior'dan (MobileMenu ve diğer diyaloglarla
 // paylaşılan, zaten doğrulanmış hook — yeni bir klavye mantığı icat
 // edilmedi).
 //
