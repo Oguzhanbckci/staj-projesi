@@ -68,6 +68,35 @@ const isDev = process.env.NODE_ENV === "development";
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
 const supabaseWsUrl = supabaseUrl ? supabaseUrl.replace(/^https:/, "wss:") : "";
 const supabaseConnectSrc = [supabaseUrl, supabaseWsUrl].filter(Boolean).join(" ");
+
+// next/image'in izinli görsel host'u da AYNI env değişkeninden türetilir
+// (bkz. aşağıda `images.remotePatterns`). 2026-08-21'e kadar burada eski
+// müşterinin proje ref'i sabit yazılıydı; yeni bir müşteride panelden ilk
+// görsel yüklendiği an next/image "hostname is not configured" diye hata
+// fırlatıyordu ve logo Navbar'da olduğu için etki tek sayfayla sınırlı
+// kalmıyordu. Yukarıdaki CSP satırı aynı değeri zaten env'den türetiyordu —
+// bu satır o düzeltmenin dışında kalmıştı.
+//
+// Bozuk bir URL değerinde `new URL()` fırlatır; build'i düşürmemek için
+// boşa düşülüyor. Bu da "fail closed": host yoksa uzak görsel hiç optimize
+// edilmez, izinsiz bir host açılmaz.
+const supabaseHost = (() => {
+  if (!supabaseUrl) return "";
+  try {
+    return new URL(supabaseUrl).hostname;
+  } catch {
+    return "";
+  }
+})();
+const supabaseImagePatterns = supabaseHost
+  ? [
+      {
+        protocol: "https" as const,
+        hostname: supabaseHost,
+        pathname: "/storage/v1/object/public/**",
+      },
+    ]
+  : [];
 const CSP_HEADER = [
   "default-src 'self'",
   `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ""}`,
@@ -153,13 +182,7 @@ const nextConfig: NextConfig = {
     // next/image, Supabase Storage'daki görselleri (bkz.
     // lib/supabase/storage.ts) optimize edebilsin diye izinli host —
     // sadece herkese açık storage yoluna kapsam daraltıldı.
-    remotePatterns: [
-      {
-        protocol: "https",
-        hostname: "vchodvviufmdwomkjrjb.supabase.co",
-        pathname: "/storage/v1/object/public/**",
-      },
-    ],
+    remotePatterns: supabaseImagePatterns,
   },
 };
 
