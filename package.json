@@ -2,12 +2,15 @@
   "name": "staj-projesi",
   "version": "0.1.0",
   "private": true,
+  "engines": {
+    "node": ">=20.9.0"
+  },
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "types:generate": "supabase gen types typescript --project-id vchodvviufmdwomkjrjb --schema public > types/database.types.ts",
+    "types:generate": "node --env-file=.env.local scripts/generate-types.mjs",
     "test:unit": "vitest run",
     "test:unit:watch": "vitest",
     "test:e2e": "playwright test",
